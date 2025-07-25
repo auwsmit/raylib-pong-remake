@@ -1,0 +1,12 @@
+# tag files
+tags
+tags.*
+
+# ignore build files
+build/
+build_web/
+build_scripts/
+*.exe
+*.html
+*.js
+*.wasm

@@ -4,12 +4,12 @@ This is my personal repo for messing with Raylib and learning how it works.
 
 ## Build for Desktop
 - Run `make` in the root directory
-- Alternatively, with `cmake` installed, you can also run a build script for your platform.
+- Alternatively, with `cmake` installed, you can run a build script for your platform:
     - `./build.sh` or `build.bat` for Windows.
 - Run with the `out` executable.
 
 ## Build for Browser
-- Same as desktop, but add `web` as an argument.
+- Same as desktop, but add `web` as an argument:
     - `make web` or `build.sh web`.
 - Run with `emrun out.html`
 

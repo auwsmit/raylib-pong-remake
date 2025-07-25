@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-# root path of project to run script from anywhere
-script_dir="$(dirname "$0")"
-proj_root=$script_dir/..
-cd $proj_root
+# cd to the script directory
+cd "$(dirname "$0")"/..
 
 if [ -z $1 ]; then
     cmake -DPLATFORM=Desktop -B build

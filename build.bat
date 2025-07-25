@@ -1,8 +1,7 @@
 @echo off
 
-:: root path of project to run script from anywhere
-set proj_root=%~dp0..\
-cd "%proj_root%"
+:: cd to the script directory
+cd "%~dp0"
 
 if "%1"=="" (
     cmake -DPLATFORM=Desktop -B build

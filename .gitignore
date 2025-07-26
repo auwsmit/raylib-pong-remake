@@ -5,6 +5,8 @@ tags.*
 # ignore build files
 build/
 build_web/
+out
+game
 *.exe
 *.html
 *.js

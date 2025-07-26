@@ -1,23 +1,25 @@
-# Credit to raylib's examples makefile for many ideas
+# Credit to raylib's makefiles for many pointers and ideas
+
+# Tell `make` that these aren't files
 .PHONY: all web web-release clean
 
-# Define environment variables:
-# ----------------------------------------------------------------------------
+# =============================================================================
+# DEFINE ENVIRONMENT VARIABLES:
+# =============================================================================
+
 # Source files to compile
-PROJ_CODE = $(wildcard *.c)
+PROJ_CODE = $(wildcard code/*.c)
+PROJ_HEADERS = $(wildcard code/*.h)
 # Name of output executable
-PROJ_EXE  = out
+PROJ_EXE  = game
 # The executable's file extension (for windows and web platforms)
 PROJ_EXT  =
 ifeq ($(OS),Windows_NT)
     PROJ_EXT = .exe
 endif
 
-# Compiler of choice
-CC = gcc
-
-# Define compiler flags: CFLAGS
-#------------------------------------------------------------------------------
+# Define C compiler flags: CFLAGS
+# ------------------------------------------------------------------------
 #  -O1                  defines optimization level
 #  -g                   include debug information on compilation
 #  -s                   strip unnecessary data from build
@@ -37,8 +39,9 @@ CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
 # 128MB of memory for emscripten, default is 16MB
 WEB_HEAP_SIZE = 134217728
-# Define web flags
-# ----------------------------------------------------------------------------
+
+# Define web compiler flags: WEBFLAGS
+# -----------------------------------------------------------------------
 # -Os                        # size optimization
 # -O2                        # optimization level 2, if used, also set --memory-init-file 0
 # -sUSE_GLFW=3              # Use glfw3 library (context/input management)
@@ -56,52 +59,73 @@ WEB_HEAP_SIZE = 134217728
 # --source-map-base          # allow debugging in browser with source map
 WEBFLAGS = -sUSE_GLFW=3 -sTOTAL_MEMORY=$(WEB_HEAP_SIZE) -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB
 
-# # Standard Windows Raylib install location
-# RAYLIB_SRC = C:\raylib\raylib\src
-# RAYLIB_INC = $(RAYLIB_SRC)
-# RAYLIB_LIB = $(RAYLIB_SRC)
-
 # Local raylib location
 RAYLIB_INC = raylib/include
 RAYLIB_LIB = raylib/lib
-RAYLIB_WEB = raylib/libweb
 
-# Include and library flags
-INCLUDES   = -I$(RAYLIB_INC)
-LIBS       = -L$(RAYLIB_LIB) -lraylib
+# Include and library flags (more libraries added below)
+INCLUDES = -I$(RAYLIB_INC)
+LIBS = -lraylib
 
-# Platform specific flags
-# -----------------------------------------------------------------------------
-# I only use Windows and Linux atm, and can use raylib's
-# CMakeLists file to compile on any other platforms
+# =============================================================================
+# CROSS-PLATFORM COMPATIBILITY
+# =============================================================================
+# I only use Windows and Linux atm, but this might work on macOS
+
+# Detect compiler
 ifeq ($(OS),Windows_NT)
+    # Windows
+    ifndef CC
+        ifneq ($(shell where gcc 2>nul),)
+            CC := gcc
+        else ifneq ($(shell where clang 2>nul),)
+            CC := clang
+        else ifneq ($(shell where cl 2>nul),)
+            CC := cl
+        endif
+    endif
+else
+    # Linux
+    CC ?= $(shell command -v gcc || command -v clang || echo cc)
+endif
+
+# Platform-specific library flags
+ifeq ($(OS),Windows_NT)
+    LIBS += -L$(RAYLIB_LIB)/windows
     LIBS += -lopengl32 -lgdi32 -lwinmm
 else
     ifeq ($(shell uname),Linux)
+        LIBS += -L$(RAYLIB_LIB)/linux
         LIBS += -lGL -lm -lpthread -ldl -lrt -lX11
     endif
 endif
 
+# Delete/remove command for cleanup
 ifeq ($(shell command -v rm >/dev/null 2>&1 && echo yes),yes)
     DELETE = rm -f
 else
-    DELETE = del
+    DELETE = del /q
 endif
 
+# =============================================================================
+# MAKEFILE TARGETS
+# =============================================================================
 all: $(PROJ_EXE)$(PROJ_EXT)
 
 # Compile for desktop (default)
-$(PROJ_EXE)$(PROJ_EXT): $(PROJ_CODE)
+$(PROJ_EXE)$(PROJ_EXT): $(PROJ_CODE) $(PROJ_HEADERS)
 	$(CC) -o $(PROJ_EXE)$(PROJ_EXT) $(PROJ_CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
 
 # Compile for Web
-# ---------------------------------------------------------------------------
-# Using a local copy of raylib's web library because Desktop is the default.
+# ----------------------------------------------------------------------
+# Use a local copy of raylib's web library in case it isn't available
+web: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web:
-	emcc -o $(PROJ_EXE).html $(PROJ_CODE) $(WEBFLAGS) $(INCLUDES) -L$(RAYLIB_WEB) -lraylib --emrun
+	emcc -o $(PROJ_EXE).html $(PROJ_CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS) --emrun
 
+web-release: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web-release:
-	emcc -o $(PROJ_EXE).html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) -L$(RAYLIB_WEB) -lraylib
+	emcc -o $(PROJ_EXE).html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) $(LIBS)
 
 # Clean up old build files
 clean:

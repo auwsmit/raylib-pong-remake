@@ -4,7 +4,7 @@
 
 // Functions
 //------------------------------------------------------------------------------------
-void DrawTitle()
+void DrawTitle(void)
 {
     char *msg = "Title";
     int fontSize = 100 * WIN_SCALE;
@@ -14,7 +14,7 @@ void DrawTitle()
     DrawText(msg, textPosX, textPosY, fontSize, RAYWHITE);
 }
 
-void DrawStartButton()
+void DrawStartButton(void)
 {
     char *msg = "Press enter or space to start";
     int fontSize = 40 * WIN_SCALE;
@@ -26,7 +26,7 @@ void DrawStartButton()
     // DrawRectangle(GetScreenWidth() / 2, GetScreenHeight() / 2, textWidth, int height, Color color);
 }
 
-void DrawStartMenu()
+void DrawStartMenu(void)
 {
     DrawTitle();
     DrawStartButton();

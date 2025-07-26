@@ -2,12 +2,10 @@
 #include "config.h"
 #include "menu.h"
 
-// Functions
-//------------------------------------------------------------------------------------
 void DrawTitle(void)
 {
     char *msg = "Title";
-    int fontSize = 100 * WIN_SCALE;
+    int fontSize = 100;
     int textWidth = MeasureText(msg, fontSize);
     int textPosX = (GetScreenWidth() - textWidth) / 2;
     int textPosY = (GetScreenHeight() / 2) - GetScreenHeight() / 4;
@@ -16,8 +14,8 @@ void DrawTitle(void)
 
 void DrawStartButton(void)
 {
-    char *msg = "Press enter or space to start";
-    int fontSize = 40 * WIN_SCALE;
+    char *msg = "Press enter to start";
+    int fontSize = 40;
     int textWidth = MeasureText(msg, fontSize);
     int textPosX = (GetScreenWidth() - textWidth) / 2;
     int textPosY = (GetScreenHeight() / 2) + GetScreenHeight() / 4;

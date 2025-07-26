@@ -24,5 +24,5 @@ elif [ $1 == "clean" ]; then
     # Clean up old files
     rm -rf build
     rm -rf build_web
-    rm game game.html game.js game.wasm
+    rm -f game game.html game.js game.wasm
 fi

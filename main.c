@@ -1,22 +1,20 @@
 #include "raylib.h"
-#include "mainmenu.h"
+#include "config.h"
+#include "menu.h"
 
 // Macros
 //------------------------------------------------------------------------------------
-#define SCREEN_HEIGHT 600 // width will be calculated to a 16:9 aspect ratio
-#define NATIVE_SCALE 720.0f
 
 int main(void)
 {
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth = SCREEN_HEIGHT * (16.0f / 9.0f);
+    const int screenHeight = SCREEN_RES;
+    const int screenWidth = screenHeight * (ASPECT_RATIO);
+
     int inputToQuitMenu = 0;
 
-    // Scale elements based on 720p
-    float winScale = SCREEN_HEIGHT / NATIVE_SCALE;
-
-    InitWindow(screenWidth, SCREEN_HEIGHT, "Raylib Test");
+    InitWindow(screenWidth, screenHeight, "Raylib Test");
 
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
@@ -36,7 +34,7 @@ int main(void)
 
         ClearBackground(BLACK);
 
-        DrawStartMenu(winScale);
+        DrawStartMenu();
 
         EndDrawing();
         //----------------------------------------------------------------------------------

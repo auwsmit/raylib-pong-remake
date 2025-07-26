@@ -33,6 +33,7 @@ int main(void)
     Logo raylibLogo = InitRaylibLogo();
     int framesCounter = 0;
     int inputToQuitMenu = 0;
+    int skipCurrentFrame = 0;
 
     SetTargetFPS(60);
     // --------------------------------------------------------------------------------------
@@ -46,8 +47,23 @@ int main(void)
         float scale = MIN((float)GetScreenWidth()/gameScreenWidth, (float)GetScreenHeight()/gameScreenHeight);
 
         // TEMP: q for fast quitting
-        if (IsKeyDown(KEY_Q))
+        if (IsKeyPressed(KEY_Q))
             inputToQuitMenu = 1;
+
+        if (IsKeyPressed(KEY_F11) ||
+            ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)))
+        {
+            ToggleBorderlessWindowed();
+            skipCurrentFrame = 1;
+        }
+
+        if (skipCurrentFrame == 1)
+        {
+            skipCurrentFrame = 0;
+            BeginDrawing(); // This is required for raylib to properly update for the next frame
+            EndDrawing();
+            continue;
+        }
 
         switch(currentScreen)
         {
@@ -70,7 +86,7 @@ int main(void)
             case TITLE:
             {
                 // Press enter to change to GAMEPLAY screen
-                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER))
                 {
                     currentScreen = GAMEPLAY;
                 }

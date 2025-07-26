@@ -20,4 +20,10 @@ if "%1"=="" (
     copy build_web\out.js .
     copy build_web\out.wasm .
     goto :eof
+) else if "%1"=="clean" (
+    rmdir /s /q build
+    rmdir /s /q build_web
+    del out.exe
+    del out.html out.js out.wasm
+    goto :eof
 )

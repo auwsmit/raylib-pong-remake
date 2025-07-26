@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # cd to the script directory
-cd "$(dirname "$0")"/..
+cd "$(dirname "$0")"
 
 if [ -z $1 ]; then
     cmake -DPLATFORM=Desktop -B build
     cmake --build build
-    rm out.exe
+    rm out
     cp build/out .
 elif [ $1 == "web" ]; then
     mkdir build_web
@@ -18,4 +18,8 @@ elif [ $1 == "web" ]; then
     cp build_web/out.html .
     cp build_web/out.js .
     cp build_web/out.wasm .
+elif [ $1 == "clean" ]; then
+    rm -rf build
+    rm -rf build_web
+    rm out out.html out.js out.wasm
 fi

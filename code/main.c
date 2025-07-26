@@ -45,26 +45,32 @@ int main(void)
         // Compute required framebuffer scaling
         float scale = MIN((float)GetScreenWidth()/gameScreenWidth, (float)GetScreenHeight()/gameScreenHeight);
 
-        // TEMP: Easily quit for testing
-        if (IsKeyDown(KEY_Q) || IsKeyDown(KEY_SPACE))
+        // TEMP: q for fast quitting
+        if (IsKeyDown(KEY_Q))
             inputToQuitMenu = 1;
 
         switch(currentScreen)
         {
             case LOGO:
             {
+                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
+                {
+                    currentScreen = TITLE;
+                }
                 UpdateRaylibLogo(&raylibLogo);
                 if (raylibLogo.state == END)
                 {
                     framesCounter++;
                     if (framesCounter >= 60) // a small pause after logo is finished
+                    {
                         currentScreen = TITLE;
+                    }
                 }
             } break;
             case TITLE:
             {
                 // Press enter to change to GAMEPLAY screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
                 {
                     currentScreen = GAMEPLAY;
                 }
@@ -74,7 +80,7 @@ int main(void)
                 // TODO: Update GAMEPLAY screen variables here!
 
                 // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
                 {
                     currentScreen = ENDING;
                 }
@@ -84,9 +90,10 @@ int main(void)
                 // TODO: Update ENDING screen variables here!
 
                 // Press enter to return to TITLE screen
-                if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
                 {
-                    currentScreen = GAMEPLAY;
+                    raylibLogo = InitRaylibLogo();
+                    currentScreen = LOGO;
                 }
             } break;
             default: break;
@@ -101,6 +108,7 @@ int main(void)
             {
                 case LOGO:
                 {
+                    DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
                     DrawRaylibLogo(&raylibLogo);
                 } break;
                 case TITLE:

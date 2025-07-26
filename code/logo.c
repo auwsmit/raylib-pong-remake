@@ -5,8 +5,8 @@
 Logo InitRaylibLogo(void)
 {
     Logo raylibLogo = {
-        GetScreenWidth()/2 - RAYLIB_LOGO_WIDTH/2,  // logoPositionX
-        GetScreenHeight()/2 - RAYLIB_LOGO_WIDTH/2, // logoPositionY
+        RENDER_WIDTH/2 - RAYLIB_LOGO_WIDTH/2,  // logoPositionX
+        RENDER_HEIGHT/2 - RAYLIB_LOGO_WIDTH/2, // logoPositionY
 
         0,  // framesCount
         0,  // lettersCount
@@ -28,7 +28,7 @@ Logo InitRaylibLogo(void)
 
 void UpdateRaylibLogo(Logo *l)
 {
-    int lineIncrement = RAYLIB_LOGO_WIDTH / 64;
+    int const lineIncrement = RAYLIB_LOGO_WIDTH / 64;
     if (l->state == START)            // State 0: Small box blinking
     {
         l->framesCount++;

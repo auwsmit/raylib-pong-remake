@@ -1,8 +1,9 @@
-#ifndef MENU_HEADER_GUARD
-#define MENU_HEADER_GUARD
+#ifndef TEST_MENU_HEADER_GUARD
+#define TEST_MENU_HEADER_GUARD
 
+// Prototypes
 void DrawTitle(void);
 void DrawStartButton(void);
 void DrawStartMenu(void);
 
-#endif // MENU_HEADER_GUARD
+#endif // TEST_MENU_HEADER_GUARD

@@ -3,9 +3,12 @@
 
 #include "config.h"
 
-#define RAYLIB_LOGO_WIDTH 256
-#define RAYLIB_LOGO_OUTLINE 16
+// Macros
+#define RAYLIB_LOGO_WIDTH 256 // 128 is the minimum recommended size
+#define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH / 16)
+#define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
 
+// Types and Structures
 typedef enum LogoState { START, BOX1, BOX2, TEXT, END } LogoState;
 
 typedef struct Logo {

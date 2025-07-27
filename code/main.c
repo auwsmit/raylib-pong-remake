@@ -50,6 +50,7 @@ int main(void)
         if (IsKeyPressed(KEY_Q))
             inputToQuitMenu = 1;
 
+        // Fullscreen input via F11 and Alt+Enter
         if (IsKeyPressed(KEY_F11) ||
             ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)))
         {

@@ -78,11 +78,17 @@ void UpdateRaylibLogo(Logo *l)
 
 void DrawRaylibLogo(Logo *l)
 {
-    int lineWidth = RAYLIB_LOGO_OUTLINE;
-    int offsetA = RAYLIB_LOGO_WIDTH*0.9375f;
-    int offsetB = lineWidth * 2;
-    int fontSize = 50;
+    const int lineWidth = RAYLIB_LOGO_OUTLINE;
+    const int offsetA   = RAYLIB_LOGO_WIDTH*0.9375f;
+    const int offsetB   = lineWidth * 2;
+    const int fontSize  = RAYLIB_LOGO_FONT_SIZE;
+    const int offsetC   = RAYLIB_LOGO_WIDTH*0.171875;
+    const int offsetD   = RAYLIB_LOGO_WIDTH*0.1875;
 
+    DrawText("powered by",
+             (RENDER_WIDTH/2) - (RAYLIB_LOGO_WIDTH/2),
+             (RENDER_HEIGHT/2) - (RAYLIB_LOGO_WIDTH/2) - offsetB - lineWidth/4,
+             fontSize / 2, RAYWHITE);
     if (l->state == START)
     {
         if ((l->framesCount/15)%2)
@@ -105,17 +111,13 @@ void DrawRaylibLogo(Logo *l)
     }
     else if (l->state == TEXT)
     {
-        // DrawText("powered by",
-        //          (GetScreenWidth() - MeasureText("powered by", 25)) / 2,
-        //          (GetScreenHeight()/2),
-        //          25, Fade(WHITE, 0.1f));
         DrawRectangle(l->logoPositionX, l->logoPositionY, l->topSideRecWidth, lineWidth, RAYWHITE);
         DrawRectangle(l->logoPositionX, l->logoPositionY + lineWidth, lineWidth, l->leftSideRecHeight - offsetB, RAYWHITE);
 
         DrawRectangle(l->logoPositionX + offsetA, l->logoPositionY + lineWidth, lineWidth, l->rightSideRecHeight - offsetB, RAYWHITE);
         DrawRectangle(l->logoPositionX, l->logoPositionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
 
-        DrawText(TextSubtext("raylib", 0, l->lettersCount), RENDER_WIDTH/2 - 44, RENDER_HEIGHT/2 + 48, fontSize, RAYWHITE);
+        DrawText(TextSubtext("raylib", 0, l->lettersCount), RENDER_WIDTH/2 - offsetC, RENDER_HEIGHT/2 + offsetD, fontSize, RAYWHITE);
 
         DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, l->alpha));
     }

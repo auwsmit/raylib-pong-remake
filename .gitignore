@@ -2,7 +2,7 @@
 tags
 tags.*
 
-# ignore build files
+# build files
 build/
 build_web/
 out
@@ -11,3 +11,6 @@ game
 *.html
 *.js
 *.wasm
+
+# swap files
+.swp

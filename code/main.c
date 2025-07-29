@@ -3,20 +3,21 @@
 #include "config.h"
 #include "logo.h"
 #include "menu.h"
+#include "pong.h"
 
 #define MAX(a, b) ((a)>(b)? (a) : (b))
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
 // Types and Structures Definition
 // ------------------------------------------------------------------------------------------
-typedef enum GameScreen { LOGO, TITLE, GAMEPLAY, ENDING } GameScreen;
+typedef enum ScreenState { LOGO, TITLE, GAMEPLAY, ENDING } ScreenState;
 
 int main(void)
 {
     // Initialization
     // --------------------------------------------------------------------------------------
-    const int screenWidth = RENDER_WIDTH;
-    const int screenHeight = RENDER_HEIGHT;
+    const int screenWidth = DEFAULT_WIDTH;
+    const int screenHeight = DEFAULT_HEIGHT;
 
     const int gameScreenWidth = RENDER_WIDTH;
     const int gameScreenHeight = RENDER_HEIGHT;
@@ -29,11 +30,13 @@ int main(void)
     RenderTexture2D target = LoadRenderTexture(gameScreenWidth, gameScreenHeight);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
 
-    GameScreen currentScreen = LOGO;
+    ScreenState currentScreen = LOGO;
     Logo raylibLogo = InitRaylibLogo();
     int framesCounter = 0;
     int inputToQuitMenu = 0;
     int skipCurrentFrame = 0;
+
+    GameState pong = InitGameState();
 
     SetTargetFPS(60);
     // --------------------------------------------------------------------------------------
@@ -94,10 +97,10 @@ int main(void)
             } break;
             case GAMEPLAY:
             {
-                // TODO: Update GAMEPLAY screen variables here!
+                UpdatePaddle(&pong.paddleR);
 
                 // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER))
                 {
                     currentScreen = ENDING;
                 }
@@ -107,9 +110,10 @@ int main(void)
                 // TODO: Update ENDING screen variables here!
 
                 // Press enter to return to TITLE screen
-                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
+                if (IsKeyPressed(KEY_ENTER))
                 {
-                    raylibLogo = InitRaylibLogo();
+                    raylibLogo = InitRaylibLogo(); // reset logo animation
+                    framesCounter = 0;
                     currentScreen = LOGO;
                 }
             } break;
@@ -121,29 +125,28 @@ int main(void)
         // ----------------------------------------------------------------------------------
         BeginTextureMode(target);
 
+            DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
             switch(currentScreen)
             {
                 case LOGO:
                 {
                     DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
                     DrawRaylibLogo(&raylibLogo);
+
                 } break;
                 case TITLE:
                 {
                     DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
                     DrawStartMenu();
+
                 } break;
                 case GAMEPLAY:
                 {
-                    // TODO: Draw GAMEPLAY screen here!
-                    DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, PURPLE);
-                    DrawText("GAMEPLAY SCREEN", 20, 20, 40, MAROON);
-                    DrawText("PRESS ENTER or TAP to JUMP to ENDING SCREEN", 130, 220, 20, MAROON);
+                    DrawGame(&pong);
 
                 } break;
                 case ENDING:
                 {
-                    // TODO: Draw ENDING screen here!
                     DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLUE);
                     DrawText("ENDING SCREEN", 20, 20, 40, DARKBLUE);
                     DrawText("PRESS ENTER or TAP to RETURN to TITLE SCREEN", 120, 220, 20, DARKBLUE);

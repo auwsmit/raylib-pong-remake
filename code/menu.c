@@ -5,7 +5,7 @@
 void DrawTitle(void)
 {
     char *msg = "Title";
-    int fontSize = 100;
+    int fontSize = 120;
     int textWidth = MeasureText(msg, fontSize);
     int textPosX = (RENDER_WIDTH - textWidth) / 2;
     int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 4;
@@ -15,7 +15,7 @@ void DrawTitle(void)
 void DrawStartButton(void)
 {
     char *msg = "Press enter to start";
-    int fontSize = 40;
+    int fontSize = 60;
     int textWidth = MeasureText(msg, fontSize);
     int textPosX = (RENDER_WIDTH - textWidth) / 2;
     int textPosY = (RENDER_HEIGHT / 2) + RENDER_HEIGHT / 4;

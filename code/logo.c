@@ -4,9 +4,10 @@
 
 Logo InitRaylibLogo(void)
 {
-    Logo raylibLogo = {
-        RENDER_WIDTH/2 - RAYLIB_LOGO_WIDTH/2,  // logoPositionX
-        RENDER_HEIGHT/2 - RAYLIB_LOGO_WIDTH/2, // logoPositionY
+    Logo raylibLogo =
+    {
+        RENDER_WIDTH/2 - RAYLIB_LOGO_WIDTH/2,  // positionX
+        RENDER_HEIGHT/2 - RAYLIB_LOGO_WIDTH/2, // positionY
 
         0,  // framesCount
         0,  // lettersCount
@@ -26,51 +27,51 @@ Logo InitRaylibLogo(void)
     return raylibLogo;
 }
 
-void UpdateRaylibLogo(Logo *l)
+void UpdateRaylibLogo(Logo *logo)
 {
     int const lineIncrement = RAYLIB_LOGO_WIDTH / 64;
-    if (l->state == START)            // State 0: Small box blinking
+    if (logo->state == START)            // State 0: Small box blinking
     {
-        l->framesCount++;
+        logo->framesCount++;
 
-        if (l->framesCount == 120)
+        if (logo->framesCount == 120)
         {
-            l->state = BOX1;
-            l->framesCount = 0;      // Reset counter... will be used later...
+            logo->state = BOX1;
+            logo->framesCount = 0;      // Reset counter... will be used later...
         }
     }
-    else if (l->state == BOX1)        // State 1: Top and left bars growing
+    else if (logo->state == BOX1)        // State 1: Top and left bars growing
     {
-        l->topSideRecWidth += lineIncrement;
-        l->leftSideRecHeight += lineIncrement;
+        logo->topSideRecWidth += lineIncrement;
+        logo->leftSideRecHeight += lineIncrement;
 
-        if (l->topSideRecWidth >= RAYLIB_LOGO_WIDTH) l->state = BOX2;
+        if (logo->topSideRecWidth >= RAYLIB_LOGO_WIDTH) logo->state = BOX2;
     }
-    else if (l->state == BOX2)        // State 2: Bottom and right bars growing
+    else if (logo->state == BOX2)        // State 2: Bottom and right bars growing
     {
-        l->bottomSideRecWidth += lineIncrement;
-        l->rightSideRecHeight += lineIncrement;
+        logo->bottomSideRecWidth += lineIncrement;
+        logo->rightSideRecHeight += lineIncrement;
 
-        if (l->bottomSideRecWidth >= RAYLIB_LOGO_WIDTH) l->state = TEXT;
+        if (logo->bottomSideRecWidth >= RAYLIB_LOGO_WIDTH) logo->state = TEXT;
     }
-    else if (l->state == TEXT)        // State 3: Letters appearing (one by one)
+    else if (logo->state == TEXT)        // State 3: Letters appearing (one by one)
     {
-        l->framesCount++;
+        logo->framesCount++;
 
-        if (l->framesCount/12)       // Every 12 frame, one more letter!
+        if (logo->framesCount/12)       // Every 12 frame, one more letter!
         {
-            l->lettersCount++;
-            l->framesCount = 0;
+            logo->lettersCount++;
+            logo->framesCount = 0;
         }
 
-        if (l->lettersCount >= 10)    // When all letters have appeared, just fade out everything
+        if (logo->lettersCount >= 10)    // When all letters have appeared, just fade out everything
         {
-            l->alpha += 0.02f;
+            logo->alpha += 0.02f;
 
-            if (l->alpha >= 1.0f)
+            if (logo->alpha >= 1.0f)
             {
-                l->alpha = 1.0f;
-                l->state = END;
+                logo->alpha = 1.0f;
+                logo->state = END;
             }
         }
     }
@@ -92,30 +93,30 @@ void DrawRaylibLogo(Logo *l)
     if (l->state == START)
     {
         if ((l->framesCount/15)%2)
-            DrawRectangle(l->logoPositionX, l->logoPositionY, lineWidth, lineWidth, RAYWHITE);
+            DrawRectangle(l->positionX, l->positionY, lineWidth, lineWidth, RAYWHITE);
         else
-            DrawRectangle(l->logoPositionX, l->logoPositionY, lineWidth, lineWidth, BLACK);
+            DrawRectangle(l->positionX, l->positionY, lineWidth, lineWidth, BLACK);
     }
     else if (l->state == BOX1)
     {
-        DrawRectangle(l->logoPositionX, l->logoPositionY, l->topSideRecWidth, lineWidth, RAYWHITE);
-        DrawRectangle(l->logoPositionX, l->logoPositionY, lineWidth, l->leftSideRecHeight, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY, l->topSideRecWidth, lineWidth, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY, lineWidth, l->leftSideRecHeight, RAYWHITE);
     }
     else if (l->state == BOX2)
     {
-        DrawRectangle(l->logoPositionX, l->logoPositionY, l->topSideRecWidth, lineWidth, RAYWHITE);
-        DrawRectangle(l->logoPositionX, l->logoPositionY, lineWidth, l->leftSideRecHeight, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY, l->topSideRecWidth, lineWidth, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY, lineWidth, l->leftSideRecHeight, RAYWHITE);
 
-        DrawRectangle(l->logoPositionX + offsetA, l->logoPositionY, lineWidth, l->rightSideRecHeight, RAYWHITE);
-        DrawRectangle(l->logoPositionX, l->logoPositionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
+        DrawRectangle(l->positionX + offsetA, l->positionY, lineWidth, l->rightSideRecHeight, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
     }
     else if (l->state == TEXT)
     {
-        DrawRectangle(l->logoPositionX, l->logoPositionY, l->topSideRecWidth, lineWidth, RAYWHITE);
-        DrawRectangle(l->logoPositionX, l->logoPositionY + lineWidth, lineWidth, l->leftSideRecHeight - offsetB, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY, l->topSideRecWidth, lineWidth, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY + lineWidth, lineWidth, l->leftSideRecHeight - offsetB, RAYWHITE);
 
-        DrawRectangle(l->logoPositionX + offsetA, l->logoPositionY + lineWidth, lineWidth, l->rightSideRecHeight - offsetB, RAYWHITE);
-        DrawRectangle(l->logoPositionX, l->logoPositionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
+        DrawRectangle(l->positionX + offsetA, l->positionY + lineWidth, lineWidth, l->rightSideRecHeight - offsetB, RAYWHITE);
+        DrawRectangle(l->positionX, l->positionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
 
         DrawText(TextSubtext("raylib", 0, l->lettersCount), RENDER_WIDTH/2 - offsetC, RENDER_HEIGHT/2 + offsetD, fontSize, RAYWHITE);
 

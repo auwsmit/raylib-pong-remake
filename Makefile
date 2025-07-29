@@ -95,7 +95,6 @@ ifeq ($(OS),Windows_NT)
     LIBS += -lopengl32 -lgdi32 -lwinmm
 else
     ifeq ($(shell uname),Linux)
-        LIBS += -L$(RAYLIB_LIB)/linux
         LIBS += -lGL -lm -lpthread -ldl -lrt -lX11
     endif
 endif

@@ -40,16 +40,16 @@ bool CheckScreenEdgeCollision(Paddle paddle)
 void UpdatePaddle(Paddle *paddle)
 {
     // Shift to speed up
-    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_LEFT_SHIFT))
-        paddle->speed = PADDLE_SPEED * 2;
+    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+        paddle->speed = deltaTime(PADDLE_SPEED * 2);
     else
-        paddle->speed = PADDLE_SPEED;
+        paddle->speed = deltaTime(PADDLE_SPEED);
 
     // W/S or Up/Down to move paddle
     if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W))
-        paddle->position.y -= paddle->speed;
+        paddle->position.y -= (paddle->speed);
     if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S))
-        paddle->position.y += paddle->speed;
+        paddle->position.y += (paddle->speed);
 
     // TODO: mouse and gamepad
 

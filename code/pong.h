@@ -6,7 +6,7 @@
 // Macros
 #define PADDLE_LENGTH 150 // Initial settings for paddles
 #define PADDLE_WIDTH 25
-#define PADDLE_SPEED 6
+#define PADDLE_SPEED 300
 
 // Types and Structures
 typedef struct Paddle

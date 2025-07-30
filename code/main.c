@@ -5,12 +5,12 @@
 #include "menu.h"
 #include "pong.h"
 
-#define MAX(a, b) ((a)>(b)? (a) : (b))
-#define MIN(a, b) ((a)<(b)? (a) : (b))
-
 // Types and Structures Definition
 // ------------------------------------------------------------------------------------------
 typedef enum ScreenState { LOGO, TITLE, GAMEPLAY, ENDING } ScreenState;
+
+// Functions Definition
+// ------------------------------------------------------------------------------------------
 
 int main(void)
 {
@@ -38,7 +38,8 @@ int main(void)
 
     GameState pong = InitGameState();
 
-    SetTargetFPS(60);
+    if (FRAMERATE > 0)
+        SetTargetFPS(FRAMERATE);
     // --------------------------------------------------------------------------------------
 
     // Main game loop
@@ -126,17 +127,16 @@ int main(void)
         BeginTextureMode(target);
 
             DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
+
             switch(currentScreen)
             {
                 case LOGO:
                 {
-                    DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
                     DrawRaylibLogo(&raylibLogo);
 
                 } break;
                 case TITLE:
                 {
-                    DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
                     DrawStartMenu();
 
                 } break;
@@ -163,6 +163,9 @@ int main(void)
             DrawTexturePro(target.texture, (Rectangle){ 0.0f, 0.0f, (float)target.texture.width,
                            (float)-target.texture.height }, (Rectangle){ (GetScreenWidth() - ((float)gameScreenWidth*scale))*0.5f, (GetScreenHeight() - ((float)gameScreenHeight*scale))*0.5f,
                            (float)gameScreenWidth*scale, (float)gameScreenHeight*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+            // Debug
+            DrawFPS(0,0);
 
         EndDrawing();
         // ----------------------------------------------------------------------------------

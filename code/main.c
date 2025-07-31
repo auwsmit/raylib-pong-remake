@@ -94,7 +94,13 @@ int main(void)
             } break;
             case GAMEPLAY:
             {
-                UpdatePaddle(&pong.paddleR);
+                UpdatePong(&pong);
+
+                // Press R to reset
+                if (IsKeyPressed(KEY_R))
+                {
+                    ResetBall(&pong.ball);
+                }
 
                 // Press enter to change to ENDING screen
                 if (IsKeyPressed(KEY_ENTER))

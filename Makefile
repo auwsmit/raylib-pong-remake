@@ -10,9 +10,11 @@
 # Source files to compile
 PROJ_CODE = $(wildcard code/*.c)
 PROJ_HEADERS = $(wildcard code/*.h)
+
 # Name of output executable
 PROJ_EXE  = game
-# The executable's file extension (for windows and web platforms)
+
+# The executable's file extension (for Windows and Web platforms)
 PROJ_EXT  =
 ifeq ($(OS),Windows_NT)
     PROJ_EXT = .exe
@@ -72,20 +74,10 @@ LIBS = -lraylib
 # =============================================================================
 # I only use Windows and Linux atm, but this might work on macOS
 
-# Detect compiler
+# Detect compiler (gcc or clang preferred)
 ifeq ($(OS),Windows_NT)
-    # Windows
-    ifndef CC
-        ifneq ($(shell where gcc 2>nul),)
-            CC := gcc
-        else ifneq ($(shell where clang 2>nul),)
-            CC := clang
-        else ifneq ($(shell where cl 2>nul),)
-            CC := cl
-        endif
-    endif
+    CC ?= $(shell where gcc 2>nul || where clang 2>nul || echo cc)
 else
-    # Linux
     CC ?= $(shell command -v gcc || command -v clang || echo cc)
 endif
 
@@ -99,13 +91,6 @@ else
     endif
 endif
 
-# Delete/remove command for cleanup
-ifeq ($(shell command -v rm >/dev/null 2>&1 && echo yes),yes)
-    DELETE = rm -f
-else
-    DELETE = del /q
-endif
-
 # =============================================================================
 # MAKEFILE TARGETS
 # =============================================================================
@@ -115,8 +100,7 @@ all: $(PROJ_EXE)$(PROJ_EXT)
 $(PROJ_EXE)$(PROJ_EXT): $(PROJ_CODE) $(PROJ_HEADERS)
 	$(CC) -o $(PROJ_EXE)$(PROJ_EXT) $(PROJ_CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
 
-# Compile for Web
-# ----------------------------------------------------------------------
+# Compile for Web:
 # Use a local copy of raylib's web library in case it isn't available
 web: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web:
@@ -128,4 +112,6 @@ web-release:
 
 # Clean up old build files
 clean:
-	$(DELETE) $(PROJ_EXE)$(PROJ_EXT) $(PROJ_EXE).html $(PROJ_EXE).js $(PROJ_EXE).wasm
+	rm -rf $(PROJ_EXE)$(PROJ_EXT) $(PROJ_EXE).html $(PROJ_EXE).js $(PROJ_EXE).wasm
+	@echo "Build files cleaned."
+

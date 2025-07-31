@@ -9,8 +9,9 @@ if "%1"=="" ( :: Build for desktop
     del /q game.exe
     copy build\desktop\Debug\game.exe .
     goto :eof
-) else if "%1"=="mingw" ( :: Build with gcc, useful if Visual Studio is unavailable
+) else if "%1"=="gcc" ( :: Build with gcc, useful if Visual Studio is unavailable
     cmake -DPLATFORM=Desktop -G "MinGW Makefiles" -B build\desktop
+    cmake --build build\desktop
     del /q game.exe
     copy build\desktop\game.exe .
     goto :eof

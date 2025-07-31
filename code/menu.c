@@ -4,8 +4,8 @@
 
 void DrawTitle(void)
 {
-    char *msg = "Title";
-    int fontSize = 120;
+    char *msg = WINDOW_TITLE;
+    int fontSize = 200;
     int textWidth = MeasureText(msg, fontSize);
     int textPosX = (RENDER_WIDTH - textWidth) / 2;
     int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 4;
@@ -15,12 +15,11 @@ void DrawTitle(void)
 void DrawStartButton(void)
 {
     char *msg = "Press enter to start";
-    int fontSize = 60;
+    int fontSize = 100;
     int textWidth = MeasureText(msg, fontSize);
     int textPosX = (RENDER_WIDTH - textWidth) / 2;
     int textPosY = (RENDER_HEIGHT / 2) + RENDER_HEIGHT / 4;
     DrawText(msg, textPosX, textPosY, fontSize, RAYWHITE);
-    // TODO: draw box/outline
 }
 
 void DrawStartMenu(void)

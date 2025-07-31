@@ -6,7 +6,7 @@
 // Macros
 #define PADDLE_LENGTH 150 // Initial settings for paddles
 #define PADDLE_WIDTH 25
-#define PADDLE_SPEED 300
+#define PADDLE_SPEED 300 // Speed in pixels per second
 
 // Types and Structures
 typedef struct Paddle
@@ -25,8 +25,8 @@ typedef struct GameState
 
 // Prototypes
 GameState InitGameState(void);
-bool CheckScreenEdgeCollision(Paddle pong);
+bool CheckScreenEdgeCollision(Paddle paddle);
 void UpdatePaddle(Paddle *paddle);
-void DrawGame(GameState *gs);
+void DrawGame(GameState *pong);
 
 #endif // TEST_GAME_HEADER_GUARD

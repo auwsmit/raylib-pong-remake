@@ -18,28 +18,29 @@ int main(void)
     // --------------------------------------------------------------------------------------
     const int screenWidth = DEFAULT_WIDTH;
     const int screenHeight = DEFAULT_HEIGHT;
-
     const int gameScreenWidth = RENDER_WIDTH;
     const int gameScreenHeight = RENDER_HEIGHT;
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(screenWidth, screenHeight, "Raylib Test");
+    // Create a window
+    unsigned int windowFlags = FLAG_WINDOW_RESIZABLE;
+    if (VSYNC_ENABLED)
+        windowFlags |= FLAG_VSYNC_HINT;
+    SetConfigFlags(windowFlags);
+    InitWindow(screenWidth, screenHeight, WINDOW_TITLE);
     SetWindowMinSize(320, 240);
 
-    // Render texture initialization, used to hold the rendering result so we can easily resize it
+    // Initialize the render texture, used to hold the rendering result so we can easily resize it
     RenderTexture2D target = LoadRenderTexture(gameScreenWidth, gameScreenHeight);
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
 
+    // Game loop variables
     ScreenState currentScreen = LOGO;
+    bool skipCurrentFrame = false;
     Logo raylibLogo = InitRaylibLogo();
-    int framesCounter = 0;
-    int inputToQuitMenu = 0;
-    int skipCurrentFrame = 0;
-
     GameState pong = InitGameState();
 
-    if (FRAMERATE > 0)
-        SetTargetFPS(FRAMERATE);
+    if (MAX_FRAMERATE > 0)
+        SetTargetFPS(MAX_FRAMERATE);
     // --------------------------------------------------------------------------------------
 
     // Main game loop
@@ -50,23 +51,22 @@ int main(void)
         // Compute required framebuffer scaling
         float scale = MIN((float)GetScreenWidth()/gameScreenWidth, (float)GetScreenHeight()/gameScreenHeight);
 
-        // TEMP: q for fast quitting
-        if (IsKeyPressed(KEY_Q))
-            inputToQuitMenu = 1;
+        // Debug: q for fast quitting
+        SetExitKey(KEY_Q);
 
         // Fullscreen input via F11 and Alt+Enter
         if (IsKeyPressed(KEY_F11) ||
             ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)))
         {
             ToggleBorderlessWindowed();
-            skipCurrentFrame = 1;
+            skipCurrentFrame = true;
         }
 
-        if (skipCurrentFrame == 1)
+        if (skipCurrentFrame == true)
         {
-            skipCurrentFrame = 0;
-            BeginDrawing(); // This is required for raylib to properly update for the next frame
-            EndDrawing();
+            skipCurrentFrame = false;
+            BeginDrawing();
+            EndDrawing(); // This is required for raylib to properly update for the next frame
             continue;
         }
 
@@ -81,11 +81,7 @@ int main(void)
                 UpdateRaylibLogo(&raylibLogo);
                 if (raylibLogo.state == END)
                 {
-                    framesCounter++;
-                    if (framesCounter >= 60) // a small pause after logo is finished
-                    {
-                        currentScreen = TITLE;
-                    }
+                    currentScreen = TITLE;
                 }
             } break;
             case TITLE:
@@ -114,7 +110,6 @@ int main(void)
                 if (IsKeyPressed(KEY_ENTER))
                 {
                     raylibLogo = InitRaylibLogo(); // reset logo animation
-                    framesCounter = 0;
                     currentScreen = LOGO;
                 }
             } break;
@@ -159,6 +154,8 @@ int main(void)
 
         BeginDrawing();
 
+            DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
+
             // Draw render texture to screen, properly scaled
             DrawTexturePro(target.texture, (Rectangle){ 0.0f, 0.0f, (float)target.texture.width,
                            (float)-target.texture.height }, (Rectangle){ (GetScreenWidth() - ((float)gameScreenWidth*scale))*0.5f, (GetScreenHeight() - ((float)gameScreenHeight*scale))*0.5f,
@@ -169,8 +166,6 @@ int main(void)
 
         EndDrawing();
         // ----------------------------------------------------------------------------------
-
-        if (inputToQuitMenu == 1) break;
     }
 
     // De-Initialization

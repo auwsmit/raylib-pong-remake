@@ -29,55 +29,82 @@ Logo InitRaylibLogo(void)
 
 void UpdateRaylibLogo(Logo *logo)
 {
-    int const lineIncrement = RAYLIB_LOGO_WIDTH / 64;
-    if (logo->state == START)            // State 0: Small box blinking
+    float deltaTime = GetFrameTime();
+    const float growSpeed = RAYLIB_LOGO_WIDTH * 0.9375f; // Speed that lines grow
+    const float letterDelay = 0.2f; // Time between each letter appearing
+    const float fadeSpeed = 1.0f; // Fade out in 1 second
+
+    switch (logo->state)
     {
-        logo->framesCount++;
-
-        if (logo->framesCount == 120)
-        {
-            logo->state = BOX1;
-            logo->framesCount = 0;      // Reset counter... will be used later...
-        }
-    }
-    else if (logo->state == BOX1)        // State 1: Top and left bars growing
-    {
-        logo->topSideRecWidth += lineIncrement;
-        logo->leftSideRecHeight += lineIncrement;
-
-        if (logo->topSideRecWidth >= RAYLIB_LOGO_WIDTH) logo->state = BOX2;
-    }
-    else if (logo->state == BOX2)        // State 2: Bottom and right bars growing
-    {
-        logo->bottomSideRecWidth += lineIncrement;
-        logo->rightSideRecHeight += lineIncrement;
-
-        if (logo->bottomSideRecWidth >= RAYLIB_LOGO_WIDTH) logo->state = TEXT;
-    }
-    else if (logo->state == TEXT)        // State 3: Letters appearing (one by one)
-    {
-        logo->framesCount++;
-
-        if (logo->framesCount/12)       // Every 12 frame, one more letter!
-        {
-            logo->lettersCount++;
-            logo->framesCount = 0;
-        }
-
-        if (logo->lettersCount >= 10)    // When all letters have appeared, just fade out everything
-        {
-            logo->alpha += 0.02f;
-
-            if (logo->alpha >= 1.0f)
+        case START: // Small box blinking
+            logo->elapsedTime += deltaTime;
+            if (logo->elapsedTime >= 2.0f) // 2 seconds delay
             {
-                logo->alpha = 1.0f;
-                logo->state = END;
+                logo->state = GROW1;
+                logo->elapsedTime = 0.0f; // Reset counter... will be used later...
             }
-        }
+            break;
+
+        case GROW1: // Top and left bars growing
+            logo->topSideRecWidth += growSpeed * deltaTime;
+            logo->leftSideRecHeight += growSpeed * deltaTime;
+
+            if (logo->topSideRecWidth >= RAYLIB_LOGO_WIDTH)
+            {
+                logo->topSideRecWidth = RAYLIB_LOGO_WIDTH;
+                logo->leftSideRecHeight = RAYLIB_LOGO_WIDTH;
+                logo->state = GROW2;
+                logo->elapsedTime = 0.0f;
+            }
+            break;
+
+        case GROW2: // Bottom and right bars growing
+            logo->bottomSideRecWidth += growSpeed * deltaTime;
+            logo->rightSideRecHeight += growSpeed * deltaTime;
+
+            if (logo->bottomSideRecWidth >= RAYLIB_LOGO_WIDTH)
+            {
+                logo->bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
+                logo->rightSideRecHeight = RAYLIB_LOGO_WIDTH;
+                logo->state = TEXT;
+                logo->elapsedTime = 0.0f;
+            }
+            break;
+
+        case TEXT: // Letters appearing (one by one)
+            logo->elapsedTime += deltaTime;
+
+            if (logo->lettersCount < 10 && logo->elapsedTime >= letterDelay)
+            {
+                logo->lettersCount++;
+                logo->elapsedTime = 0.0f;
+            }
+
+            // When all letters have appeared, just fade out everything
+            if (logo->lettersCount >= 10)
+            {
+                logo->alpha += fadeSpeed * deltaTime;
+                if (logo->alpha >= 1.0f)
+                {
+                    logo->alpha = 1.0f;
+                    logo->state = PAUSE;
+                    logo->elapsedTime = 0.0f;
+                }
+            }
+            break;
+
+        case PAUSE: // Pause at end of animation
+            logo->elapsedTime += deltaTime;
+            if (logo->elapsedTime >= 1.5f)
+                logo->state = END;
+            break;
+
+        case END: // Animation is finished
+            break;
     }
 }
 
-void DrawRaylibLogo(Logo *l)
+void DrawRaylibLogo(Logo *logo)
 {
     const int lineWidth = RAYLIB_LOGO_OUTLINE;
     const int offsetA   = RAYLIB_LOGO_WIDTH*0.9375f;
@@ -90,39 +117,56 @@ void DrawRaylibLogo(Logo *l)
              (RENDER_WIDTH/2) - (RAYLIB_LOGO_WIDTH/2),
              (RENDER_HEIGHT/2) - (RAYLIB_LOGO_WIDTH/2) - offsetB - lineWidth/4,
              fontSize / 2, RAYWHITE);
-    if (l->state == START)
-    {
-        if ((l->framesCount/15)%2)
-            DrawRectangle(l->positionX, l->positionY, lineWidth, lineWidth, RAYWHITE);
-        else
-            DrawRectangle(l->positionX, l->positionY, lineWidth, lineWidth, BLACK);
-    }
-    else if (l->state == BOX1)
-    {
-        DrawRectangle(l->positionX, l->positionY, l->topSideRecWidth, lineWidth, RAYWHITE);
-        DrawRectangle(l->positionX, l->positionY, lineWidth, l->leftSideRecHeight, RAYWHITE);
-    }
-    else if (l->state == BOX2)
-    {
-        DrawRectangle(l->positionX, l->positionY, l->topSideRecWidth, lineWidth, RAYWHITE);
-        DrawRectangle(l->positionX, l->positionY, lineWidth, l->leftSideRecHeight, RAYWHITE);
 
-        DrawRectangle(l->positionX + offsetA, l->positionY, lineWidth, l->rightSideRecHeight, RAYWHITE);
-        DrawRectangle(l->positionX, l->positionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
-    }
-    else if (l->state == TEXT)
+    switch (logo->state)
     {
-        DrawRectangle(l->positionX, l->positionY, l->topSideRecWidth, lineWidth, RAYWHITE);
-        DrawRectangle(l->positionX, l->positionY + lineWidth, lineWidth, l->leftSideRecHeight - offsetB, RAYWHITE);
+        case START:
+            if (((int)(logo->elapsedTime * 4)) % 2)
+                DrawRectangle(logo->positionX, logo->positionY,
+                              lineWidth, lineWidth, RAYWHITE);
+            else
+                DrawRectangle(logo->positionX, logo->positionY,
+                              lineWidth, lineWidth, BLACK);
+            break;
+        case GROW1:
+            DrawRectangle(logo->positionX, logo->positionY,
+                          logo->topSideRecWidth, lineWidth, RAYWHITE);
+            DrawRectangle(logo->positionX, logo->positionY,
+                          lineWidth, logo->leftSideRecHeight, RAYWHITE);
+            break;
+        case GROW2:
+            DrawRectangle(logo->positionX, logo->positionY,
+                          logo->topSideRecWidth, lineWidth, RAYWHITE);
+            DrawRectangle(logo->positionX, logo->positionY,
+                          lineWidth, logo->leftSideRecHeight, RAYWHITE);
 
-        DrawRectangle(l->positionX + offsetA, l->positionY + lineWidth, lineWidth, l->rightSideRecHeight - offsetB, RAYWHITE);
-        DrawRectangle(l->positionX, l->positionY + offsetA, l->bottomSideRecWidth, lineWidth, RAYWHITE);
+            DrawRectangle(logo->positionX + offsetA, logo->positionY,
+                          lineWidth, logo->rightSideRecHeight, RAYWHITE);
+            DrawRectangle(logo->positionX, logo->positionY + offsetA,
+                          logo->bottomSideRecWidth, lineWidth, RAYWHITE);
+            break;
+        case TEXT:
+            DrawRectangle(logo->positionX, logo->positionY,
+                          logo->topSideRecWidth, lineWidth, RAYWHITE);
+            DrawRectangle(logo->positionX, logo->positionY + lineWidth,
+                          lineWidth, logo->leftSideRecHeight - offsetB, RAYWHITE);
 
-        DrawText(TextSubtext("raylib", 0, l->lettersCount), RENDER_WIDTH/2 - offsetC, RENDER_HEIGHT/2 + offsetD, fontSize, RAYWHITE);
+            DrawRectangle(logo->positionX + offsetA, logo->positionY + lineWidth,
+                          lineWidth, logo->rightSideRecHeight - offsetB, RAYWHITE);
+            DrawRectangle(logo->positionX, logo->positionY + offsetA,
+                          logo->bottomSideRecWidth, lineWidth, RAYWHITE);
 
-        DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, l->alpha));
+            DrawText(TextSubtext("raylib", 0, logo->lettersCount),
+                     RENDER_WIDTH/2 - offsetC, RENDER_HEIGHT/2 + offsetD,
+                     fontSize, RAYWHITE);
+
+            DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, logo->alpha));
+            break;
+        case PAUSE:
+            DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
+            break;
+        case END:
+            break;
     }
-    else if (l->state == END)
-        DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
 }
 

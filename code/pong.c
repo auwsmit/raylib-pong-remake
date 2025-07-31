@@ -39,11 +39,12 @@ bool CheckScreenEdgeCollision(Paddle paddle)
 
 void UpdatePaddle(Paddle *paddle)
 {
+    float deltaTime = GetFrameTime();
     // Shift to speed up
     if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
-        paddle->speed = deltaTime(PADDLE_SPEED * 2);
+        paddle->speed = (PADDLE_SPEED * 2) * deltaTime;
     else
-        paddle->speed = deltaTime(PADDLE_SPEED);
+        paddle->speed = (PADDLE_SPEED) * deltaTime;
 
     // W/S or Up/Down to move paddle
     if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W))

@@ -4,18 +4,19 @@
 #include "config.h"
 
 // Macros
-#define RAYLIB_LOGO_WIDTH 512 // 128 is the minimum recommended size
+#define RAYLIB_LOGO_WIDTH 512 // takes multiples of 64
+                              // 192 is the minimum size
 #define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH / 16)
 #define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
 
 // Types and Structures
-typedef enum LogoState { START, BOX1, BOX2, TEXT, END } LogoState;
+typedef enum LogoState { START, GROW1, GROW2, TEXT, PAUSE, END } LogoState;
 
 typedef struct Logo {
     int positionX;
     int positionY;
 
-    int framesCount;
+    float elapsedTime;
     int lettersCount;
 
     int topSideRecWidth;
@@ -30,7 +31,7 @@ typedef struct Logo {
 
 // Prototypes
 Logo InitRaylibLogo(void);
-void DrawRaylibLogo(Logo *l);
-void UpdateRaylibLogo(Logo *l);
+void DrawRaylibLogo(Logo *logo);
+void UpdateRaylibLogo(Logo *logo);
 
 #endif // TEST_LOGO_HEADER_GUARD

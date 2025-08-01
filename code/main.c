@@ -99,7 +99,7 @@ int main(void)
                 // Press R to reset
                 if (IsKeyPressed(KEY_R))
                 {
-                    ResetBall(&pong.ball);
+                    BallReset(&pong.ball);
                 }
 
                 // Press enter to change to ENDING screen
@@ -160,6 +160,7 @@ int main(void)
 
         BeginDrawing();
 
+            // Fill in any potential area outside of the render texture
             DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
 
             // Draw render texture to screen, properly scaled

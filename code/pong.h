@@ -9,7 +9,7 @@
 #define PADDLE_SPEED 400 // Speed in pixels per second
 
 #define BALL_SIZE 25 // Initial settings for ball
-#define BALL_SPEED 500
+#define BALL_SPEED 800
 
 // Types and Structures
 typedef struct Paddle
@@ -43,17 +43,18 @@ GameState InitGameState(void);
 bool CheckCollisionBallPaddle(Ball ball, Paddle paddle);
 void PaddleEdgeCollision(Paddle *paddle);
 void BallEdgeBounce(Ball *ball);
+void BallPaddleBounce(Ball *ball, Paddle *paddle);
 
 // Updating state
-void PlayerUpdatePaddle(Paddle *paddle);
-void ComputerUpdatePaddle(Paddle *paddle, Ball *ball);
+void PaddlePlayerInput(Paddle *paddle);
+void PaddleOpponentAI(Paddle *paddle, Ball *ball);
 void UpdatePaddle(Paddle *paddle);
-void UpdateBall(Ball *ball);
+void BallUpdate(Ball *ball);
 void UpdatePong(GameState *pong);
 
 void DrawGame(GameState *pong);
 
 // Extra
-void ResetBall(Ball *ball);
+void BallReset(Ball *ball);
 
 #endif // TEST_GAME_HEADER_GUARD

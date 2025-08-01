@@ -10,12 +10,12 @@
                            // This will scale to the game window.
 #define RENDER_WIDTH (RENDER_HEIGHT * ASPECT_RATIO)
 
-#define DEFAULT_HEIGHT 640 // Default size of the game window.
+#define DEFAULT_HEIGHT 720 // Default size of the game window.
 #define DEFAULT_WIDTH (DEFAULT_HEIGHT * ASPECT_RATIO)
 
 // NOTE: Very high fps (~500+) is buggy because delta time between frames is too low to be tracked precisely.
 // Unsure if/how to fix this so that the game could theoretically run fine at obsurdly high framerates.
-#define MAX_FRAMERATE 0 // Set to 0 for uncapped framerate
+#define MAX_FRAMERATE 120 // Set to 0 for uncapped framerate
 #define VSYNC_ENABLED true
 
 #define MAX(a, b) ((a)>(b)? (a) : (b)) // Used to calculate framebuffer scaling

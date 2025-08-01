@@ -52,7 +52,7 @@ bool CheckCollisionBallPaddle(Ball ball, Paddle paddle)
     return collision;
 }
 
-void PaddleEdgeCollision(Paddle *paddle)
+void EdgeCollisionPaddle(Paddle *paddle)
 {
     if (paddle->position.y <= 0)
         paddle->position.y = 0; // Don't get stuck
@@ -60,7 +60,7 @@ void PaddleEdgeCollision(Paddle *paddle)
         paddle->position.y = RENDER_HEIGHT - paddle->length;
 }
 
-void BallEdgeBounce(Ball *ball)
+void BounceBallEdge(Ball *ball)
 {
     int leftEdgeCollide = (ball->position.x <= 0);
     int rightEdgeCollide = (ball->position.x + ball->size >= RENDER_WIDTH);
@@ -89,15 +89,15 @@ void BallEdgeBounce(Ball *ball)
     }
 }
 
-
-void BallPaddleBounce(Ball *ball, Paddle *paddle)
+void BounceBallPaddle(Ball *ball, Paddle *paddle)
 {
     if (CheckCollisionBallPaddle(*ball, *paddle) == false)
         return;
 
     int paddleCenter = paddle->position.y + paddle->length / 2;
     int ballCenter = ball->position.y + ball->size / 2;
-    float hitPosition = (float)(ballCenter - paddleCenter) / (paddle->length / 2);
+    float hitPosition =
+        (float)(ballCenter - paddleCenter) / (paddle->length / 2);
 
     // Bounce off paddle
     if (paddle->position.x < ball->position.x)
@@ -131,13 +131,14 @@ void BallPaddleBounce(Ball *ball, Paddle *paddle)
     ball->speed.y += (paddle->speed * GetFrameTime()) * 150;
 
     // Normalize speed
-    ball->speed = Vector2Scale(Vector2Normalize(ball->speed), Vector2Length(ball->speed));
+    ball->speed = Vector2Scale(Vector2Normalize(ball->speed),
+                               Vector2Length(ball->speed));
 
     // Debug
     // TraceLog(LOG_INFO, "cpu paddle speed: %f\n", paddle->speed);
 }
 
-void PaddlePlayerInput(Paddle *paddle)
+void UpdatePaddlePlayerInput(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
@@ -156,7 +157,7 @@ void PaddlePlayerInput(Paddle *paddle)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void PaddleOpponentAI(Paddle *paddle, Ball *ball)
+void UpdatePaddleComputerPlayer(Paddle *paddle, Ball *ball)
 {
     float newSpeed = 0.0f; // Not moving by default
 
@@ -176,23 +177,23 @@ void PaddleOpponentAI(Paddle *paddle, Ball *ball)
     // TODO: a seek position which periodically updates
 }
 
-void BallUpdate(Ball *ball)
+void UpdateBall(Ball *ball)
 {
     Vector2 deltaTimeSpeed = Vector2Scale(ball->speed, GetFrameTime());
     ball->position = Vector2Add(ball->position, deltaTimeSpeed);
 
     // Make sure diagonal movement isn't too steep
-    float minimumXSpeed = 400.0f;
+    float minimumXSpeed = 300.0f;
     if (fabsf(ball->speed.x) < minimumXSpeed) {
-        // Preserve the sign of the x velocity
-        ball->speed.x = (ball->speed.x >= 0) ? minimumXSpeed : -minimumXSpeed;
+        ball->speed.x = (ball->speed.x >= 0) ?
+            minimumXSpeed : -minimumXSpeed;
     }
 
     // Normalize speed
     ball->speed = Vector2Scale(Vector2Normalize(ball->speed), BALL_SPEED);
 }
 
-void BallReset(Ball *ball)
+void ResetBall(Ball *ball)
 {
     Vector2 center = { RENDER_HEIGHT / 2, RENDER_HEIGHT / 2 };
     ball->position = center;
@@ -203,24 +204,27 @@ void BallReset(Ball *ball)
 void UpdatePong(GameState *pong)
 {
     // Update position
-    PaddlePlayerInput(&pong->paddleR);
-    PaddleOpponentAI(&pong->paddleL, &pong->ball);
-    BallUpdate(&pong->ball);
+    UpdatePaddlePlayerInput(&pong->paddleR);
+    UpdatePaddleComputerPlayer(&pong->paddleL, &pong->ball);
+    UpdateBall(&pong->ball);
 
     // Collision logic
-    BallEdgeBounce(&pong->ball);
-    BallPaddleBounce(&pong->ball, &pong->paddleR);
-    BallPaddleBounce(&pong->ball, &pong->paddleL);
-    PaddleEdgeCollision(&pong->paddleR);
-    PaddleEdgeCollision(&pong->paddleL);
+    BounceBallEdge(&pong->ball);
+    BounceBallPaddle(&pong->ball, &pong->paddleR);
+    BounceBallPaddle(&pong->ball, &pong->paddleL);
+    EdgeCollisionPaddle(&pong->paddleR);
+    EdgeCollisionPaddle(&pong->paddleL);
 }
 
 void DrawGame(GameState *pong)
 {
     // Draw paddles
-    DrawRectangle(pong->paddleR.position.x, pong->paddleR.position.y, pong->paddleR.width, pong->paddleR.length, WHITE);
-    DrawRectangle(pong->paddleL.position.x, pong->paddleL.position.y, pong->paddleL.width, pong->paddleL.length, WHITE);
+    DrawRectangle(pong->paddleR.position.x, pong->paddleR.position.y,
+                  pong->paddleR.width, pong->paddleR.length, WHITE);
+    DrawRectangle(pong->paddleL.position.x, pong->paddleL.position.y,
+                  pong->paddleL.width, pong->paddleL.length, WHITE);
 
     // Draw ball
-    DrawRectangle(pong->ball.position.x, pong->ball.position.y, pong->ball.size, pong->ball.size, WHITE);
+    DrawRectangle(pong->ball.position.x, pong->ball.position.y,
+                  pong->ball.size, pong->ball.size, WHITE);
 }

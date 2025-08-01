@@ -30,8 +30,8 @@ typedef struct Logo {
 } Logo;
 
 // Prototypes
-Logo InitRaylibLogo(void);
+Logo InitRaylibLogo(void); // Initialize the logo animation
+void UpdateRaylibLogo(Logo *logo); // Update logo animation for the current frame
 void DrawRaylibLogo(Logo *logo);
-void UpdateRaylibLogo(Logo *logo);
 
 #endif // TEST_LOGO_HEADER_GUARD

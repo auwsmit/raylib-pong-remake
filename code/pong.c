@@ -6,6 +6,8 @@
 GameState InitGameState(void)
 {
     GameState state = {
+        0, // scoreL
+        0, // scoreR
         { // paddleL
             { // position x, y
                 PADDLE_WIDTH * 1.5,
@@ -15,6 +17,7 @@ GameState InitGameState(void)
             PADDLE_LENGTH, // length
             PADDLE_WIDTH,  // width
         },
+
         { // paddleR
             { // position x, y
                 RENDER_WIDTH - PADDLE_WIDTH * 2.5,
@@ -33,6 +36,7 @@ GameState InitGameState(void)
             { // speed x, y
                 BALL_SPEED, 0,
             },
+            BALL_SPEED, // maxSpeed
             BALL_SIZE, // size
         },
     };
@@ -111,13 +115,17 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle)
         ball->speed.x = -fabs(ball->speed.x);
     }
 
+    // Increase ball speed
+    float bounceMultiplier = 1.1;
+    ball->maxSpeed *= bounceMultiplier;
+
     // Calculate the new angle based on hit position
     float maxAngle = 40.0f;
     float angleInDegrees = hitPosition * maxAngle;
     float angleInRadians = angleInDegrees * PI / 180.0f;
 
     // Set the new velocity components based on the angle
-    float speed = BALL_SPEED;
+    float speed = ball->maxSpeed;
     ball->speed.x = cosf(angleInRadians) * speed;
     ball->speed.y = sinf(angleInRadians) * speed;
 
@@ -138,18 +146,37 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle)
     // TraceLog(LOG_INFO, "cpu paddle speed: %f\n", paddle->speed);
 }
 
-void UpdatePaddlePlayerInput(Paddle *paddle)
+void UpdatePaddlePlayer1Input(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
-    // W/S or Up/Down to move paddle
-    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W))
+    // W/S to move paddle
+    if (IsKeyDown(KEY_W))
         newSpeed = -PADDLE_SPEED;
-    if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S))
+    if (IsKeyDown(KEY_S))
         newSpeed = PADDLE_SPEED;
 
-    // Shift to speed up
-    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT))
+    // Left Shift to speed up
+    if (IsKeyDown(KEY_LEFT_SHIFT))
+        newSpeed *= 2;
+
+    // Update paddle
+    paddle->speed = newSpeed;
+    paddle->position.y += paddle->speed * GetFrameTime();
+}
+
+void UpdatePaddlePlayer2Input(Paddle *paddle)
+{
+    float newSpeed = 0.0f; // Not moving by default
+
+    // O/L or Up/Down to move paddle
+    if (IsKeyDown(KEY_O) || IsKeyDown(KEY_UP))
+        newSpeed = -PADDLE_SPEED;
+    if (IsKeyDown(KEY_L) || IsKeyDown(KEY_DOWN))
+        newSpeed = PADDLE_SPEED;
+
+    // Right Shift to speed up
+    if (IsKeyDown(KEY_RIGHT_SHIFT))
         newSpeed *= 2;
 
     // Update paddle
@@ -190,34 +217,71 @@ void UpdateBall(Ball *ball)
     }
 
     // Normalize speed
-    ball->speed = Vector2Scale(Vector2Normalize(ball->speed), BALL_SPEED);
+    ball->speed = Vector2Scale(Vector2Normalize(ball->speed), ball->maxSpeed);
 }
 
 void ResetBall(Ball *ball)
 {
-    Vector2 center = { RENDER_HEIGHT / 2, RENDER_HEIGHT / 2 };
+    Vector2 center = { RENDER_WIDTH / 2 + ball->size / 2, RENDER_HEIGHT / 2 + ball->size / 2 };
     ball->position = center;
-    Vector2 direction = { BALL_SPEED, 1 };
+    Vector2 direction = { GetRandomValue(-1,1), GetRandomValue(-BALL_SPEED, BALL_SPEED) };
     ball->speed = direction;
+    ball->maxSpeed = BALL_SPEED;
 }
 
 void UpdatePong(GameState *pong)
 {
     // Update position
-    UpdatePaddlePlayerInput(&pong->paddleR);
-    UpdatePaddleComputerPlayer(&pong->paddleL, &pong->ball);
+    UpdatePaddlePlayer1Input(&pong->paddleL);
+    UpdatePaddlePlayer2Input(&pong->paddleR);
+    // UpdatePaddleComputerPlayer(&pong->paddleL, &pong->ball);
+    // UpdatePaddleComputerPlayer(&pong->paddleR, &pong->ball);
     UpdateBall(&pong->ball);
 
     // Collision logic
     BounceBallEdge(&pong->ball);
-    BounceBallPaddle(&pong->ball, &pong->paddleR);
     BounceBallPaddle(&pong->ball, &pong->paddleL);
-    EdgeCollisionPaddle(&pong->paddleR);
+    BounceBallPaddle(&pong->ball, &pong->paddleR);
     EdgeCollisionPaddle(&pong->paddleL);
+    EdgeCollisionPaddle(&pong->paddleR);
+}
+
+void DrawScores(GameState *pong)
+{
+    int fontSize = 180;
+
+    const char *scoreLmsg = TextFormat("%2i", pong->scoreL);
+    int scoreLWidth = MeasureText(scoreLmsg, fontSize);
+    int scoreLposX = (RENDER_WIDTH - scoreLWidth) / 4;
+
+    const char *scoreRmsg = TextFormat("%2i", pong->scoreR);
+    int scoreRWidth = MeasureText(scoreRmsg, fontSize);
+    int scoreRposX = 3 * RENDER_WIDTH / 4 - scoreRWidth;
+
+    int scorePosY = 50;
+    DrawText(scoreLmsg, scoreLposX, scorePosY, fontSize, RAYWHITE);
+    DrawText(scoreRmsg, scoreRposX, scorePosY, fontSize, RAYWHITE);
+}
+
+void DrawDottedLine(void)
+{
+    int dashHeight = 50;
+    int gapHeight = 50;
+    int lineWidth = 25;
+
+    for (int y = 0; y < RENDER_HEIGHT; y += dashHeight + gapHeight) {
+        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y, lineWidth, dashHeight, WHITE);
+    }
 }
 
 void DrawGame(GameState *pong)
 {
+    // Draw line down middle
+    DrawDottedLine();
+
+    // Draw score
+    DrawScores(pong);
+
     // Draw paddles
     DrawRectangle(pong->paddleR.position.x, pong->paddleR.position.y,
                   pong->paddleR.width, pong->paddleR.length, WHITE);

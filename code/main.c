@@ -16,8 +16,6 @@ int main(void)
 {
     // Initialization
     // --------------------------------------------------------------------------------------
-    const int screenWidth = DEFAULT_WIDTH;
-    const int screenHeight = DEFAULT_HEIGHT;
     const int gameScreenWidth = RENDER_WIDTH;
     const int gameScreenHeight = RENDER_HEIGHT;
 
@@ -26,7 +24,7 @@ int main(void)
     if (VSYNC_ENABLED)
         windowFlags |= FLAG_VSYNC_HINT;
     SetConfigFlags(windowFlags);
-    InitWindow(screenWidth, screenHeight, WINDOW_TITLE);
+    InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
     SetWindowMinSize(320, 240);
 
     // Initialize the render texture, used to hold the rendering result so we can easily resize it
@@ -90,33 +88,26 @@ int main(void)
                 if (IsKeyPressed(KEY_ENTER))
                 {
                     currentScreen = GAMEPLAY;
+
+                    // Temp
+                    ResetBall(&pong.ball);
                 }
             } break;
             case GAMEPLAY:
             {
                 UpdatePong(&pong);
 
-                // Press R to reset
+                // Press R to reset ball
                 if (IsKeyPressed(KEY_R))
                 {
                     ResetBall(&pong.ball);
                 }
 
-                // Press enter to change to ENDING screen
-                if (IsKeyPressed(KEY_ENTER))
+                // Escape back to beginning
+                if (IsKeyPressed(KEY_ESCAPE))
                 {
-                    currentScreen = ENDING;
-                }
-            } break;
-            case ENDING:
-            {
-                // TODO: Update ENDING screen variables here!
-
-                // Press enter to return to TITLE screen
-                if (IsKeyPressed(KEY_ENTER))
-                {
-                    raylibLogo = InitRaylibLogo(); // reset logo animation
                     currentScreen = LOGO;
+                    pong = InitGameState();
                 }
             } break;
             default: break;
@@ -144,13 +135,6 @@ int main(void)
                 case GAMEPLAY:
                 {
                     DrawGame(&pong);
-
-                } break;
-                case ENDING:
-                {
-                    DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLUE);
-                    DrawText("ENDING SCREEN", 20, 20, 40, DARKBLUE);
-                    DrawText("PRESS ENTER or TAP to RETURN to TITLE SCREEN", 120, 220, 20, DARKBLUE);
 
                 } break;
                 default: break;

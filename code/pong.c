@@ -3,11 +3,15 @@
 #include "config.h"
 #include "pong.h"
 
+// See header for data type and function descriptions
+
 GameState InitGameState(void)
 {
     GameState state = {
-        0, // scoreL
-        0, // scoreR
+        0, 0, // scoreL, scoreR
+        false, // playerWonFlag
+        5.0f, // winTimer
+        0.0f, // scoreTimer
         { // paddleL
             { // position x, y
                 PADDLE_WIDTH * 1.5,
@@ -30,13 +34,13 @@ GameState InitGameState(void)
 
         { // ball
             { // position x, y
-                RENDER_WIDTH / 2 + BALL_SIZE / 2,
-                RENDER_HEIGHT / 2 + BALL_SIZE / 2,
+                RENDER_WIDTH / 2 - BALL_SIZE / 2,
+                RENDER_HEIGHT / 2 - BALL_SIZE / 2,
             },
-            { // speed x, y
-                BALL_SPEED, 0,
+            { // velocity x, y
+                0, 0,
             },
-            BALL_SPEED, // maxSpeed
+            BALL_SPEED, // speed
             BALL_SIZE, // size
         },
     };
@@ -64,32 +68,52 @@ void EdgeCollisionPaddle(Paddle *paddle)
         paddle->position.y = RENDER_HEIGHT - paddle->length;
 }
 
-void BounceBallEdge(Ball *ball)
+void BounceBallEdge(GameState *pong)
 {
-    int leftEdgeCollide = (ball->position.x <= 0);
-    int rightEdgeCollide = (ball->position.x + ball->size >= RENDER_WIDTH);
-    int topEdgeCollide = (ball->position.y <= 0);
-    int bottomEdgeCollide = (ball->position.y + ball->size >= RENDER_HEIGHT);
+    int leftEdgeCollide = (pong->ball.position.x <= 0);
+    int rightEdgeCollide = (pong->ball.position.x + pong->ball.size >= RENDER_WIDTH);
+    int topEdgeCollide = (pong->ball.position.y <= 0);
+    int bottomEdgeCollide = (pong->ball.position.y + pong->ball.size >= RENDER_HEIGHT);
 
-    if (leftEdgeCollide && ball->speed.x < 0)
+    if (leftEdgeCollide && pong->ball.velocity.x < 0)
     {
-        ball->speed.x *= -1; // Bounce
-        ball->position.x = 0; // Don't get stuck
+        if (pong->playerWonFlag)
+        {
+            pong->ball.velocity.x *= -1; // Bounce
+            pong->ball.position.x = 0; // Don't get stuck
+        }
+        else
+        {
+            pong->scoreR += 1;
+            pong->scoreTimer = 1.0f;
+            if (pong->scoreR != WIN_SCORE)
+                ResetBall(&pong->ball);
+        }
     }
-    if (rightEdgeCollide && ball->speed.x > 0)
+    if (rightEdgeCollide && pong->ball.velocity.x > 0)
     {
-        ball->speed.x *= -1;
-        ball->position.x = RENDER_WIDTH - ball->size;
+        if (pong->playerWonFlag)
+        {
+        pong->ball.velocity.x *= -1;
+        pong->ball.position.x = RENDER_WIDTH - pong->ball.size;
+        }
+        else
+        {
+            pong->scoreL += 1;
+            pong->scoreTimer = 1.0f;
+            if (pong->scoreL != WIN_SCORE)
+                ResetBall(&pong->ball);
+        }
     }
-    if (topEdgeCollide && ball->speed.y < 0)
+    if (topEdgeCollide && pong->ball.velocity.y < 0)
     {
-        ball->speed.y *= -1;
-        ball->position.y = 0;
+        pong->ball.velocity.y *= -1;
+        pong->ball.position.y = 0;
     }
-    if (bottomEdgeCollide && ball->speed.y > 0)
+    if (bottomEdgeCollide && pong->ball.velocity.y > 0)
     {
-        ball->speed.y *= -1;
-        ball->position.y = RENDER_HEIGHT - ball->size;
+        pong->ball.velocity.y *= -1;
+        pong->ball.position.y = RENDER_HEIGHT - pong->ball.size;
     }
 }
 
@@ -107,17 +131,16 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle)
     if (paddle->position.x < ball->position.x)
     {
         ball->position.x = paddle->position.x + paddle->width + 1;
-        ball->speed.x = fabs(ball->speed.x);
+        ball->velocity.x = fabs(ball->velocity.x);
     }
     else
     {
         ball->position.x = paddle->position.x - ball->size - 1;
-        ball->speed.x = -fabs(ball->speed.x);
+        ball->velocity.x = -fabs(ball->velocity.x);
     }
 
     // Increase ball speed
-    float bounceMultiplier = 1.1;
-    ball->maxSpeed *= bounceMultiplier;
+    ball->speed *= BOUNCE_MULTIPLIER;
 
     // Calculate the new angle based on hit position
     float maxAngle = 40.0f;
@@ -125,28 +148,29 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle)
     float angleInRadians = angleInDegrees * PI / 180.0f;
 
     // Set the new velocity components based on the angle
-    float speed = ball->maxSpeed;
-    ball->speed.x = cosf(angleInRadians) * speed;
-    ball->speed.y = sinf(angleInRadians) * speed;
+    float speed = ball->speed;
+    ball->velocity.x = cosf(angleInRadians) * speed;
+    ball->velocity.y = sinf(angleInRadians) * speed;
 
     // Ensure correct horizontal direction
-    ball->speed.x = (ball->speed.x > 0 && paddle->position.x >= ball->position.x) ?
-        -ball->speed.x : ball->speed.x;
-    ball->speed.x = (ball->speed.x < 0 && paddle->position.x < ball->position.x) ?
-        -ball->speed.x : ball->speed.x;
+    ball->velocity.x = (ball->velocity.x > 0 && paddle->position.x >= ball->position.x) ?
+        -ball->velocity.x : ball->velocity.x;
+    ball->velocity.x = (ball->velocity.x < 0 && paddle->position.x < ball->position.x) ?
+        -ball->velocity.x : ball->velocity.x;
 
     // Change angle based on the velocity of the paddle
-    ball->speed.y += (paddle->speed * GetFrameTime()) * 150;
+    // ball->velocity.y += (paddle->speed * GetFrameTime()) * PADDLE_SPEED_INFLUENCE;
+    ball->velocity.y += (PADDLE_SPEED * GetFrameTime()) * PADDLE_SPEED_INFLUENCE;
 
     // Normalize speed
-    ball->speed = Vector2Scale(Vector2Normalize(ball->speed),
-                               Vector2Length(ball->speed));
+    ball->velocity = Vector2Scale(Vector2Normalize(ball->velocity),
+                               Vector2Length(ball->velocity));
 
     // Debug
     // TraceLog(LOG_INFO, "cpu paddle speed: %f\n", paddle->speed);
 }
 
-void UpdatePaddlePlayer1Input(Paddle *paddle)
+void UpdatePaddlePlayer1(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
@@ -165,7 +189,7 @@ void UpdatePaddlePlayer1Input(Paddle *paddle)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void UpdatePaddlePlayer2Input(Paddle *paddle)
+void UpdatePaddlePlayer2(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
@@ -184,7 +208,7 @@ void UpdatePaddlePlayer2Input(Paddle *paddle)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void UpdatePaddleComputerPlayer(Paddle *paddle, Ball *ball)
+void UpdatePaddleComputer(Paddle *paddle, Ball *ball)
 {
     float newSpeed = 0.0f; // Not moving by default
 
@@ -201,94 +225,115 @@ void UpdatePaddleComputerPlayer(Paddle *paddle, Ball *ball)
     // perfect AI
     // paddle->position.y = ball->position.y;
 
-    // TODO: a seek position which periodically updates
+    // TODO: a seek position which periodically updates to look more natural, and has difficulty factors
 }
 
 void UpdateBall(Ball *ball)
 {
-    Vector2 deltaTimeSpeed = Vector2Scale(ball->speed, GetFrameTime());
+    Vector2 deltaTimeSpeed = Vector2Scale(ball->velocity, GetFrameTime());
     ball->position = Vector2Add(ball->position, deltaTimeSpeed);
 
     // Make sure diagonal movement isn't too steep
-    float minimumXSpeed = 300.0f;
-    if (fabsf(ball->speed.x) < minimumXSpeed) {
-        ball->speed.x = (ball->speed.x >= 0) ?
-            minimumXSpeed : -minimumXSpeed;
+    float minimumXspeed = MINIMUM_STEEPNESS;
+    if (fabsf(ball->velocity.x) < minimumXspeed) {
+        ball->velocity.x = (ball->velocity.x >= 0) ?
+            minimumXspeed : -minimumXspeed;
     }
 
-    // Normalize speed
-    ball->speed = Vector2Scale(Vector2Normalize(ball->speed), ball->maxSpeed);
-}
-
-void ResetBall(Ball *ball)
-{
-    Vector2 center = { RENDER_WIDTH / 2 + ball->size / 2, RENDER_HEIGHT / 2 + ball->size / 2 };
-    ball->position = center;
-    Vector2 direction = { GetRandomValue(-1,1), GetRandomValue(-BALL_SPEED, BALL_SPEED) };
-    ball->speed = direction;
-    ball->maxSpeed = BALL_SPEED;
+    // Normalize velocity
+    ball->velocity = Vector2Scale(Vector2Normalize(ball->velocity), ball->speed);
 }
 
 void UpdatePong(GameState *pong)
 {
     // Update position
-    UpdatePaddlePlayer1Input(&pong->paddleL);
-    UpdatePaddlePlayer2Input(&pong->paddleR);
-    // UpdatePaddleComputerPlayer(&pong->paddleL, &pong->ball);
-    // UpdatePaddleComputerPlayer(&pong->paddleR, &pong->ball);
-    UpdateBall(&pong->ball);
+    UpdatePaddlePlayer1(&pong->paddleR);
+    // UpdatePaddlePlayer2(&pong->paddleR);
+    UpdatePaddleComputer(&pong->paddleL, &pong->ball);
+
+    if (pong->scoreTimer <= 0 ||
+        pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
+        UpdateBall(&pong->ball);
 
     // Collision logic
-    BounceBallEdge(&pong->ball);
-    BounceBallPaddle(&pong->ball, &pong->paddleL);
-    BounceBallPaddle(&pong->ball, &pong->paddleR);
+    BounceBallEdge(pong);
+    if (pong->playerWonFlag == false)
+    {
+        BounceBallPaddle(&pong->ball, &pong->paddleL);
+        BounceBallPaddle(&pong->ball, &pong->paddleR);
+    }
     EdgeCollisionPaddle(&pong->paddleL);
     EdgeCollisionPaddle(&pong->paddleR);
+
+    // Check for winner
+    if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
+        pong->playerWonFlag = true;
+
+    // Update timers for winning and scoring
+    if (pong->scoreTimer > 0)
+        pong->scoreTimer -= GetFrameTime();
+    if (pong->playerWonFlag && pong->winTimer > 0)
+        pong->winTimer -= GetFrameTime();
+
+    // Reset game after a player wins
+    if (pong->playerWonFlag == true && pong->winTimer <= 0)
+        *pong = InitGameState();
+}
+
+void DrawDottedLine(void)
+{
+    int dashHeight = 40;
+    int spaceHeight = 40;
+    int lineWidth = 15;
+
+    for (int y = 0; y < RENDER_HEIGHT; y += dashHeight + spaceHeight) {
+        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y, lineWidth, dashHeight, WHITE);
+    }
 }
 
 void DrawScores(GameState *pong)
 {
     int fontSize = 180;
 
-    const char *scoreLmsg = TextFormat("%2i", pong->scoreL);
-    int scoreLWidth = MeasureText(scoreLmsg, fontSize);
-    int scoreLposX = (RENDER_WIDTH - scoreLWidth) / 4;
+    const char *scoreLmsg = TextFormat("%i", pong->scoreL);
+    int scoreLwidth = MeasureText(scoreLmsg, fontSize);
+    int scoreLposX = RENDER_WIDTH / 4 - scoreLwidth / 2;
 
-    const char *scoreRmsg = TextFormat("%2i", pong->scoreR);
-    int scoreRWidth = MeasureText(scoreRmsg, fontSize);
-    int scoreRposX = 3 * RENDER_WIDTH / 4 - scoreRWidth;
+    const char *scoreRmsg = TextFormat("%i", pong->scoreR);
+    int scoreRwidth = MeasureText(scoreRmsg, fontSize);
+    int scoreRposX = 3 * RENDER_WIDTH / 4 - scoreRwidth / 2;
 
     int scorePosY = 50;
     DrawText(scoreLmsg, scoreLposX, scorePosY, fontSize, RAYWHITE);
     DrawText(scoreRmsg, scoreRposX, scorePosY, fontSize, RAYWHITE);
 }
 
-void DrawDottedLine(void)
-{
-    int dashHeight = 50;
-    int gapHeight = 50;
-    int lineWidth = 25;
-
-    for (int y = 0; y < RENDER_HEIGHT; y += dashHeight + gapHeight) {
-        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y, lineWidth, dashHeight, WHITE);
-    }
-}
-
 void DrawGame(GameState *pong)
 {
-    // Draw line down middle
+    // Draw dotted line down middle
     DrawDottedLine();
 
     // Draw score
     DrawScores(pong);
 
     // Draw paddles
-    DrawRectangle(pong->paddleR.position.x, pong->paddleR.position.y,
-                  pong->paddleR.width, pong->paddleR.length, WHITE);
-    DrawRectangle(pong->paddleL.position.x, pong->paddleL.position.y,
-                  pong->paddleL.width, pong->paddleL.length, WHITE);
+    if (pong->playerWonFlag == false)
+    {
+        DrawRectangle(pong->paddleR.position.x, pong->paddleR.position.y,
+                      pong->paddleR.width, pong->paddleR.length, WHITE);
+        DrawRectangle(pong->paddleL.position.x, pong->paddleL.position.y,
+                      pong->paddleL.width, pong->paddleL.length, WHITE);
+    }
 
     // Draw ball
-    DrawRectangle(pong->ball.position.x, pong->ball.position.y,
-                  pong->ball.size, pong->ball.size, WHITE);
+    if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
+        DrawRectangle(pong->ball.position.x, pong->ball.position.y,
+                      pong->ball.size, pong->ball.size, WHITE);
+}
+
+void ResetBall(Ball *ball)
+{
+    float horizontalCenter = RENDER_WIDTH / 2 - ball->size / 2;
+    ball->position.x = horizontalCenter;
+    ball->speed = BALL_SPEED;
 }

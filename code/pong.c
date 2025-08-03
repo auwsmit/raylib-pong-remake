@@ -12,7 +12,7 @@ GameState InitGameState(void)
         0, 0, // scoreL, scoreR
         false, // playerWon
         WIN_PAUSE_TIME, // winTimer
-        0.0f, // scoreTimer
+        1.0f, // scoreTimer
         { // paddleL
             { // position x, y
                 PADDLE_WIDTH * 1.5,
@@ -39,9 +39,8 @@ GameState InitGameState(void)
                 RENDER_HEIGHT / 2 - BALL_SIZE / 2,
             },
             { // direction x, y
-                1, 0
-                // (GetRandomValue(0, 1) * 2 - 1) * 10, // randomly move towards left or right player
-                // (float)GetRandomValue(-10, 10),
+                (float)((GetRandomValue(0, 1) * 2 - 1) * 10), // randomly move towards left or right player
+                (float)GetRandomValue(-10, 10),
             },
             BALL_SPEED, // speed
             BALL_SIZE, // size
@@ -68,7 +67,7 @@ void EdgeCollisionPaddle(Paddle *paddle)
     if (paddle->position.y <= 0)
         paddle->position.y = 0; // Don't get stuck
     if (paddle->position.y + paddle->length > RENDER_HEIGHT)
-        paddle->position.y = RENDER_HEIGHT - paddle->length;
+        paddle->position.y = (float)RENDER_HEIGHT - paddle->length;
 }
 
 void BounceBallEdge(GameState *pong)
@@ -98,7 +97,7 @@ void BounceBallEdge(GameState *pong)
         if (pong->playerWon)
         {
         pong->ball.direction.x *= -1;
-        pong->ball.position.x = RENDER_WIDTH - pong->ball.size;
+        pong->ball.position.x = (float)RENDER_WIDTH - pong->ball.size;
         }
         else
         {
@@ -116,7 +115,7 @@ void BounceBallEdge(GameState *pong)
     if (bottomEdgeCollide && pong->ball.direction.y > 0)
     {
         pong->ball.direction.y *= -1;
-        pong->ball.position.y = RENDER_HEIGHT - pong->ball.size;
+        pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size;
     }
 }
 
@@ -206,18 +205,18 @@ void UpdatePaddleComputer(Paddle *paddle, Ball *ball)
 
     // Follow the ball
     if ((paddle->position.y + paddle->length / 10) > ball->position.y + ball->size)
-        newSpeed = -PADDLE_SPEED * 2;
+        newSpeed = -PADDLE_SPEED;
     if ((paddle->position.y + paddle->length - paddle-> length / 10) < ball->position.y)
-        newSpeed = PADDLE_SPEED * 2;
+        newSpeed = PADDLE_SPEED;
 
     // Update Paddle
     if (fabsf(paddle->position.x - ball->position.x) < RENDER_WIDTH / 2)
     {
-        paddle->speed = newSpeed / 2;
+        paddle->speed = newSpeed * DIFFICULTY_MODIFIER;
         paddle->position.y += paddle->speed * GetFrameTime();
     }
 
-    // perfect AI
+    // // Perfect computer
     // paddle->position.y = ball->position.y;
 
     // TODO: a seek position which periodically updates to look more natural, and has difficulty factors
@@ -248,17 +247,24 @@ void UpdateBall(Ball *ball)
 
 }
 
-void UpdatePong(GameState *pong)
+void UpdatePong(GameState *pong, GameSession *session)
 {
-    // Update position
-    // 1 player
-    UpdatePaddlePlayer1(&pong->paddleL);
-    UpdatePaddleComputer(&pong->paddleR, &pong->ball);
-
-    // // 2 player
-    // UpdatePaddlePlayer1(&pong->paddleL);
-    // UpdatePaddlePlayer2(&pong->paddleR);
-    // UpdatePaddleComputer(&pong->paddleL, &pong->ball);
+    // Update paddles
+    if (session->playMode == ONEPLAYER)
+    {
+        UpdatePaddlePlayer1(&pong->paddleL);
+        UpdatePaddleComputer(&pong->paddleR, &pong->ball);
+    }
+    if (session->playMode == TWOPLAYER)
+    {
+        UpdatePaddlePlayer1(&pong->paddleL);
+        UpdatePaddlePlayer2(&pong->paddleR);
+    }
+    if (session->playMode == DEMO)
+    {
+        UpdatePaddleComputer(&pong->paddleL, &pong->ball);
+        UpdatePaddleComputer(&pong->paddleR, &pong->ball);
+    }
 
     if (pong->scoreTimer <= 0 ||
         pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
@@ -284,6 +290,11 @@ void UpdatePong(GameState *pong)
     if (pong->playerWon && pong->winTimer > 0)
         pong->winTimer -= GetFrameTime();
 
+    // Press Enter or Space or Click to skip win screen
+    if (pong->playerWon == true &&
+        (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP)))
+        pong->winTimer = 0;
+
     // Reset game after a player wins
     if (pong->playerWon == true && pong->winTimer <= 0)
         *pong = InitGameState();
@@ -295,8 +306,15 @@ void DrawDottedLine(void)
     int spaceHeight = 40;
     int lineWidth = 15;
 
-    for (int y = 0; y < RENDER_HEIGHT; y += dashHeight + spaceHeight)
+    // Calculate amount of dashes needed
+    int totalSegmentHeight = dashHeight + spaceHeight;
+    int totalSegments = (RENDER_HEIGHT - spaceHeight) / totalSegmentHeight;
+    int usedHeight = totalSegments * totalSegmentHeight - spaceHeight;
+    int offsetY = (RENDER_HEIGHT - usedHeight) / 2;
+
+    for (int i = 0; i < totalSegments; i++)
     {
+        int y = offsetY + i * totalSegmentHeight;
         DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y, lineWidth, dashHeight, WHITE);
     }
 }
@@ -336,7 +354,7 @@ void DrawWinnerMessage(int scoreL, int scoreR)
     }
 }
 
-void DrawGame(GameState *pong)
+void DrawPong(GameState *pong)
 {
     // Draw dotted line down middle
     DrawDottedLine();
@@ -347,16 +365,16 @@ void DrawGame(GameState *pong)
     // Draw paddles
     if (pong->playerWon == false)
     {
-        DrawRectangle(pong->paddleR.position.x, pong->paddleR.position.y,
-                      pong->paddleR.width, pong->paddleR.length, WHITE);
-        DrawRectangle(pong->paddleL.position.x, pong->paddleL.position.y,
-                      pong->paddleL.width, pong->paddleL.length, WHITE);
+        DrawRectangle((int)pong->paddleR.position.x, (int)pong->paddleR.position.y,
+                      (int)pong->paddleR.width,      (int)pong->paddleR.length, WHITE);
+        DrawRectangle((int)pong->paddleL.position.x, (int)pong->paddleL.position.y,
+                      (int)pong->paddleL.width,      (int)pong->paddleL.length, WHITE);
     }
 
     // Draw ball
     if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
-        DrawRectangle(pong->ball.position.x, pong->ball.position.y,
-                      pong->ball.size, pong->ball.size, WHITE);
+        DrawRectangle((int)pong->ball.position.x, (int)pong->ball.position.y,
+                      (int)pong->ball.size,       (int)pong->ball.size, WHITE);
 
     // Draw win message
     if (pong->playerWon)
@@ -366,10 +384,10 @@ void DrawGame(GameState *pong)
 void ResetBall(Ball *ball)
 {
     // Return to center, but keep previous vertical position
-    ball->position.x = (RENDER_WIDTH - ball->size) / 2;
+    ball->position.x = ((float)RENDER_WIDTH - ball->size) / 2.0f;
 
     // Change the ball's return position and angle a bit
-    ball->position.y += GetRandomValue(-RETURN_POS_VARIATION, RETURN_POS_VARIATION);
+    ball->position.y += GetRandomValue(-RETURN_VERTICAL_VARIATION, RETURN_VERTICAL_VARIATION);
     ball->direction.y += GetRandomValue(-RETURN_ANGLE_VARIATION, RETURN_ANGLE_VARIATION);
     ball->speed = BALL_SPEED;
 }

@@ -7,7 +7,7 @@
 
 // Types and Structures Definition
 // ------------------------------------------------------------------------------------------
-typedef enum ScreenState { LOGO, TITLE, GAMEPLAY, ENDING } ScreenState;
+typedef enum ScreenState { LOGO, TITLE, DIFFICULTY, GAMEPLAY, ENDING } ScreenState;
 
 // Functions Definition
 // ------------------------------------------------------------------------------------------
@@ -36,6 +36,7 @@ int main(void)
     bool skipCurrentFrame = false;
     Logo raylibLogo = InitRaylibLogo();
     GameState pong = InitGameState();
+    GameSession session = { ONEPLAYER, MEDIUM }; // tracks mode and difficulty selection
 
     if (MAX_FRAMERATE > 0)
         SetTargetFPS(MAX_FRAMERATE);
@@ -52,9 +53,10 @@ int main(void)
         // Debug: q for fast quitting
         SetExitKey(KEY_Q);
 
-        // Fullscreen input via F11 and Alt+Enter
+        // Fullscreen input via F11, Alt+Enter, and Shift+F
         if (IsKeyPressed(KEY_F11) ||
-            ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)))
+            ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
+            ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_LEFT_SHIFT)) && IsKeyPressed(KEY_F)))
         {
             ToggleBorderlessWindowed();
             skipCurrentFrame = true;
@@ -84,15 +86,23 @@ int main(void)
             } break;
             case TITLE:
             {
-                // Press enter to change to GAMEPLAY screen
-                if (IsKeyPressed(KEY_ENTER))
+                // Press enter or space to change to GAMEPLAY screen
+                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
+                {
+                    currentScreen = GAMEPLAY;
+                }
+            } break;
+            case DIFFICULTY:
+            {
+                // Press enter or space to change to GAMEPLAY screen
+                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
                 {
                     currentScreen = GAMEPLAY;
                 }
             } break;
             case GAMEPLAY:
             {
-                UpdatePong(&pong);
+                UpdatePong(&pong, &session);
 
                 // Press R to reset ball
                 if (IsKeyPressed(KEY_R))
@@ -104,6 +114,7 @@ int main(void)
                 if (IsKeyPressed(KEY_ESCAPE))
                 {
                     currentScreen = LOGO;
+                    raylibLogo = InitRaylibLogo();
                     pong = InitGameState();
                 }
             } break;
@@ -131,7 +142,7 @@ int main(void)
                 } break;
                 case GAMEPLAY:
                 {
-                    DrawGame(&pong);
+                    DrawPong(&pong);
 
                 } break;
                 default: break;

@@ -4,7 +4,7 @@
 
 void DrawTitle(void)
 {
-    const char *msg = WINDOW_TITLE;
+    const char *msg = "Raylib Pong";
     const int fontSize = 180;
     const int textWidth = MeasureText(msg, fontSize);
     const int textPosX = (RENDER_WIDTH - textWidth) / 2;

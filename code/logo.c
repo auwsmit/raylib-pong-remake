@@ -106,55 +106,50 @@ void UpdateRaylibLogo(Logo *logo)
 
 void DrawRaylibLogo(Logo *logo)
 {
-    const int lineWidth = RAYLIB_LOGO_OUTLINE;
-    const int offsetA   = RAYLIB_LOGO_WIDTH*0.9375f;
-    const int offsetB   = lineWidth * 2;
-    const int fontSize  = RAYLIB_LOGO_FONT_SIZE;
-    const int offsetC   = RAYLIB_LOGO_WIDTH*0.171875;
-    const int offsetD   = RAYLIB_LOGO_WIDTH*0.1875;
+    int lineWidth = (int)(RAYLIB_LOGO_OUTLINE); // DrawRectangle() takes ints, so all this casting is just to remove warnings
+    int offsetA   = (int)(RAYLIB_LOGO_WIDTH*0.9375f);
+    int offsetB   = (int)(lineWidth * 2);
+    int fontSize  = (int)(RAYLIB_LOGO_FONT_SIZE);
+    int offsetC   = (int)(RAYLIB_LOGO_WIDTH*0.171875);
+    int offsetD   = (int)(RAYLIB_LOGO_WIDTH*0.1875);
 
     DrawText("powered by",
-             (RENDER_WIDTH/2) - (RAYLIB_LOGO_WIDTH/2),
-             (RENDER_HEIGHT/2) - (RAYLIB_LOGO_WIDTH/2) - offsetB - lineWidth/4,
-             fontSize / 2, RAYWHITE);
+             (int)((RENDER_WIDTH / 2) - (RAYLIB_LOGO_WIDTH / 2)),
+             (int)((RENDER_HEIGHT / 2) - (RAYLIB_LOGO_WIDTH / 2) - offsetB - lineWidth / 4),
+             (int)(fontSize / 2), RAYWHITE);
+
+    int posX        = (int)logo->positionX;
+    int posY        = (int)logo->positionY;
+    int topWidth    = (int)logo->topSideRecWidth;
+    int leftHeight  = (int)logo->leftSideRecHeight;
+    int rightHeight = (int)logo->rightSideRecHeight;
+    int bottomWidth = (int)logo->bottomSideRecWidth;
 
     switch (logo->state)
     {
         case START:
             if (((int)(logo->elapsedTime * 4)) % 2)
-                DrawRectangle(logo->positionX, logo->positionY,
-                              lineWidth, lineWidth, RAYWHITE);
+                DrawRectangle(posX, posY, lineWidth, lineWidth, RAYWHITE);
             else
-                DrawRectangle(logo->positionX, logo->positionY,
-                              lineWidth, lineWidth, BLACK);
+                DrawRectangle(posX, posY, lineWidth, lineWidth, BLACK);
             break;
         case GROW1:
-            DrawRectangle(logo->positionX, logo->positionY,
-                          logo->topSideRecWidth, lineWidth, RAYWHITE);
-            DrawRectangle(logo->positionX, logo->positionY,
-                          lineWidth, logo->leftSideRecHeight, RAYWHITE);
+            DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
+            DrawRectangle(posX, posY, lineWidth, leftHeight, RAYWHITE);
             break;
         case GROW2:
-            DrawRectangle(logo->positionX, logo->positionY,
-                          logo->topSideRecWidth, lineWidth, RAYWHITE);
-            DrawRectangle(logo->positionX, logo->positionY,
-                          lineWidth, logo->leftSideRecHeight, RAYWHITE);
+            DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
+            DrawRectangle(posX, posY, lineWidth, leftHeight, RAYWHITE);
 
-            DrawRectangle(logo->positionX + offsetA, logo->positionY,
-                          lineWidth, logo->rightSideRecHeight, RAYWHITE);
-            DrawRectangle(logo->positionX, logo->positionY + offsetA,
-                          logo->bottomSideRecWidth, lineWidth, RAYWHITE);
+            DrawRectangle(posX + offsetA, posY, lineWidth, rightHeight, RAYWHITE);
+            DrawRectangle(posX, posY + offsetA, bottomWidth, lineWidth, RAYWHITE);
             break;
         case TEXT:
-            DrawRectangle(logo->positionX, logo->positionY,
-                          logo->topSideRecWidth, lineWidth, RAYWHITE);
-            DrawRectangle(logo->positionX, logo->positionY + lineWidth,
-                          lineWidth, logo->leftSideRecHeight - offsetB, RAYWHITE);
+            DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
+            DrawRectangle(posX, posY + lineWidth, lineWidth, leftHeight - offsetB, RAYWHITE);
 
-            DrawRectangle(logo->positionX + offsetA, logo->positionY + lineWidth,
-                          lineWidth, logo->rightSideRecHeight - offsetB, RAYWHITE);
-            DrawRectangle(logo->positionX, logo->positionY + offsetA,
-                          logo->bottomSideRecWidth, lineWidth, RAYWHITE);
+            DrawRectangle(posX + offsetA, posY + lineWidth, lineWidth, rightHeight - offsetB, RAYWHITE);
+            DrawRectangle(posX, posY + offsetA, bottomWidth, lineWidth, RAYWHITE);
 
             DrawText(TextSubtext("raylib", 0, logo->lettersCount),
                      RENDER_WIDTH/2 - offsetC, RENDER_HEIGHT/2 + offsetD,

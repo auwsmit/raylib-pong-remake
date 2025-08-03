@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 
-# Name of the project and output executable
-project(game C)
+# Name of the project, also using C
+project("Raylib Test" C)
+set(EXECUTABLE_NAME game)
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -26,19 +27,19 @@ endif()
 
 # Our Project
 file(GLOB SRC_FILES code/*.c)
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_executable(${EXECUTABLE_NAME} ${SRC_FILES})
 #set(raylib_VERBOSE 1)
-target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${EXECUTABLE_NAME} raylib)
 
 # Web Configurations
 if (${PLATFORM} STREQUAL "Web")
-    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html") # Tell Emscripten to build an example.html file.
+    set_target_properties(${EXECUTABLE_NAME} PROPERTIES SUFFIX ".html") # Tell Emscripten to build an example.html file.
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 --emrun")
 endif()
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME} "-framework IOKit")
-    target_link_libraries(${PROJECT_NAME} "-framework Cocoa")
-    target_link_libraries(${PROJECT_NAME} "-framework OpenGL")
+    target_link_libraries(${EXECUTABLE_NAME} "-framework IOKit")
+    target_link_libraries(${EXECUTABLE_NAME} "-framework Cocoa")
+    target_link_libraries(${EXECUTABLE_NAME} "-framework OpenGL")
 endif()

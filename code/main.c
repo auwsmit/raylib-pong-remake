@@ -88,9 +88,6 @@ int main(void)
                 if (IsKeyPressed(KEY_ENTER))
                 {
                     currentScreen = GAMEPLAY;
-
-                    // Temp
-                    ResetBall(&pong.ball);
                 }
             } break;
             case GAMEPLAY:

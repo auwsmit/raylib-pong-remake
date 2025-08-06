@@ -19,7 +19,7 @@ if "%1"=="" ( :: Build for desktop
 ) else if "%1"=="web" ( :: Build for web
     mkdir build\web
     cd build\web
-    call emcmake cmake .. -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXECUTABLE_SUFFIX=".html"
+    call emcmake cmake ..\.. -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXECUTABLE_SUFFIX=".html"
     call emmake make
     cd ..\..
     del /q game.html game.js game.wasm

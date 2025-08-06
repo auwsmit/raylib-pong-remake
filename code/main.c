@@ -58,7 +58,11 @@ int main(void)
             ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
             ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_LEFT_SHIFT)) && IsKeyPressed(KEY_F)))
         {
+#ifdef PLATFORM_WEB
+            ToggleFullscreen();
+#else
             ToggleBorderlessWindowed();
+#endif
             skipCurrentFrame = true;
         }
 

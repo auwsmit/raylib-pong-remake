@@ -9,10 +9,11 @@ GameState InitGameState(void)
 {
     GameState state =
     {
-        SCREEN_LOGO, // currentScreen
-        0, DIFFICULTY_MEDIUM, // gameMode, difficulty (selected by player)
-        0, 0, // scoreL, scoreR
-        false, // playerWon
+        SCREEN_LOGO,  // currentScreen
+        0,            // gameMode (selected by player)
+        DIFFICULTY_MEDIUM, // difficulty (default used for cpu vs cpu demo mode)
+        0, 0,         // scoreL, scoreR
+        false,        // playerWon
         WIN_PAUSE_TIME, // winTimer
         SCORE_PAUSE_TIME, // scoreTimer
         { // paddleL
@@ -242,7 +243,7 @@ void UpdateBall(Ball *ball)
 
 }
 
-void UpdatePong(GameState *pong)
+void UpdatePongFrame(GameState *pong)
 {
     // Get the difficulty multiplier
     // TODO: make better difficulty implementation
@@ -297,7 +298,10 @@ void UpdatePong(GameState *pong)
 
     // Reset game after a player wins
     if (pong->playerWon == true && pong->winTimer <= 0)
+    {
         *pong = InitGameState();
+        pong->currentScreen = SCREEN_GAMEPLAY;
+    }
 
     // Debug: Press R to reset ball
     // if (IsKeyPressed(KEY_R))
@@ -360,7 +364,7 @@ void DrawWinnerMessage(int scoreL, int scoreR)
     }
 }
 
-void DrawPong(GameState *pong)
+void DrawPongFrame(GameState *pong)
 {
     // Draw dotted line down middle
     DrawDottedLine();

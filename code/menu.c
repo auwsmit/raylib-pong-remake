@@ -8,27 +8,32 @@ MenuState InitMenuState(void)
     MenuButton title     = InitMenuButtonTitle("Pong Remake");
 
     // Main buttons
-    MenuButton onePlayer = InitMenuButtonOption("One Player", &title, 200); // 200 pixels below title button
-    MenuButton twoPlayer = InitMenuButtonOption("Two Player", &onePlayer, 50); // 50 pixels below onePlayer button
-    MenuButton demo      = InitMenuButtonOption("Demo", &twoPlayer, 50);
-    MenuButton exitGame  = InitMenuButtonOption("Exit", &demo, 50);
+    MenuButton onePlayer = InitMenuButtonOption("One Player", &title, MENU_SPACE_FROM_TITLE);
+    MenuButton twoPlayer = InitMenuButtonOption("Two Player", &onePlayer, MENU_OPTION_SPACING);
+    MenuButton demo      = InitMenuButtonOption("Demo", &twoPlayer, MENU_OPTION_SPACING);
+#if !defined(PLATFORM_WEB)
+    MenuButton exitGame  = InitMenuButtonOption("Exit", &demo, MENU_OPTION_SPACING);
+#endif
 
     // Difficulty buttons
-    MenuButton easy   = InitMenuButtonOption("Easy", &title, 200);
-    MenuButton medium = InitMenuButtonOption("Medium", &easy, 50);
-    MenuButton hard   = InitMenuButtonOption("Hard", &medium, 50);
+    MenuButton easy   = InitMenuButtonOption("Easy", &title, MENU_SPACE_FROM_TITLE);
+    MenuButton medium = InitMenuButtonOption("Medium", &easy, MENU_OPTION_SPACING);
+    MenuButton hard   = InitMenuButtonOption("Hard", &medium, MENU_OPTION_SPACING);
 
     MenuState state =
     {
         MENU_SS_DEFAULT, // currentScreen
         title, // title
         { // options
-            onePlayer, twoPlayer, demo, exitGame
+            onePlayer, twoPlayer, demo,
+#if !defined(PLATFORM_WEB)
+            exitGame
+#endif
         },
         { // difficulties
             easy, medium, hard
         },
-        25, // cursorSize
+        25.0f, // cursorSize
         0, // selectedIndex
     };
     return state;
@@ -38,9 +43,9 @@ MenuButton InitMenuButtonTitle(char *text)
 {
     int fontSize = 180;
     int textWidth = MeasureText(text, fontSize);
-    int textPosX = (RENDER_WIDTH - textWidth) / 2;
+    float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     // int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 2.5f;
-    int textPosY = 100;
+    float textPosY = MENU_TITLE_SPACE_FROM_TOP;
     MenuButton button =
     {
         text, fontSize,
@@ -51,17 +56,17 @@ MenuButton InitMenuButtonTitle(char *text)
     return button;
 }
 
-MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, int offsetY)
+MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offsetY)
 {
     int fontSize = 80;
     int textWidth = MeasureText(text, fontSize);
-    int textPosX = (RENDER_WIDTH - textWidth) / 2;
-    int textPosY = originButton->position.y + originButton->fontSize + originButton->offset.y;
+    float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
+    float textPosY = originButton->position.y + originButton->fontSize + originButton->offset.y;
     MenuButton button =
     {
         text, fontSize,
         { textPosX, textPosY },
-        { 0, offsetY },
+        { 0.0f, offsetY },
         RAYWHITE,
     };
     return button;
@@ -73,7 +78,7 @@ void UpdateMenuCursorMove(MenuState *menu)
     if (menu->currentScreen == MENU_SS_DEFAULT)
         indexLimit = MENU_TOTAL_OPTIONS - 1;
     if (menu->currentScreen == MENU_SS_DIFFICULTY)
-        indexLimit = MENU_TOTAL_DIFFS - 1;
+        indexLimit = ARRAY_SIZE(menu->difficulties) - 1;
 
     // Move cursor
     if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP))
@@ -105,9 +110,9 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
                 pong->gameShouldExit = true;
             else if (selectedChoice == MENU_1PLAYER)
             {
-                pong->gameMode = (GameMode)selectedChoice;
+                pong->gameMode      = (GameMode)selectedChoice;
                 menu->currentScreen = MENU_SS_DIFFICULTY;
-                menu->selectedIndex = 0;
+                menu->selectedIndex = (MenuOption)DIFFICULTY_MEDIUM;
             }
             else
             {
@@ -137,14 +142,14 @@ void UpdateStartMenu(MenuState *menu, GameState *pong)
 void DrawMenuElement(MenuButton *button)
 {
     DrawText(button->text,
-             button->position.x + button->offset.x,
-             button->position.y + button->offset.y,
+             (int)button->position.x + (int)button->offset.x,
+             (int)button->position.y + (int)button->offset.y,
              button->fontSize, RAYWHITE);
 }
 
 void DrawCursor(MenuState *menu)
 {
-    int size = menu->cursorSize;
+    float size = menu->cursorSize;
     MenuButton *selected; // the option that the cursor is currently pointing at
     if (menu->currentScreen == MENU_SS_DEFAULT)
         selected = &menu->options[menu->selectedIndex];
@@ -152,7 +157,7 @@ void DrawCursor(MenuState *menu)
         selected = &menu->difficulties[menu->selectedIndex];
 
     Vector2 selectPointPos; // the corner/vertice pointing towards the right
-    Vector2 cursorOffset = (Vector2){-50, selected->fontSize / 2};
+    Vector2 cursorOffset = (Vector2){-50.0f, (float)selected->fontSize / 2};
     selectPointPos = Vector2Add(selected->position, cursorOffset);
     selectPointPos = Vector2Add(selectPointPos, selected->offset);
 
@@ -175,7 +180,7 @@ void DrawStartMenu(MenuState *menu)
     }
     else if (menu->currentScreen == MENU_SS_DIFFICULTY)
     {
-        for (int i = 0; i < MENU_TOTAL_DIFFS; i++)
+        for (int i = 0; i < ARRAY_SIZE(menu->difficulties); i++)
         {
             DrawMenuElement(&menu->difficulties[i]);
         };

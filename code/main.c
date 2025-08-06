@@ -11,22 +11,18 @@
 
 // Types and Structures Definition
 // --------------------------------------------------------------------------------
-
-// Local Variables Definition
-// --------------------------------------------------------------------------------
-const int gameScreenWidth = RENDER_WIDTH;
-const int gameScreenHeight = RENDER_HEIGHT;
-RenderTexture2D gameTarget; // used to hold the rendering result to rescale window
-
-// Game loop variables
-bool skipCurrentFrame = false;
-Logo raylibLogo;
-GameState pong;
-MenuState menu;
+typedef struct AppData // Local variables for the game loop in main()
+{
+    RenderTexture2D renderTarget; // used to hold the rendering result to rescale window
+    bool skipCurrentFrame;
+    Logo raylibLogo; // data for logo animation
+    GameState pong;
+    MenuState menu; // data for main menu
+} AppData;
 
 // Local Functions Declaration
 // --------------------------------------------------------------------------------
-void UpdateDrawFrame(void);
+void UpdateDrawFrame(AppData *app);
 
 // Main entry point
 // --------------------------------------------------------------------------------
@@ -34,6 +30,7 @@ int main(void)
 {
     // Initialization
     // --------------------------------------------------------------------------------
+    AppData app = { 0 };
 
     // Create a window
     unsigned int windowFlags = FLAG_WINDOW_RESIZABLE;
@@ -44,24 +41,25 @@ int main(void)
     SetWindowMinSize(320, 240);
 
     // Initialize the render texture, used to hold the rendering result so we can easily resize it
-    gameTarget = LoadRenderTexture(gameScreenWidth, gameScreenHeight);
-    SetTextureFilter(gameTarget.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
+    app.renderTarget = LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT);
+    SetTextureFilter(app.renderTarget.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
 
-    raylibLogo = InitRaylibLogo();
-    pong = InitGameState();
-    menu = InitMenuState();
+    app.skipCurrentFrame = false;
+    app.raylibLogo = InitRaylibLogo();
+    app.pong = InitGameState();
+    app.menu = InitMenuState();
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
+    emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, &app, 0, 1);
 #else
     if (MAX_FRAMERATE > 0)
         SetTargetFPS(MAX_FRAMERATE);
     // --------------------------------------------------------------------------------
 
     // Main game loop
-    while (!WindowShouldClose() && !pong.gameShouldExit) // Detect window close button
+    while (!WindowShouldClose() && !app.pong.gameShouldExit) // Detect window close button
     {
-        UpdateDrawFrame();
+        UpdateDrawFrame(&app);
     }
 #endif // PLATFORM_WEB
 
@@ -73,12 +71,12 @@ int main(void)
     return 0;
 }
 
-void UpdateDrawFrame()
+void UpdateDrawFrame(AppData *app)
 {
     // Update
     // --------------------------------------------------------------------------------
     // Compute required framebuffer scaling
-    float scale = MIN((float)GetScreenWidth()/gameScreenWidth, (float)GetScreenHeight()/gameScreenHeight);
+    float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
 
     // Debug: q for fast quitting
     SetExitKey(KEY_Q);
@@ -94,63 +92,65 @@ void UpdateDrawFrame()
 #else
         ToggleBorderlessWindowed();
 #endif
-        skipCurrentFrame = true;
+        app->skipCurrentFrame = true;
     }
 
-    if (skipCurrentFrame == true)
+    if (app->skipCurrentFrame == true)
     {
-        skipCurrentFrame = false;
+        app->skipCurrentFrame = false;
         BeginDrawing();
         EndDrawing(); // This is required for raylib to properly update for the next frame
         return;
     }
 
-    switch(pong.currentScreen)
+    switch(app->pong.currentScreen)
     {
         case SCREEN_LOGO:
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
             {
-                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
-                {
-                    pong.currentScreen = SCREEN_TITLE;
-                }
-                UpdateRaylibLogo(&raylibLogo);
-                if (raylibLogo.state == END)
-                {
-                    pong.currentScreen = SCREEN_TITLE;
-                }
-            } break;
-        case SCREEN_TITLE: UpdateStartMenu(&menu, &pong);
-                           break;
-        case SCREEN_GAMEPLAY:
+                app->pong.currentScreen = SCREEN_TITLE;
+            }
+            UpdateRaylibLogo(&app->raylibLogo);
+            if (app->raylibLogo.state == END)
             {
-                UpdatePong(&pong);
+                app->pong.currentScreen = SCREEN_TITLE;
+            }
+            break;
 
-                // Escape back to title
-                if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
-                {
-                    raylibLogo = InitRaylibLogo();
-                    pong = InitGameState();
-                    menu = InitMenuState();
-                    pong.currentScreen = SCREEN_TITLE;
-                }
-            } break;
+        case SCREEN_TITLE:
+            UpdateStartMenu(&app->menu, &app->pong);
+            break;
+
+        case SCREEN_GAMEPLAY:
+            UpdatePongFrame(&app->pong);
+
+            // Escape or Backspace to title
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
+            {
+                app->raylibLogo = InitRaylibLogo();
+                app->pong = InitGameState();
+                app->menu = InitMenuState();
+                app->pong.currentScreen = SCREEN_TITLE;
+            }
+            break;
+
         default: break;
     }
     // --------------------------------------------------------------------------------
 
     // Draw
     // --------------------------------------------------------------------------------
-    BeginTextureMode(gameTarget); // Draw to the render texture
+    BeginTextureMode(app->renderTarget); // Draw to the render texture
     {
         ClearBackground(BLACK); // Default background color
 
-        switch(pong.currentScreen)
+        switch(app->pong.currentScreen)
         {
-            case SCREEN_LOGO:     DrawRaylibLogo(&raylibLogo);
+            case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawStartMenu(&menu);
+            case SCREEN_TITLE:    DrawStartMenu(&app->menu);
                                   break;
-            case SCREEN_GAMEPLAY: DrawPong(&pong);
+            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
                                   break;
             default: break;
         }
@@ -159,12 +159,12 @@ void UpdateDrawFrame()
     BeginDrawing();
     {
         // Fill in any potential area outside of the render texture
-        DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK);
+        DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
 
         // Draw render texture to screen, properly scaled
-        DrawTexturePro(gameTarget.texture, (Rectangle){ 0.0f, 0.0f, (float)gameTarget.texture.width,
-                       (float)-gameTarget.texture.height }, (Rectangle){ (GetScreenWidth() - ((float)gameScreenWidth*scale))*0.5f, (GetScreenHeight() - ((float)gameScreenHeight*scale))*0.5f,
-                       (float)gameScreenWidth*scale, (float)gameScreenHeight*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        DrawTexturePro(app->renderTarget.texture, (Rectangle){ 0.0f, 0.0f, (float)app->renderTarget.texture.width,
+                       (float)-app->renderTarget.texture.height }, (Rectangle){ (GetScreenWidth() - ((float)RENDER_WIDTH*scale))*0.5f, (GetScreenHeight() - ((float)RENDER_HEIGHT*scale))*0.5f,
+                       (float)RENDER_WIDTH*scale, (float)RENDER_HEIGHT*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         // Debug
         DrawFPS(0,0);

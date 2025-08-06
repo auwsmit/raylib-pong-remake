@@ -5,12 +5,18 @@
 
 // Macros
 // --------------------------------------------------------------------------------
+
+#define MENU_TITLE_SPACE_FROM_TOP 100
+#define MENU_SPACE_FROM_TITLE 200
+#define MENU_OPTION_SPACING 50
+
 #if defined(PLATFORM_WEB)
-    #define MENU_TOTAL_OPTIONS 3 // total options to pick on the main menu
+    #define MENU_TOTAL_OPTIONS 3 // no Exit option for web
 #else
     #define MENU_TOTAL_OPTIONS 4
 #endif
-#define MENU_TOTAL_DIFFS 3 // total difficulty options
+
+#define ARRAY_SIZE(arr) (int)(sizeof(arr) / sizeof((arr)[0]))
 
 // Types and Structures
 // --------------------------------------------------------------------------------
@@ -34,8 +40,8 @@ typedef struct MenuState
     MenuScreenState currentScreen;
     MenuButton title;
     MenuButton options[MENU_TOTAL_OPTIONS];
-    MenuButton difficulties[MENU_TOTAL_DIFFS];
-    int cursorSize;
+    MenuButton difficulties[3];
+    float cursorSize;
     MenuOption selectedIndex;
 } MenuState;
 
@@ -43,7 +49,7 @@ typedef struct MenuState
 // --------------------------------------------------------------------------------
 MenuState InitMenuState(void);
 MenuButton InitMenuButtonTitle(char* text);
-MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, int offsetY);
+MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offsetY);
 void UpdateMenuCursorMove(MenuState *menu);
 void UpdateMenuCursorSelect(MenuState *menu, GameState *pong);
 void UpdateStartMenu(MenuState *menu, GameState *pong);

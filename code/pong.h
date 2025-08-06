@@ -1,10 +1,8 @@
 #ifndef TEST_PONG_HEADER_GUARD
 #define TEST_PONG_HEADER_GUARD
 
-// #include "config.h"
-
 // Macros
-// ----------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 #define WIN_SCORE 5 // Score needed to win
 
 #define PADDLE_LENGTH 120 // Initial settings for paddles
@@ -26,7 +24,7 @@
 #define WIN_PAUSE_TIME 10.0f   // Time to pause after a win
 
 // Types and Structures
-// ----------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 typedef enum ScreenState {
     SCREEN_LOGO, SCREEN_TITLE, SCREEN_GAMEPLAY, SCREEN_ENDING
@@ -72,7 +70,7 @@ typedef struct GameState
 } GameState;
 
 // Prototypes
-// ----------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Initialization
 GameState InitGameState(void); // Initialize game objects and data for the game loop.
@@ -88,13 +86,13 @@ void UpdatePaddlePlayer1(Paddle *paddle); // Paddle updates based on player inpu
 void UpdatePaddlePlayer2(Paddle *paddle); // Paddle updates based on player input. (O/L and Up/Down with Right Shift)
 void UpdatePaddleComputer(Paddle *paddle, Ball *ball, int difficulty); // Paddle updates based on Computer AI.
 void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed.
-void UpdatePong(GameState *pong); // Updates all the game's data and objects for the current frame.
+void UpdatePongFrame(GameState *pong); // Updates all the game's data and objects for the current frame.
 
 // Draw game
 void DrawDottedLine(void);
 void DrawScores(GameState *pong);
 void DrawWinnerMessage(int scoreL, int scoreR);
-void DrawPong(GameState *pong); // Draws all the game's objects for the current frame.
+void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame.
 
 // Game functions
 void ResetBall(Ball *ball); // Reset the ball's horizontal position and modify its vertical position and angle.

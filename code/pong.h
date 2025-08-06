@@ -29,7 +29,7 @@
 // ----------------------------------------------------------------------------------
 
 typedef enum ScreenState {
-    SCREEN_LOGO, SCREEN_TITLE, SCREEN_DIFFICULTY, SCREEN_GAMEPLAY, SCREEN_ENDING
+    SCREEN_LOGO, SCREEN_TITLE, SCREEN_GAMEPLAY, SCREEN_ENDING
 } ScreenState;
 typedef enum GameMode {
     MODE_ONEPLAYER, MODE_TWOPLAYER, MODE_DEMO

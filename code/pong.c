@@ -10,7 +10,7 @@ GameState InitGameState(void)
     GameState state =
     {
         SCREEN_LOGO, // currentScreen
-        0, 0, // gameMode, difficulty (selected by player)
+        0, DIFFICULTY_MEDIUM, // gameMode, difficulty (selected by player)
         0, 0, // scoreL, scoreR
         false, // playerWon
         WIN_PAUSE_TIME, // winTimer
@@ -265,6 +265,7 @@ void UpdatePong(GameState *pong)
         UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
     }
 
+    // Update ball
     if (pong->scoreTimer <= 0 ||
         pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
         UpdateBall(&pong->ball);
@@ -297,6 +298,12 @@ void UpdatePong(GameState *pong)
     // Reset game after a player wins
     if (pong->playerWon == true && pong->winTimer <= 0)
         *pong = InitGameState();
+
+    // Debug: Press R to reset ball
+    // if (IsKeyPressed(KEY_R))
+    // {
+    //     ResetBall(&pong.ball);
+    // }
 }
 
 void DrawDottedLine(void)

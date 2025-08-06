@@ -69,7 +69,9 @@ MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, int offset
 
 void UpdateMenuCursorMove(MenuState *menu)
 {
-    int indexLimit = MENU_TOTAL_OPTIONS - 1;
+    int indexLimit; // used to determine the beginning/end of list
+    if (menu->currentScreen == MENU_SS_DEFAULT)
+        indexLimit = MENU_TOTAL_OPTIONS - 1;
     if (menu->currentScreen == MENU_SS_DIFFICULTY)
         indexLimit = MENU_TOTAL_DIFFS - 1;
 
@@ -105,6 +107,7 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
             {
                 pong->gameMode = (GameMode)selectedChoice;
                 menu->currentScreen = MENU_SS_DIFFICULTY;
+                menu->selectedIndex = 0;
             }
             else
             {
@@ -121,6 +124,7 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
     if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
     {
         menu->currentScreen = MENU_SS_DEFAULT;
+        menu->selectedIndex = 0;
     }
 }
 
@@ -142,8 +146,9 @@ void DrawCursor(MenuState *menu)
 {
     int size = menu->cursorSize;
     MenuButton *selected; // the option that the cursor is currently pointing at
-    selected = &menu->options[menu->selectedIndex];
-    if (menu->currentScreen == MENU_SS_DIFFICULTY)
+    if (menu->currentScreen == MENU_SS_DEFAULT)
+        selected = &menu->options[menu->selectedIndex];
+    else if (menu->currentScreen == MENU_SS_DIFFICULTY)
         selected = &menu->difficulties[menu->selectedIndex];
 
     Vector2 selectPointPos; // the corner/vertice pointing towards the right

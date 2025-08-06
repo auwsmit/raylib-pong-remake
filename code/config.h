@@ -5,7 +5,7 @@
 #define TEST_CONFIG_HEADER_GUARD
 
 // Global macros
-// ------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 #define WINDOW_TITLE "Raylib Testing"
 #define ASPECT_RATIO (4.0f / 3.0f)
@@ -17,7 +17,7 @@
 #define DEFAULT_WIDTH (int)(DEFAULT_HEIGHT * ASPECT_RATIO)
 
 // there may be small bugs with very high FPS (uncapped + no vsync), but should work fine overall
-#define MAX_FRAMERATE 120 // Set to 0 for uncapped framerate
+#define MAX_FRAMERATE 300 // Set to 0 for uncapped framerate
 #define VSYNC_ENABLED true
 
 #define MAX(a, b) ((a)>(b)? (a) : (b)) // Used to calculate framebuffer scaling

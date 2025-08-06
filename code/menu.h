@@ -4,12 +4,16 @@
 #include "pong.h"
 
 // Macros
-// ----------------------------------------------------------------------------------
-#define MENU_TOTAL_OPTIONS 4 // total options to pick on the main menu
+// --------------------------------------------------------------------------------
+#if defined(PLATFORM_WEB)
+    #define MENU_TOTAL_OPTIONS 3 // total options to pick on the main menu
+#else
+    #define MENU_TOTAL_OPTIONS 4
+#endif
 #define MENU_TOTAL_DIFFS 3 // total difficulty options
 
 // Types and Structures
-// ----------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 typedef enum MenuScreenState { MENU_SS_DEFAULT, MENU_SS_DIFFICULTY } MenuScreenState;
 typedef enum MenuOption // these correspond enum GameMode in pong.h
 {
@@ -18,7 +22,7 @@ typedef enum MenuOption // these correspond enum GameMode in pong.h
 
 typedef struct MenuButton
 {
-    char *text;
+    const char *text;
     int fontSize;
     Vector2 position;
     Vector2 offset;
@@ -36,7 +40,7 @@ typedef struct MenuState
 } MenuState;
 
 // Prototypes
-// ----------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 MenuState InitMenuState(void);
 MenuButton InitMenuButtonTitle(char* text);
 MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, int offsetY);

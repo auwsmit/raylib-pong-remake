@@ -9,10 +9,12 @@ GameState InitGameState(void)
 {
     GameState state =
     {
+        SCREEN_LOGO, // currentScreen
+        0, 0, // gameMode, difficulty (selected by player)
         0, 0, // scoreL, scoreR
         false, // playerWon
         WIN_PAUSE_TIME, // winTimer
-        1.0f, // scoreTimer
+        SCORE_PAUSE_TIME, // scoreTimer
         { // paddleL
             { // position x, y
                 PADDLE_WIDTH * 1.5,
@@ -45,6 +47,7 @@ GameState InitGameState(void)
             BALL_SPEED, // speed
             BALL_SIZE, // size
         },
+        false, // gameShouldExit
     };
     return state;
 }
@@ -124,7 +127,7 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle)
     if (CheckCollisionBallPaddle(*ball, *paddle) == false)
         return;
 
-    bool isLeftPaddle = paddle->position.x < ball->position.x;
+    bool isLeftPaddle = paddle->position.x < RENDER_WIDTH / 2;
     // Position the ball outside the paddle
     if (isLeftPaddle)
     {
@@ -142,19 +145,7 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle)
     float paddleCenter = paddle->position.y + paddle->length / 2.0f;
     float ballCenter = ball->position.y + ball->size / 2.0f;
     float hitPosition = (ballCenter - paddleCenter) / (paddle->length / 2.0f); // -1 to 1
-    float angleFromHit = hitPosition * PADDLE_HIT_MAX_ANGLE * (PI / 180.0f);
-
-    // Modify the ball's angle based on how fast the paddle is currently moving
-    float normalizedPaddleSpeed = paddle->speed / PADDLE_SPEED;
-    float angleFromSpeed = normalizedPaddleSpeed * PADDLE_SPEED_INFLUENCE * (PI / 180.0f);
-
-    // Get current angle, but use absolute horizontal direction
-    float currentAngle = atan2f(ball->direction.y, fabsf(ball->direction.x));
-    float newAngle = currentAngle + angleFromHit + angleFromSpeed;
-
-    // Clamp angle to prevent extreme vertical movement
-    float maxAngle = (90.0f - MINIMUM_VERTICAL_ANGLE) * (PI / 180.0f);
-    newAngle = fmaxf(-maxAngle, fminf(maxAngle, newAngle));
+    float newAngle = hitPosition * PADDLE_HIT_MAX_ANGLE * (PI / 180.0f);
 
     // Apply new direction
     ball->direction.y = sinf(newAngle);
@@ -199,7 +190,7 @@ void UpdatePaddlePlayer2(Paddle *paddle)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void UpdatePaddleComputer(Paddle *paddle, Ball *ball)
+void UpdatePaddleComputer(Paddle *paddle, Ball *ball, int difficulty)
 {
     float newSpeed = 0.0f; // Not moving by default
 
@@ -210,21 +201,25 @@ void UpdatePaddleComputer(Paddle *paddle, Ball *ball)
         newSpeed = PADDLE_SPEED;
 
     // Update Paddle
-    if (fabsf(paddle->position.x - ball->position.x) < RENDER_WIDTH / 2)
+    float xdiff = paddle->position.x - ball->position.x;
+    float distanceToBall = fabsf(xdiff);
+    // bool isMovingTowards = (xdiff > 0 && ball->direction.x > 0) || (xdiff < 0 && ball->direction.x < 0);
+    // (&& isMovingTowards) to stop paddle after it hits ball
+    if (distanceToBall < RENDER_WIDTH / 2)
     {
-        paddle->speed = newSpeed * DIFFICULTY_MODIFIER;
+        paddle->speed = newSpeed * difficulty;
         paddle->position.y += paddle->speed * GetFrameTime();
     }
 
     // // Perfect computer
     // paddle->position.y = ball->position.y;
 
-    // TODO: a seek position which periodically updates to look more natural, and has difficulty factors
+    // TODO: make computer behavior more interesting/varied
 }
 
 void UpdateBall(Ball *ball)
 {
-    // Update ball's direction
+    // Set minimum vertical angle for ball
     float speed = Vector2Length(ball->direction);
     float angleRad = MINIMUM_VERTICAL_ANGLE * (PI / 180.0f);
     float minX = speed * sinf(angleRad);
@@ -247,23 +242,27 @@ void UpdateBall(Ball *ball)
 
 }
 
-void UpdatePong(GameState *pong, GameSession *session)
+void UpdatePong(GameState *pong)
 {
+    // Get the difficulty multiplier
+    // TODO: make better difficulty implementation
+    int difficulty = (int)pong->difficulty + 1;
+
     // Update paddles
-    if (session->playMode == ONEPLAYER)
+    if (pong->gameMode == MODE_ONEPLAYER)
     {
         UpdatePaddlePlayer1(&pong->paddleL);
-        UpdatePaddleComputer(&pong->paddleR, &pong->ball);
+        UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
     }
-    if (session->playMode == TWOPLAYER)
+    if (pong->gameMode == MODE_TWOPLAYER)
     {
         UpdatePaddlePlayer1(&pong->paddleL);
         UpdatePaddlePlayer2(&pong->paddleR);
     }
-    if (session->playMode == DEMO)
+    if (pong->gameMode == MODE_DEMO)
     {
-        UpdatePaddleComputer(&pong->paddleL, &pong->ball);
-        UpdatePaddleComputer(&pong->paddleR, &pong->ball);
+        UpdatePaddleComputer(&pong->paddleL, &pong->ball, difficulty);
+        UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
     }
 
     if (pong->scoreTimer <= 0 ||
@@ -387,7 +386,7 @@ void ResetBall(Ball *ball)
     ball->position.x = ((float)RENDER_WIDTH - ball->size) / 2.0f;
 
     // Change the ball's return position and angle a bit
-    ball->position.y += GetRandomValue(-RETURN_VERTICAL_VARIATION, RETURN_VERTICAL_VARIATION);
+    ball->position.y += GetRandomValue(-RETURN_POSITION_VARIATION, RETURN_POSITION_VARIATION);
     ball->direction.y += GetRandomValue(-RETURN_ANGLE_VARIATION, RETURN_ANGLE_VARIATION);
     ball->speed = BALL_SPEED;
 }

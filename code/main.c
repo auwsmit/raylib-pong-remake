@@ -7,7 +7,6 @@
 
 // Types and Structures Definition
 // ------------------------------------------------------------------------------------------
-typedef enum ScreenState { LOGO, TITLE, DIFFICULTY, GAMEPLAY, ENDING } ScreenState;
 
 // Functions Definition
 // ------------------------------------------------------------------------------------------
@@ -32,18 +31,17 @@ int main(void)
     SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
 
     // Game loop variables
-    ScreenState currentScreen = LOGO;
     bool skipCurrentFrame = false;
     Logo raylibLogo = InitRaylibLogo();
     GameState pong = InitGameState();
-    GameSession session = { ONEPLAYER, MEDIUM }; // tracks mode and difficulty selection
+    MenuState menu = InitMenuState();
 
     if (MAX_FRAMERATE > 0)
         SetTargetFPS(MAX_FRAMERATE);
     // --------------------------------------------------------------------------------------
 
     // Main game loop
-    while (!WindowShouldClose()) // Detect window close button or ESC key
+    while (!WindowShouldClose() && !pong.gameShouldExit) // Detect window close button
     {
         // Update
         // ----------------------------------------------------------------------------------
@@ -52,6 +50,7 @@ int main(void)
 
         // Debug: q for fast quitting
         SetExitKey(KEY_Q);
+        // SetExitKey(KEY_NULL); // No exit key
 
         // Fullscreen input via F11, Alt+Enter, and Shift+F
         if (IsKeyPressed(KEY_F11) ||
@@ -74,39 +73,35 @@ int main(void)
             continue;
         }
 
-        switch(currentScreen)
+        switch(pong.currentScreen)
         {
-            case LOGO:
+            case SCREEN_LOGO:
             {
                 if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
                 {
-                    currentScreen = TITLE;
+                    pong.currentScreen = SCREEN_TITLE;
                 }
                 UpdateRaylibLogo(&raylibLogo);
                 if (raylibLogo.state == END)
                 {
-                    currentScreen = TITLE;
+                    pong.currentScreen = SCREEN_TITLE;
                 }
             } break;
-            case TITLE:
+            case SCREEN_TITLE:
             {
-                // Press enter or space to change to GAMEPLAY screen
+                UpdateStartMenu(&menu, &pong);
+            } break;
+            case SCREEN_DIFFICULTY:
+            {
+                // Press enter or space to change to SCREEN_GAMEPLAY screen
                 if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
                 {
-                    currentScreen = GAMEPLAY;
+                    pong.currentScreen = SCREEN_GAMEPLAY;
                 }
             } break;
-            case DIFFICULTY:
+            case SCREEN_GAMEPLAY:
             {
-                // Press enter or space to change to GAMEPLAY screen
-                if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
-                {
-                    currentScreen = GAMEPLAY;
-                }
-            } break;
-            case GAMEPLAY:
-            {
-                UpdatePong(&pong, &session);
+                UpdatePong(&pong);
 
                 // Press R to reset ball
                 if (IsKeyPressed(KEY_R))
@@ -114,12 +109,13 @@ int main(void)
                     ResetBall(&pong.ball);
                 }
 
-                // Escape back to beginning
+                // Escape back to title
                 if (IsKeyPressed(KEY_ESCAPE))
                 {
-                    currentScreen = LOGO;
                     raylibLogo = InitRaylibLogo();
                     pong = InitGameState();
+                    menu = InitMenuState();
+                    pong.currentScreen = SCREEN_TITLE;
                 }
             } break;
             default: break;
@@ -130,21 +126,21 @@ int main(void)
         // ----------------------------------------------------------------------------------
         BeginTextureMode(target); // Draw to the render texture
 
-            DrawRectangle(0, 0, gameScreenWidth, gameScreenHeight, BLACK); // Default background color
+            ClearBackground(BLACK); // Default background color
 
-            switch(currentScreen)
+            switch(pong.currentScreen)
             {
-                case LOGO:
+                case SCREEN_LOGO:
                 {
                     DrawRaylibLogo(&raylibLogo);
 
                 } break;
-                case TITLE:
+                case SCREEN_TITLE:
                 {
-                    DrawStartMenu();
+                    DrawStartMenu(&menu);
 
                 } break;
-                case GAMEPLAY:
+                case SCREEN_GAMEPLAY:
                 {
                     DrawPong(&pong);
 

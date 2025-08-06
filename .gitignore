@@ -8,9 +8,9 @@ build_web/
 out
 game
 *.exe
-*.html
-*.js
-*.wasm
+game.html
+game.js
+game.wasm
 
 # swap files
 .swp

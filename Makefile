@@ -109,7 +109,7 @@ web:
 
 web-release: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web-release:
-	emcc -o $(PROJ_EXE).html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) $(LIBS)
+	emcc -o index.html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) $(LIBS)
 
 # Clean up old build files
 clean:

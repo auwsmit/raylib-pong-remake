@@ -132,7 +132,7 @@ void UpdateDrawFrame(AppData *app)
             break;
 
         case SCREEN_TITLE:
-            UpdateStartMenu(&app->menu, &app->pong);
+            UpdateStartMenuFrame(&app->menu, &app->pong);
             break;
 
         case SCREEN_GAMEPLAY:
@@ -162,7 +162,7 @@ void UpdateDrawFrame(AppData *app)
         {
             case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawStartMenu(&app->menu);
+            case SCREEN_TITLE:    DrawStartMenuFrame(&app->menu);
                                   break;
             case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
                                   break;
@@ -181,7 +181,7 @@ void UpdateDrawFrame(AppData *app)
                        (float)RENDER_WIDTH*scale, (float)RENDER_HEIGHT*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         // Debug:
-        // DrawFPS(0,0);
+        DrawFPS(0,0);
         // int temp_key = GetKeyPressed();
         // if (temp_key != 0)
         //     app->key = temp_key;

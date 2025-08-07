@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "raylib.h"
 #include "raymath.h"
 #include "config.h"
@@ -33,8 +34,11 @@ MenuState InitMenuState(void)
         { // difficulties
             easy, medium, hard
         },
-        25.0f, // cursorSize
-        0, // selectedIndex
+        0,     // selectedIndex
+        MENU_CURSOR_SIZE, // cursorSize
+        0.0f,  // keyHeldTime
+        0,     // lastKeyHeld
+        false, // autoScroll
     };
     return state;
 }
@@ -46,6 +50,7 @@ MenuButton InitMenuButtonTitle(char *text)
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     // int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 2.5f;
     float textPosY = MENU_TITLE_SPACE_FROM_TOP;
+
     MenuButton button =
     {
         text, fontSize,
@@ -53,6 +58,7 @@ MenuButton InitMenuButtonTitle(char *text)
         { 0, 0 }, // offset
         RAYWHITE, // color
     };
+
     return button;
 }
 
@@ -62,6 +68,7 @@ MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offs
     int textWidth = MeasureText(text, fontSize);
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     float textPosY = originButton->position.y + originButton->fontSize + originButton->offset.y;
+
     MenuButton button =
     {
         text, fontSize,
@@ -69,6 +76,7 @@ MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offs
         { 0.0f, offsetY },
         RAYWHITE,
     };
+
     return button;
 }
 
@@ -80,23 +88,56 @@ void UpdateMenuCursorMove(MenuState *menu)
     if (menu->currentScreen == MENU_SS_DIFFICULTY)
         indexLimit = ARRAY_SIZE(menu->difficulties) - 1;
 
+
     // Move cursor
-    if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP))
+    bool menuInputUp = (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP));
+    bool menuInputDown = (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN));
+    const float autoScrollInitPause = 0.6f;
+
+    if ((!menu->autoScroll && menu->keyHeldTime == 0) ||
+        (menu->autoScroll && menu->keyHeldTime >= 0.1f))
     {
-        if (menu->selectedIndex > 0)
-            menu->selectedIndex--;
-        else
-            menu->selectedIndex = indexLimit;
-    }
-    if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN))
-    {
-        if ((int)menu->selectedIndex < indexLimit)
-            menu->selectedIndex++;
-        else
-            menu->selectedIndex = 0;
+        if (menuInputUp)
+        {
+            if (menu->selectedIndex > 0)
+                menu->selectedIndex--;
+            else
+                menu->selectedIndex = indexLimit;
+            menu->keyHeldTime = 0;
+        }
+        else if (menuInputDown)
+        {
+            if ((int)menu->selectedIndex < indexLimit)
+                menu->selectedIndex++;
+            else
+                menu->selectedIndex = 0;
+            menu->keyHeldTime = 0.0f;
+        }
     }
 
-    // TODO: hold key to keep moving after a small pause
+    // Update data needed for auto scrolling after holding Up or Down
+    if (menuInputUp || menuInputDown)
+    {
+        menu->keyHeldTime += GetFrameTime();
+        if (IsKeyDown(menu->lastKeyHeld))
+        {
+            if (menu->keyHeldTime >= autoScrollInitPause)
+            {
+                menu->autoScroll = true;
+            }
+        }
+
+        // Update last key held
+        int currentKey = GetKeyPressed();
+        if (currentKey != 0)
+            menu->lastKeyHeld = currentKey;
+    }
+    else
+    {
+        menu->lastKeyHeld = 0;
+        menu->keyHeldTime = 0;
+        menu->autoScroll = false;
+    }
 }
 
 void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
@@ -126,17 +167,21 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
             pong->currentScreen = SCREEN_GAMEPLAY;
         }
     }
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
+}
+
+void UpdateStartMenuFrame(MenuState *menu, GameState *pong)
+{
+
+    UpdateMenuCursorMove(menu);
+    UpdateMenuCursorSelect(menu, pong);
+
+    // Escape or Backspace to go back
+    if ((IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) &&
+        menu->currentScreen != MENU_SS_DEFAULT)
     {
         menu->currentScreen = MENU_SS_DEFAULT;
         menu->selectedIndex = 0;
     }
-}
-
-void UpdateStartMenu(MenuState *menu, GameState *pong)
-{
-    UpdateMenuCursorMove(menu);
-    UpdateMenuCursorSelect(menu, pong);
 }
 
 void DrawMenuElement(MenuButton *button)
@@ -167,7 +212,7 @@ void DrawCursor(MenuState *menu)
                  RAYWHITE);
 }
 
-void DrawStartMenu(MenuState *menu)
+void DrawStartMenuFrame(MenuState *menu)
 {
     DrawMenuElement(&menu->title);
 

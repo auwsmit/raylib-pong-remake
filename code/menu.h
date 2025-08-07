@@ -8,6 +8,7 @@
 
 #define MENU_TITLE_SIZE 180
 #define MENU_BUTTON_SIZE 80
+#define MENU_CURSOR_SIZE 20.0f
 
 #define MENU_TITLE_SPACE_FROM_TOP 100
 #define MENU_SPACE_FROM_TITLE 200
@@ -44,8 +45,11 @@ typedef struct MenuState
     MenuButton title;
     MenuButton options[MENU_TOTAL_OPTIONS];
     MenuButton difficulties[3];
-    float cursorSize;
     MenuOption selectedIndex;
+    float cursorSize;
+    float keyHeldTime;
+    int lastKeyHeld;
+    bool autoScroll;
 } MenuState;
 
 // Prototypes
@@ -55,9 +59,9 @@ MenuButton InitMenuButtonTitle(char* text);
 MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offsetY);
 void UpdateMenuCursorMove(MenuState *menu);
 void UpdateMenuCursorSelect(MenuState *menu, GameState *pong);
-void UpdateStartMenu(MenuState *menu, GameState *pong);
+void UpdateStartMenuFrame(MenuState *menu, GameState *pong);
 void DrawMenuElement(MenuButton *button);
 void DrawCursor(MenuState *menu);
-void DrawStartMenu(MenuState *state);
+void DrawStartMenuFrame(MenuState *state);
 
 #endif // TEST_MENU_HEADER_GUARD

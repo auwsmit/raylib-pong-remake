@@ -304,25 +304,25 @@ void UpdatePongFrame(GameState *pong)
     else // isPaused
     {
         // Update pause fade animation
-        pong->pauseFadeTimeElapsed += GetFrameTime();
-        static float fadeIncrement = 0.1 / 10;
-        const float animationSpeed = (1.0f/120.0f);
-        if (pong->pauseFadeTimeElapsed > animationSpeed)
-        {
-            pong->pauseFadeTimeElapsed = 0;
-            pong->pauseFade += fadeIncrement;
-            if (pong->pauseFade >= 1)
-                fadeIncrement = -fabsf(fadeIncrement);
-            else if (pong->pauseFade <= 0)
-                fadeIncrement = fabsf(fadeIncrement);
-        }
+        static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
+        static bool fadingOut = false;
+        float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
+
+        if (pong->pauseFade >= 1.0f)
+            fadingOut = true;
+        else if (pong->pauseFade <= 0.0f)
+            fadingOut = false;
+        if (fadingOut)
+            fadeIncrement *= -1;
+
+        pong->pauseFade += fadeIncrement;
     }
 
     // Press Space or P to pause
     if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
     {
         pong->isPaused = !pong->isPaused;
-        pong->pauseFade = 0;
+        pong->pauseFade = 1;
     }
 
     // Reset game after a player wins

@@ -163,8 +163,8 @@ void UpdatePaddlePlayer1(Paddle *paddle)
     if (IsKeyDown(KEY_S))
         newSpeed = PADDLE_SPEED;
 
-    // Left Shift to speed up
-    if (IsKeyDown(KEY_LEFT_SHIFT))
+    // Left Shift and A/D to speed up
+    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_A) || IsKeyDown(KEY_D))
         newSpeed *= 2;
 
     // Update paddle
@@ -176,14 +176,15 @@ void UpdatePaddlePlayer2(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
-    // O/L or Up/Down to move paddle
-    if (IsKeyDown(KEY_O) || IsKeyDown(KEY_UP))
+    // I/K or Up/Down to move paddle
+    if (IsKeyDown(KEY_I) || IsKeyDown(KEY_UP))
         newSpeed = -PADDLE_SPEED;
-    if (IsKeyDown(KEY_L) || IsKeyDown(KEY_DOWN))
+    if (IsKeyDown(KEY_K) || IsKeyDown(KEY_DOWN))
         newSpeed = PADDLE_SPEED;
 
-    // Right Shift to speed up
-    if (IsKeyDown(KEY_RIGHT_SHIFT))
+    // Right shift, Left/Right arrow keys, and J/L to speed up
+    if (IsKeyDown(KEY_RIGHT_SHIFT) || IsKeyDown(KEY_J) || IsKeyDown(KEY_L) ||
+        IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT))
         newSpeed *= 2;
 
     // Update paddle

@@ -14,9 +14,9 @@ though, so I would appreciate anyone who can confirm if it works there.
 
 - `Esc`/`Backspace` to go back
 
-- Player 1: `W`/`S` to move. `LShift` to move faster
+- Player 1: Press `W`/`S` to move. Hold `A`/`D`/`LShift` to move faster
 
-- Player 2: `O`/`L` or `Up`/`Down` to move. `RShift` to move faster
+- Player 2: Press `I`/`K` or `Up`/`Down` to move. Hold `Left`/`Right`/`RShift`/`J`/`L` to move faster
 
 ## Build for Desktop
 - Either run `build.sh` or `build.bat`, depending on your platform.

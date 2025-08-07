@@ -14,8 +14,8 @@
 typedef struct AppData // Local variables for the game loop in main()
 {
     RenderTexture2D renderTarget; // used to hold the rendering result to rescale window
-    bool skipCurrentFrame;
     Logo raylibLogo; // data for logo animation
+    bool skipCurrentFrame;
     GameState pong;
     MenuState menu; // data for main menu
 } AppData;
@@ -32,12 +32,18 @@ int main(void)
     // --------------------------------------------------------------------------------
     AppData app = { 0 };
 
-    // Create a window
+// Create a window
+#ifdef PLATFORM_WEB
+    SetConfigFlags(0);
+    InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
+    SetWindowSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+#else
     unsigned int windowFlags = FLAG_WINDOW_RESIZABLE;
     if (VSYNC_ENABLED)
         windowFlags |= FLAG_VSYNC_HINT;
     SetConfigFlags(windowFlags);
     InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
+#endif
     SetWindowMinSize(320, 240);
 
     // Initialize the render texture, used to hold the rendering result so we can easily resize it
@@ -82,18 +88,22 @@ void UpdateDrawFrame(AppData *app)
     SetExitKey(KEY_Q);
     // SetExitKey(KEY_NULL); // No exit key
 
+#if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy.
+                           // For now just use emscripten's fullscreen button.
     // Fullscreen input via F11, Alt+Enter, and Shift+F
-    if (IsKeyPressed(KEY_F11) ||
+    bool fullscreenInputPressed = false;
+    fullscreenInputPressed |= IsKeyPressed(KEY_F11);
+    fullscreenInputPressed |=
         ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
-        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_LEFT_SHIFT)) && IsKeyPressed(KEY_F)))
+        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_LEFT_SHIFT)) && IsKeyPressed(KEY_F));
+    if (fullscreenInputPressed)
     {
-#ifdef PLATFORM_WEB
-        ToggleFullscreen();
-#else
+        // Borderless Windowed is generally nicer to use on desktop
         ToggleBorderlessWindowed();
-#endif
+        // ToggleFullscreen();
         app->skipCurrentFrame = true;
     }
+#endif
 
     if (app->skipCurrentFrame == true)
     {
@@ -106,7 +116,7 @@ void UpdateDrawFrame(AppData *app)
     switch(app->pong.currentScreen)
     {
         case SCREEN_LOGO:
-            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
             {
                 app->pong.currentScreen = SCREEN_TITLE;
             }

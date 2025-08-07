@@ -14,6 +14,9 @@ PROJ_HEADERS = $(wildcard code/*.h)
 # Name of output executable
 PROJ_EXE  = game
 
+# Name of output files for web assembly that will be uploaded online
+WEB_RELEASE  = index
+
 # The executable's file extension (for Windows and Web platforms)
 PROJ_EXT  =
 ifeq ($(OS),Windows_NT)
@@ -106,10 +109,12 @@ $(PROJ_EXE)$(PROJ_EXT): $(PROJ_CODE) $(PROJ_HEADERS)
 web: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web:
 	emcc -o $(PROJ_EXE).html $(PROJ_CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS) --emrun
+	sed -i 's|<input type="checkbox" id="resize">|<input type="checkbox" id="resize" checked>|' $(PROJ_EXE).html
 
 web-release: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web-release:
-	emcc -o index.html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) $(LIBS)
+	emcc -o $(WEB_RELEASE).html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) $(LIBS)
+	sed -i 's|<input type=checkbox id=resize>|<input type=checkbox id=resize checked>|' $(WEB_RELEASE).html
 
 # Clean up old build files
 clean:

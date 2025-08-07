@@ -6,6 +6,9 @@
 // Macros
 // --------------------------------------------------------------------------------
 
+#define MENU_TITLE_SIZE 180
+#define MENU_BUTTON_SIZE 80
+
 #define MENU_TITLE_SPACE_FROM_TOP 100
 #define MENU_SPACE_FROM_TITLE 200
 #define MENU_OPTION_SPACING 50

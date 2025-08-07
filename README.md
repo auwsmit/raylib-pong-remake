@@ -10,13 +10,15 @@ though, so I would appreciate anyone who can confirm if it works there.
 
 ## Controls
 
-- `Enter`/`Space` to select
+- `Enter` to select
 
-- `Esc`/`Backspace` to go back
+- `Space`/`P` to pause
+
+- `Esc`/`Backspace` to go back to title
 
 - Player 1: Press `W`/`S` to move. Hold `A`/`D`/`LShift` to move faster
 
-- Player 2: Press `I`/`K` or `Up`/`Down` to move. Hold `Left`/`Right`/`RShift`/`J`/`L` to move faster
+- Player 2: Press `I`/`K` or `Up`/`Down` to move. Hold `J`/`L`/`Left`/`Right` to move faster
 
 ## Build for Desktop
 - Either run `build.sh` or `build.bat`, depending on your platform.

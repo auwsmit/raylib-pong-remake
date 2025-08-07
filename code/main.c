@@ -18,6 +18,8 @@ typedef struct AppData // Local variables for the game loop in main()
     bool skipCurrentFrame;
     GameState pong;
     MenuState menu; // data for main menu
+    // Debug:
+    // int key;
 } AppData;
 
 // Local Functions Declaration
@@ -34,7 +36,7 @@ int main(void)
 
 // Create a window
 #ifdef PLATFORM_WEB
-    SetConfigFlags(0);
+    SetConfigFlags(0); // no vsync or window resize for web
     InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
     SetWindowSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 #else
@@ -56,7 +58,9 @@ int main(void)
     app.menu = InitMenuState();
 
 #if defined(PLATFORM_WEB)
-    emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, &app, 0, 1);
+    int emscriptenFPS = 0; // Let emscripten handle the framerate because setting a specific one is kinda janky.
+                           // Generally, it will use whatever the monitor's refresh rate is.
+    emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, &app, emscriptenFPS, 1);
 #else
     if (MAX_FRAMERATE > 0)
         SetTargetFPS(MAX_FRAMERATE);
@@ -95,7 +99,7 @@ void UpdateDrawFrame(AppData *app)
     fullscreenInputPressed |= IsKeyPressed(KEY_F11);
     fullscreenInputPressed |=
         ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
-        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_LEFT_SHIFT)) && IsKeyPressed(KEY_F));
+        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
     if (fullscreenInputPressed)
     {
         // Borderless Windowed is generally nicer to use on desktop
@@ -176,8 +180,12 @@ void UpdateDrawFrame(AppData *app)
                        (float)-app->renderTarget.texture.height }, (Rectangle){ (GetScreenWidth() - ((float)RENDER_WIDTH*scale))*0.5f, (GetScreenHeight() - ((float)RENDER_HEIGHT*scale))*0.5f,
                        (float)RENDER_WIDTH*scale, (float)RENDER_HEIGHT*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
 
-        // Debug
-        DrawFPS(0,0);
+        // Debug:
+        // DrawFPS(0,0);
+        // int temp_key = GetKeyPressed();
+        // if (temp_key != 0)
+        //     app->key = temp_key;
+        // DrawText(TextFormat("Current input: %i", app->key), 0, 20, 40, WHITE);
     } EndDrawing();
     // --------------------------------------------------------------------------------
 }

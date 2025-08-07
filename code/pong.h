@@ -12,6 +12,9 @@
 #define BALL_SIZE 20      // Initial settings for ball
 #define BALL_SPEED 500
 
+#define SCORE_FONT_SIZE 180 // Also used for pause font size
+#define WIN_FONT_SIZE 100
+
 // Ball physics tweaks for game feel
 #define BOUNCE_MULTIPLIER 1.1f       // How much faster the ball gets after hitting a paddle
 #define PADDLE_HIT_MAX_ANGLE 45.0f   // How much the ball's angle is affected by where it hits the paddle (0 to 90 degrees)
@@ -26,12 +29,16 @@
 // Types and Structures
 // --------------------------------------------------------------------------------
 
-typedef enum ScreenState {
+typedef enum ScreenState
+{
     SCREEN_LOGO, SCREEN_TITLE, SCREEN_GAMEPLAY, SCREEN_ENDING
 } ScreenState;
-typedef enum GameMode {
+
+typedef enum GameMode
+{
     MODE_ONEPLAYER, MODE_TWOPLAYER, MODE_DEMO
 } GameMode;
+
 typedef enum Difficulty // Multiplier for CPU paddle speed
 {
     DIFFICULTY_EASY, DIFFICULTY_MEDIUM, DIFFICULTY_HARD
@@ -55,17 +62,20 @@ typedef struct Ball
 
 typedef struct GameState
 {
-    ScreenState currentScreen;
+    Ball ball;
+    Paddle paddleL;
+    Paddle paddleR;
     GameMode gameMode;
+    ScreenState currentScreen;
     Difficulty difficulty; // unused for MODE_TWOPLAYER
     int scoreL;
     int scoreR;
     bool playerWon; // set after a player wins
+    bool isPaused;
+    float pauseFade; // tracks time for the pause animation
+    float pauseFadeTimeElapsed; // tracks time for the pause animation
     float winTimer; // countdown after player wins
     float scoreTimer; // countdown after a score
-    Paddle paddleL;
-    Paddle paddleR;
-    Ball ball;
     bool gameShouldExit; // flag to tell the game window to close
 } GameState;
 

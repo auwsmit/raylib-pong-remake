@@ -9,13 +9,19 @@ GameState InitGameState(void)
 {
     GameState state =
     {
-        SCREEN_LOGO,  // currentScreen
-        0,            // gameMode (selected by player)
-        DIFFICULTY_MEDIUM, // difficulty (default used for cpu vs cpu demo mode)
-        0, 0,         // scoreL, scoreR
-        false,        // playerWon
-        WIN_PAUSE_TIME, // winTimer
-        SCORE_PAUSE_TIME, // scoreTimer
+        { // ball
+            { // position x, y
+                RENDER_WIDTH / 2 - BALL_SIZE / 2,
+                RENDER_HEIGHT / 2 - BALL_SIZE / 2,
+            },
+            { // direction x, y
+                (float)((GetRandomValue(0, 1) * 2 - 1) * 10), // randomly move towards left or right player
+                (float)GetRandomValue(-10, 10),
+            },
+            BALL_SPEED, // speed
+            BALL_SIZE, // size
+        },
+
         { // paddleL
             { // position x, y
                 PADDLE_WIDTH * 1.5,
@@ -35,20 +41,17 @@ GameState InitGameState(void)
             PADDLE_LENGTH, // length
             PADDLE_WIDTH,  // width
         },
-
-        { // ball
-            { // position x, y
-                RENDER_WIDTH / 2 - BALL_SIZE / 2,
-                RENDER_HEIGHT / 2 - BALL_SIZE / 2,
-            },
-            { // direction x, y
-                (float)((GetRandomValue(0, 1) * 2 - 1) * 10), // randomly move towards left or right player
-                (float)GetRandomValue(-10, 10),
-            },
-            BALL_SPEED, // speed
-            BALL_SIZE, // size
-        },
-        false, // gameShouldExit
+        0,                 // gameMode (selected by player)
+        SCREEN_LOGO,       // currentScreen
+        DIFFICULTY_MEDIUM, // difficulty (default used for cpu vs cpu demo mode)
+        0, 0,              // scoreL, scoreR
+        false,             // playerWon
+        false,             // isPaused
+        0.0f,              // pauseFade
+        0.0f,              // pauseFadeTimeElapsed
+        WIN_PAUSE_TIME,    // winTimer
+        SCORE_PAUSE_TIME,  // scoreTimer
+        false,             // gameShouldExit
     };
     return state;
 }
@@ -176,14 +179,14 @@ void UpdatePaddlePlayer2(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
-    // I/K or Up/Down to move paddle
+    // I/K or Up/Down arrow keys to move paddle
     if (IsKeyDown(KEY_I) || IsKeyDown(KEY_UP))
         newSpeed = -PADDLE_SPEED;
     if (IsKeyDown(KEY_K) || IsKeyDown(KEY_DOWN))
         newSpeed = PADDLE_SPEED;
 
-    // Right shift, Left/Right arrow keys, and J/L to speed up
-    if (IsKeyDown(KEY_RIGHT_SHIFT) || IsKeyDown(KEY_J) || IsKeyDown(KEY_L) ||
+    // Left/Right arrow keys, or J/L to speed up
+    if (IsKeyDown(KEY_J) || IsKeyDown(KEY_L) ||
         IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT))
         newSpeed *= 2;
 
@@ -246,56 +249,81 @@ void UpdateBall(Ball *ball)
 
 void UpdatePongFrame(GameState *pong)
 {
-    // Get the difficulty multiplier
-    // TODO: make better difficulty implementation
-    int difficulty = (int)pong->difficulty + 1;
-
-    // Update paddles
-    if (pong->gameMode == MODE_ONEPLAYER)
+    if (!pong->isPaused)
     {
-        UpdatePaddlePlayer1(&pong->paddleL);
-        UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
+        // Get the difficulty multiplier
+        // TODO: make better difficulty implementation
+        int difficulty = (int)pong->difficulty + 1;
+
+        // Update paddles
+        if (pong->gameMode == MODE_ONEPLAYER)
+        {
+            UpdatePaddlePlayer1(&pong->paddleL);
+            UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
+        }
+        if (pong->gameMode == MODE_TWOPLAYER)
+        {
+            UpdatePaddlePlayer1(&pong->paddleL);
+            UpdatePaddlePlayer2(&pong->paddleR);
+        }
+        if (pong->gameMode == MODE_DEMO)
+        {
+            UpdatePaddleComputer(&pong->paddleL, &pong->ball, difficulty);
+            UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
+        }
+
+        // Update ball
+        if (pong->scoreTimer <= 0 ||
+            pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
+            UpdateBall(&pong->ball);
+
+        // Collision logic
+        BounceBallEdge(pong);
+        if (pong->playerWon == false)
+        {
+            BounceBallPaddle(&pong->ball, &pong->paddleL);
+            BounceBallPaddle(&pong->ball, &pong->paddleR);
+        }
+        EdgeCollisionPaddle(&pong->paddleL);
+        EdgeCollisionPaddle(&pong->paddleR);
+
+        // Check for winner
+        if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
+            pong->playerWon = true;
+
+        // Press Enter to skip win screen
+        if (pong->playerWon == true && (IsKeyPressed(KEY_ENTER)))
+            pong->winTimer = 0;
+
+        // Update timers for winning and scoring
+        if (pong->scoreTimer > 0)
+            pong->scoreTimer -= GetFrameTime();
+        if (pong->playerWon && pong->winTimer > 0)
+            pong->winTimer -= GetFrameTime();
     }
-    if (pong->gameMode == MODE_TWOPLAYER)
+    else // isPaused
     {
-        UpdatePaddlePlayer1(&pong->paddleL);
-        UpdatePaddlePlayer2(&pong->paddleR);
+        // Update pause fade animation
+        pong->pauseFadeTimeElapsed += GetFrameTime();
+        static float fadeIncrement = 0.1 / 10;
+        const float animationSpeed = (1.0f/120.0f);
+        if (pong->pauseFadeTimeElapsed > animationSpeed)
+        {
+            pong->pauseFadeTimeElapsed = 0;
+            pong->pauseFade += fadeIncrement;
+            if (pong->pauseFade >= 1)
+                fadeIncrement = -fabsf(fadeIncrement);
+            else if (pong->pauseFade <= 0)
+                fadeIncrement = fabsf(fadeIncrement);
+        }
     }
-    if (pong->gameMode == MODE_DEMO)
+
+    // Press Space or P to pause
+    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
     {
-        UpdatePaddleComputer(&pong->paddleL, &pong->ball, difficulty);
-        UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
+        pong->isPaused = !pong->isPaused;
+        pong->pauseFade = 0;
     }
-
-    // Update ball
-    if (pong->scoreTimer <= 0 ||
-        pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
-        UpdateBall(&pong->ball);
-
-    // Collision logic
-    BounceBallEdge(pong);
-    if (pong->playerWon == false)
-    {
-        BounceBallPaddle(&pong->ball, &pong->paddleL);
-        BounceBallPaddle(&pong->ball, &pong->paddleR);
-    }
-    EdgeCollisionPaddle(&pong->paddleL);
-    EdgeCollisionPaddle(&pong->paddleR);
-
-    // Check for winner
-    if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
-        pong->playerWon = true;
-
-    // Update timers for winning and scoring
-    if (pong->scoreTimer > 0)
-        pong->scoreTimer -= GetFrameTime();
-    if (pong->playerWon && pong->winTimer > 0)
-        pong->winTimer -= GetFrameTime();
-
-    // Press Enter or Space or Click to skip win screen
-    if (pong->playerWon == true &&
-        (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP)))
-        pong->winTimer = 0;
 
     // Reset game after a player wins
     if (pong->playerWon == true && pong->winTimer <= 0)
@@ -326,7 +354,8 @@ void DrawDottedLine(void)
     for (int i = 0; i < totalSegments; i++)
     {
         int y = offsetY + i * totalSegmentHeight;
-        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y, lineWidth, dashHeight, WHITE);
+        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y,
+                      lineWidth, dashHeight, RAYWHITE);
     }
 }
 
@@ -368,7 +397,14 @@ void DrawWinnerMessage(int scoreL, int scoreR)
 void DrawPongFrame(GameState *pong)
 {
     // Draw dotted line down middle
-    DrawDottedLine();
+    if (!pong->isPaused)
+        DrawDottedLine();
+
+    // Draw ball
+    if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
+        DrawRectangle((int)pong->ball.position.x, (int)pong->ball.position.y,
+                      (int)pong->ball.size,       (int)pong->ball.size, RAYWHITE);
+
 
     // Draw score
     DrawScores(pong);
@@ -377,19 +413,25 @@ void DrawPongFrame(GameState *pong)
     if (pong->playerWon == false)
     {
         DrawRectangle((int)pong->paddleR.position.x, (int)pong->paddleR.position.y,
-                      (int)pong->paddleR.width,      (int)pong->paddleR.length, WHITE);
+                      (int)pong->paddleR.width,      (int)pong->paddleR.length, RAYWHITE);
         DrawRectangle((int)pong->paddleL.position.x, (int)pong->paddleL.position.y,
-                      (int)pong->paddleL.width,      (int)pong->paddleL.length, WHITE);
+                      (int)pong->paddleL.width,      (int)pong->paddleL.length, RAYWHITE);
     }
-
-    // Draw ball
-    if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
-        DrawRectangle((int)pong->ball.position.x, (int)pong->ball.position.y,
-                      (int)pong->ball.size,       (int)pong->ball.size, WHITE);
 
     // Draw win message
     if (pong->playerWon)
         DrawWinnerMessage(pong->scoreL, pong->scoreR);
+
+    // Draw pause message
+    if (pong->isPaused)
+    {
+        int textOffset = MeasureText("Paused", SCORE_FONT_SIZE) / 2;
+        DrawText("Paused",
+                 RENDER_WIDTH / 2 - textOffset,
+                 RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
+                 SCORE_FONT_SIZE,
+                 Fade(RAYWHITE, pong->pauseFade));
+    }
 }
 
 void ResetBall(Ball *ball)

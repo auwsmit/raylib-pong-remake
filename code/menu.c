@@ -41,7 +41,7 @@ MenuState InitMenuState(void)
 
 MenuButton InitMenuButtonTitle(char *text)
 {
-    int fontSize = 180;
+    int fontSize = MENU_TITLE_SIZE;
     int textWidth = MeasureText(text, fontSize);
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     // int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 2.5f;
@@ -58,7 +58,7 @@ MenuButton InitMenuButtonTitle(char *text)
 
 MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offsetY)
 {
-    int fontSize = 80;
+    int fontSize = MENU_BUTTON_SIZE;
     int textWidth = MeasureText(text, fontSize);
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     float textPosY = originButton->position.y + originButton->fontSize + originButton->offset.y;

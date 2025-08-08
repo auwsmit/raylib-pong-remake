@@ -15,7 +15,8 @@
 #define BALL_SIZE 20      // Initial settings for ball
 #define BALL_SPEED 500
 
-#define SCORE_FONT_SIZE 180 // Also used for pause font size
+#define SCORE_FONT_SIZE 180     // Also used for pause font size
+#define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
 #define WIN_FONT_SIZE 100
 
 // Ball physics tweaks for game feel
@@ -31,6 +32,8 @@
 
 // Types and Structures
 // --------------------------------------------------------------------------------
+
+typedef enum GameTurn { TURN_RIGHT_SIDE, TURN_LEFT_SIDE } GameTurn;
 
 typedef enum ScreenState
 {
@@ -50,6 +53,8 @@ typedef enum Difficulty // Multiplier for CPU paddle speed
 typedef struct Paddle
 {
     Vector2 position;
+    float nextHitPos; // Only used for Computer paddle
+                      // Determines the random spot on the paddle will aim to get the ball to hit
     float speed;
     int length;
     int width;
@@ -68,7 +73,8 @@ typedef struct GameState
     Ball ball;
     Paddle paddleL;
     Paddle paddleR;
-    GameMode gameMode;
+    GameMode currentMode;
+    GameTurn currentTurn; // keeps track of whose turn it currently is
     ScreenState currentScreen;
     Difficulty difficulty; // unused for MODE_TWOPLAYER
     int scoreL;
@@ -86,28 +92,32 @@ typedef struct GameState
 // --------------------------------------------------------------------------------
 
 // Initialization
-GameState InitGameState(void); // Initialize game objects and data for the game loop.
+GameState InitGameState(void); // Initialize game objects and data for the game loop
 
 // Collision
-bool CheckCollisionBallPaddle(Ball ball, Paddle paddle); // Check if ball and paddle are colliding.
-void EdgeCollisionPaddle(Paddle *paddle); // Paddles collide with screen edges.
-void BounceBallEdge(GameState *pong); // Ball bounces off screen edges and updates the score.
-void BounceBallPaddle(Ball *ball, Paddle *paddle); // Ball bounces off paddle.
+bool CheckCollisionBallPaddle(Ball ball, Paddle paddle); // Check if ball and paddle are colliding
+void EdgeCollisionPaddle(Paddle *paddle); // Paddles collide with screen edges
+void BounceBallEdge(GameState *pong); // Ball bounces off screen edges and updates the score
+void BounceBallPaddle(Ball *ball,     // Ball bounces off paddle
+                      Paddle *paddle, // TODO: just pass *pong instead?
+                      GameTurn *currentTurn);
+
 
 // Update game
-void UpdatePaddlePlayer1(Paddle *paddle); // Paddle updates based on player input. (W/S with Left Shift)
-void UpdatePaddlePlayer2(Paddle *paddle); // Paddle updates based on player input. (O/L and Up/Down with Right Shift)
-void UpdatePaddleComputer(Paddle *paddle, Ball *ball, int difficulty); // Paddle updates based on Computer AI.
-void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed.
-void UpdatePongFrame(GameState *pong); // Updates all the game's data and objects for the current frame.
+void UpdatePaddlePlayer1(Paddle *paddle); // Paddle updates based on player input (W/S with Left Shift)
+void UpdatePaddlePlayer2(Paddle *paddle); // Paddle updates based on player input (O/L and Up/Down with Right Shift)
+void UpdatePaddleComputer(Paddle *paddle, // Paddle updates based on Computer AI
+                          Ball *ball, GameTurn currentTurn, Difficulty difficulty); // TODO: pass *pong instead?
+void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed
+void UpdatePongFrame(GameState *pong); // Updates all the game's data and objects for the current frame
 
 // Draw game
 void DrawDottedLine(bool isPaused);
 void DrawScores(GameState *pong);
 void DrawWinnerMessage(int scoreL, int scoreR);
-void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame.
+void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame
 
 // Game functions
-void ResetBall(Ball *ball); // Reset the ball's horizontal position and modify its vertical position and angle.
+void ResetBall(Ball *ball); // Reset the ball's horizontal position and modify its vertical position and angle
 
 #endif // TEST_PONG_HEADER_GUARD

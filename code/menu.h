@@ -44,7 +44,11 @@ typedef struct MenuState // Holds data for the title screen menu
 {
     MenuScreenState currentScreen;
     MenuButton title;
-    MenuButton options[MENU_TOTAL_OPTIONS];
+#if defined(PLATFORM_WEB)
+    MenuButton buttons[MENU_TOTAL_OPTIONS - 1];
+#else
+    MenuButton buttons[MENU_TOTAL_OPTIONS];
+#endif
     MenuButton difficulties[3];
     MenuOption selectedIndex;
     float cursorSize;

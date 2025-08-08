@@ -9,6 +9,12 @@
 
 GameState InitGameState(void)
 {
+    // Random player starts the game
+    int startingTurn = GetRandomValue(TURN_RIGHT_SIDE, TURN_LEFT_SIDE);
+
+    // Start the ball in any random direction
+    float ballStartDirectionX = (float)(startingTurn * 2 - 1) * 100; // either -100 or +100
+    float ballStartDirectionY = (float)GetRandomValue(-100, 100);
     GameState state =
     {
         { // ball
@@ -17,8 +23,8 @@ GameState InitGameState(void)
                 RENDER_HEIGHT / 2 - BALL_SIZE / 2,
             },
             { // direction x, y
-                (float)((GetRandomValue(0, 1) * 2 - 1) * 10), // randomly move towards left or right player
-                (float)GetRandomValue(-10, 10),
+                ballStartDirectionX, // randomly move towards left or right player
+                ballStartDirectionY,
             },
             BALL_SPEED, // speed
             BALL_SIZE, // size
@@ -29,6 +35,7 @@ GameState InitGameState(void)
                 PADDLE_WIDTH * 1.5,
                 RENDER_HEIGHT / 2,
             },
+            0.0f,          // nextHitPos
             PADDLE_SPEED,  // speed
             PADDLE_LENGTH, // length
             PADDLE_WIDTH,  // width
@@ -39,13 +46,15 @@ GameState InitGameState(void)
                 RENDER_WIDTH - PADDLE_WIDTH * 2.5,
                 RENDER_HEIGHT / 2,
             },
+            0.0f,          // nextHitPos
             PADDLE_SPEED,  // speed
             PADDLE_LENGTH, // length
             PADDLE_WIDTH,  // width
         },
-        0,                 // gameMode (selected by player)
+        0,                 // currentMode (selected at title screen)
+        (GameTurn)startingTurn,     // currentTurn
         SCREEN_LOGO,       // currentScreen
-        DIFFICULTY_MEDIUM, // difficulty (default used for cpu vs cpu demo mode)
+        DIFFICULTY_MEDIUM, // difficulty (default value used for cpu-vs-cpu demo mode)
         0, 0,              // scoreL, scoreR
         false,             // playerWon
         false,             // isPaused
@@ -128,21 +137,27 @@ void BounceBallEdge(GameState *pong)
     }
 }
 
-void BounceBallPaddle(Ball *ball, Paddle *paddle)
+void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
 {
     if (CheckCollisionBallPaddle(*ball, *paddle) == false)
         return;
 
+    // Track that it's a new player's turn
+    *currentTurn = !*currentTurn;
+
     bool isLeftPaddle = paddle->position.x < RENDER_WIDTH / 2;
     // Position the ball outside the paddle
-    if (isLeftPaddle)
+    if (*currentTurn == TURN_LEFT_SIDE)
     {
         ball->position.x = paddle->position.x + paddle->width + 1;
     }
-    else
+    else // *currentTurn == TURN_RIGHT_SIDE
     {
         ball->position.x = paddle->position.x - ball->size - 1;
     }
+
+    // Set a new hit position for the potential computer paddle
+    paddle->nextHitPos = (float)GetRandomValue(0, paddle->length/2);
 
     // Increase ball speed
     ball->speed *= BOUNCE_MULTIPLIER;
@@ -197,24 +212,39 @@ void UpdatePaddlePlayer2(Paddle *paddle)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void UpdatePaddleComputer(Paddle *paddle, Ball *ball, int difficulty)
+void UpdatePaddleComputer(Paddle *paddle, Ball *ball, GameTurn currentTurn, Difficulty difficulty)
 {
     float newSpeed = 0.0f; // Not moving by default
-
+    bool paddleIsLeft = paddle->position.x < RENDER_WIDTH / 2;
     // Follow the ball
-    if ((paddle->position.y + paddle->length / 10) > ball->position.y + ball->size)
+    if ((paddle->position.y + paddle->nextHitPos) > ball->position.y + ball->size)
         newSpeed = -PADDLE_SPEED;
-    if ((paddle->position.y + paddle->length - paddle-> length / 10) < ball->position.y)
+    if ((paddle->position.y + paddle->length - paddle->nextHitPos) < ball->position.y)
         newSpeed = PADDLE_SPEED;
 
     // Update Paddle
-    float xdiff = paddle->position.x - ball->position.x;
-    float distanceToBall = fabsf(xdiff);
-    // bool isMovingTowards = (xdiff > 0 && ball->direction.x > 0) || (xdiff < 0 && ball->direction.x < 0);
-    // (&& isMovingTowards) to stop paddle after it hits ball
-    if (distanceToBall < RENDER_WIDTH / 2)
+    float distanceToBall = fabsf(paddle->position.x - ball->position.x);
+    float ballIsHalfway = (float)(distanceToBall < RENDER_WIDTH / 2);
+    bool movingTowardsPaddle =
+        ((paddleIsLeft && currentTurn == TURN_RIGHT_SIDE) ||
+        (!paddleIsLeft && currentTurn == TURN_LEFT_SIDE));
+
+    if (ballIsHalfway)
     {
-        paddle->speed = newSpeed * difficulty;
+        paddle->speed = newSpeed * (difficulty + 1);
+
+        // Tweak difficulty speeds
+        if (difficulty == DIFFICULTY_EASY)
+            paddle->speed += paddle->speed * 0.50f;
+        else if (difficulty == DIFFICULTY_MEDIUM)
+            paddle->speed += paddle->speed * 0.00f;
+        else if (difficulty == DIFFICULTY_HARD)
+            paddle->speed += paddle->speed * 0.00f;
+
+        // Move slower after hitting ball
+        if (!movingTowardsPaddle && (distanceToBall < RENDER_WIDTH / 5))
+            paddle->speed += distanceToBall / PADDLE_SPEED / 4 * (difficulty + 1);
+
         paddle->position.y += paddle->speed * GetFrameTime();
     }
 
@@ -254,24 +284,25 @@ void UpdatePongFrame(GameState *pong)
     if (!pong->isPaused)
     {
         // Get the difficulty multiplier
-        // TODO: make better difficulty implementation
-        int difficulty = (int)pong->difficulty + 1;
 
         // Update paddles
-        if (pong->gameMode == MODE_ONEPLAYER)
+        if (pong->currentMode == MODE_ONEPLAYER)
         {
             UpdatePaddlePlayer1(&pong->paddleL);
-            UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
+            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
+                                 pong->currentTurn, pong->difficulty);
         }
-        if (pong->gameMode == MODE_TWOPLAYER)
+        if (pong->currentMode == MODE_TWOPLAYER)
         {
             UpdatePaddlePlayer1(&pong->paddleL);
             UpdatePaddlePlayer2(&pong->paddleR);
         }
-        if (pong->gameMode == MODE_DEMO)
+        if (pong->currentMode == MODE_DEMO)
         {
-            UpdatePaddleComputer(&pong->paddleL, &pong->ball, difficulty);
-            UpdatePaddleComputer(&pong->paddleR, &pong->ball, difficulty);
+            UpdatePaddleComputer(&pong->paddleL, &pong->ball,
+                                 pong->currentTurn, pong->difficulty);
+            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
+                                 pong->currentTurn, pong->difficulty);
         }
 
         // Update ball
@@ -283,8 +314,8 @@ void UpdatePongFrame(GameState *pong)
         BounceBallEdge(pong);
         if (pong->playerWon == false)
         {
-            BounceBallPaddle(&pong->ball, &pong->paddleL);
-            BounceBallPaddle(&pong->ball, &pong->paddleR);
+            BounceBallPaddle(&pong->ball, &pong->paddleL, &pong->currentTurn);
+            BounceBallPaddle(&pong->ball, &pong->paddleR, &pong->currentTurn);
         }
         EdgeCollisionPaddle(&pong->paddleL);
         EdgeCollisionPaddle(&pong->paddleR);
@@ -424,6 +455,30 @@ void DrawPongFrame(GameState *pong)
                       (int)pong->paddleR.width,      (int)pong->paddleR.length, RAYWHITE);
         DrawRectangle((int)pong->paddleL.position.x, (int)pong->paddleL.position.y,
                       (int)pong->paddleL.width,      (int)pong->paddleL.length, RAYWHITE);
+    }
+
+    // Draw difficulty mode
+    if (pong->currentMode == MODE_ONEPLAYER)
+    {
+        const char *difficultyText;
+        int diffTextLength;
+        switch (pong->difficulty)
+        {
+            case DIFFICULTY_EASY:
+                difficultyText = "Difficulty Easy";
+                break;
+            case DIFFICULTY_MEDIUM:
+                difficultyText = "Difficulty Medium";
+                break;
+            case DIFFICULTY_HARD:
+                difficultyText = "Difficulty Hard";
+                break;
+        }
+        diffTextLength = MeasureText(difficultyText, DIFFICULTY_FONT_SIZE);
+        DrawText(difficultyText,
+                 RENDER_WIDTH / 4 * 3 - diffTextLength / 2,
+                 RENDER_HEIGHT - DIFFICULTY_FONT_SIZE - 10,
+                 DIFFICULTY_FONT_SIZE, RAYWHITE);
     }
 
     // Draw win message

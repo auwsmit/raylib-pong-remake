@@ -91,7 +91,11 @@ void UpdateMenuCursorMove(MenuState *menu)
 {
     int indexLimit; // used to determine the beginning/end of list
     if (menu->currentScreen == MENU_SS_DEFAULT)
+#if defined(PLATFORM_WEB)
+        indexLimit = MENU_TOTAL_OPTIONS - 2;
+#else
         indexLimit = MENU_TOTAL_OPTIONS - 1;
+#endif
     if (menu->currentScreen == MENU_SS_DIFFICULTY)
         indexLimit = ARRAY_SIZE(menu->difficulties) - 1;
 

@@ -49,7 +49,11 @@ MenuButton InitMenuButtonTitle(char *text)
     int textWidth = MeasureText(text, fontSize);
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     // int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 2.5f;
+#if !defined(PLATFORM_WEB)
     float textPosY = MENU_TITLE_SPACE_FROM_TOP;
+#else
+    float textPosY = MENU_TITLE_SPACE_FROM_TOP + MENU_BUTTON_SIZE;
+#endif
 
     MenuButton button =
     {

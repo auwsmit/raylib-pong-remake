@@ -24,6 +24,8 @@ typedef struct AppData // Local variables for the game loop in main()
 
 // Local Functions Declaration
 // --------------------------------------------------------------------------------
+void CreateNewWindow(void);
+void RunGameLoop(AppData *app);
 void UpdateDrawFrame(AppData *app);
 
 // Main entry point
@@ -34,8 +36,30 @@ int main(void)
     // --------------------------------------------------------------------------------
     AppData app = { 0 };
 
-// Create a window
-#ifdef PLATFORM_WEB
+    CreateNewWindow();
+
+    // Initialize the render texture, used to hold the rendering result so we can easily resize it
+    app.renderTarget = LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT);
+    SetTextureFilter(app.renderTarget.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
+
+    app.skipCurrentFrame = false;
+    app.raylibLogo = InitRaylibLogo();
+    app.pong = InitGameState();
+    app.menu = InitMenuState();
+
+    RunGameLoop(&app);
+
+    // De-Initialization
+    // --------------------------------------------------------------------------------
+    CloseWindow();        // Close window and OpenGL context
+    // --------------------------------------------------------------------------------
+
+    return 0;
+}
+
+void CreateNewWindow(void)
+{
+#if defined(PLATFORM_WEB)
     SetConfigFlags(0); // no vsync or window resize for web
     InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
     SetWindowSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -47,40 +71,28 @@ int main(void)
     InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
 #endif
     SetWindowMinSize(320, 240);
+}
 
-    // Initialize the render texture, used to hold the rendering result so we can easily resize it
-    app.renderTarget = LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT);
-    SetTextureFilter(app.renderTarget.texture, TEXTURE_FILTER_BILINEAR);  // Texture scale filter to use
-
-    app.skipCurrentFrame = false;
-    app.raylibLogo = InitRaylibLogo();
-    app.pong = InitGameState();
-    app.menu = InitMenuState();
-
+void RunGameLoop(AppData *app)
+{
 #if defined(PLATFORM_WEB)
     int emscriptenFPS = 0; // Let emscripten handle the framerate because setting a specific one is kinda janky.
                            // Generally, it will use whatever the monitor's refresh rate is.
-    emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, &app, emscriptenFPS, 1);
+    emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, app, emscriptenFPS, 1);
 #else
     if (MAX_FRAMERATE > 0)
         SetTargetFPS(MAX_FRAMERATE);
     // --------------------------------------------------------------------------------
 
     // Main game loop
-    while (!WindowShouldClose() && !app.pong.gameShouldExit) // Detect window close button
+    while (!WindowShouldClose() && !app->pong.gameShouldExit) // Detect window close button
     {
-        UpdateDrawFrame(&app);
+        UpdateDrawFrame(app);
     }
-#endif // PLATFORM_WEB
-
-    // De-Initialization
-    // --------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    // --------------------------------------------------------------------------------
-
-    return 0;
+#endif
 }
 
+// Update data and draw elements to the screen for the current frame
 void UpdateDrawFrame(AppData *app)
 {
     // Update

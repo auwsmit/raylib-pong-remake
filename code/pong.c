@@ -339,7 +339,7 @@ void UpdatePongFrame(GameState *pong)
     // }
 }
 
-void DrawDottedLine(void)
+void DrawDottedLine(bool isPaused)
 {
     int dashHeight = 40;
     int spaceHeight = 40;
@@ -354,8 +354,15 @@ void DrawDottedLine(void)
     for (int i = 0; i < totalSegments; i++)
     {
         int y = offsetY + i * totalSegmentHeight;
+
+        // if dash overlaps with Paused message, do not draw
+        int pauseMessageYPos = RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2;
+        if ((isPaused && (y+dashHeight > pauseMessageYPos) && (y < pauseMessageYPos + SCORE_FONT_SIZE)))
+            continue;
+
         DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y,
                       lineWidth, dashHeight, RAYWHITE);
+
     }
 }
 
@@ -397,8 +404,7 @@ void DrawWinnerMessage(int scoreL, int scoreR)
 void DrawPongFrame(GameState *pong)
 {
     // Draw dotted line down middle
-    if (!pong->isPaused)
-        DrawDottedLine();
+    DrawDottedLine(pong->isPaused);
 
     // Draw ball
     if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
@@ -425,9 +431,9 @@ void DrawPongFrame(GameState *pong)
     // Draw pause message
     if (pong->isPaused)
     {
-        int textOffset = MeasureText("Paused", SCORE_FONT_SIZE) / 2;
-        DrawText("Paused",
-                 RENDER_WIDTH / 2 - textOffset,
+        char *text = "PAUSED";
+        int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
+        DrawText(text, RENDER_WIDTH / 2 - textOffset,
                  RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
                  SCORE_FONT_SIZE,
                  Fade(RAYWHITE, pong->pauseFade));

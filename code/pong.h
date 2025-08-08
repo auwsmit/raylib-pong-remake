@@ -99,7 +99,7 @@ void UpdateBall(Ball *ball); // Moves the ball based on its direction, and norma
 void UpdatePongFrame(GameState *pong); // Updates all the game's data and objects for the current frame.
 
 // Draw game
-void DrawDottedLine(void);
+void DrawDottedLine(bool isPaused);
 void DrawScores(GameState *pong);
 void DrawWinnerMessage(int scoreL, int scoreR);
 void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame.

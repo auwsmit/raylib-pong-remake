@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 
 # Name of the project, also using C
 project("Raylib Test" C)
-set(EXECUTABLE_NAME game)
+
+if (${PLATFORM} STREQUAL "Web")
+  set(OUTPUT_NAME index)
+else ()
+  set(OUTPUT_NAME game)
+endif()
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -27,35 +32,19 @@ endif()
 
 # Our Project
 file(GLOB SRC_FILES code/*.c)
-add_executable(${EXECUTABLE_NAME} ${SRC_FILES})
+add_executable(${OUTPUT_NAME} ${SRC_FILES})
 #set(raylib_VERBOSE 1)
-target_link_libraries(${EXECUTABLE_NAME} raylib)
+target_link_libraries(${OUTPUT_NAME} raylib)
 
 # Web Configurations
 if (${PLATFORM} STREQUAL "Web")
-  set_target_properties(${EXECUTABLE_NAME} PROPERTIES SUFFIX ".html") # Tell Emscripten to build an example.html file.
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 -sEXPORTED_FUNCTIONS=_main,requestFullscreen --emrun")
-
-  # Check the "resize canvas" checkbox for fullscreen to scale properly
-  # This is just to add the word "checked" to an html file...
-  set(HTML_FILE "${CMAKE_CURRENT_BINARY_DIR}/${EXECUTABLE_NAME}.html")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/patch_html.cmake" "
-  file(READ \"${HTML_FILE}\" FILE_CONTENTS)
-  string(REPLACE
-    \"<input type=checkbox id=resize>\"
-    \"<input type=checkbox id=resize checked>\"
-    FILE_CONTENTS \"\${FILE_CONTENTS}\")
-  file(WRITE \"${HTML_FILE}\" \"\${FILE_CONTENTS}\")")
-  # make a patch file to replace text after build
-  add_custom_command(TARGET ${EXECUTABLE_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/patch_html.cmake"
-  )
-
+  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".html") # Tell Emscripten to build an example.html file.
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 -sEXPORTED_FUNCTIONS=_main,requestFullscreen")
 endif()
 
 # Checks if OSX and links appropriate frameworks (Only required on MacOS)
 if (APPLE)
-  target_link_libraries(${EXECUTABLE_NAME} "-framework IOKit")
-  target_link_libraries(${EXECUTABLE_NAME} "-framework Cocoa")
-  target_link_libraries(${EXECUTABLE_NAME} "-framework OpenGL")
+  target_link_libraries(${OUTPUT_NAME} "-framework IOKit")
+  target_link_libraries(${OUTPUT_NAME} "-framework Cocoa")
+  target_link_libraries(${OUTPUT_NAME} "-framework OpenGL")
 endif()

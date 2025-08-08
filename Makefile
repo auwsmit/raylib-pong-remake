@@ -8,19 +8,22 @@
 # =============================================================================
 
 # Source files to compile
-PROJ_CODE = $(wildcard code/*.c)
-PROJ_HEADERS = $(wildcard code/*.h)
+CODE = $(wildcard code/*.c)
+HEADERS = $(wildcard code/*.h)
+
+# Add object files from source files (not currently in use)
+OBJS = $(CODE:.c=.o)
 
 # Name of output executable
-PROJ_EXE  = game
+OUTPUT = game
 
-# Name of output files for web assembly that will be uploaded online
-WEB_RELEASE  = index
+# Name of output files for web assembly
+WEB_OUT = index
 
 # The executable's file extension (for Windows and Web platforms)
-PROJ_EXT  =
+EXTENSION =
 ifeq ($(OS),Windows_NT)
-    PROJ_EXT = .exe
+    EXTENSION = .exe
 endif
 
 # Define C compiler flags: CFLAGS
@@ -42,9 +45,6 @@ CFLAGS = -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result
 #  -Werror=implicit-function-declaration   catch function calls without prior declaration
 CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
-# 128MB of memory for emscripten, default is 16MB
-WEB_HEAP_SIZE = 134217728
-
 # Define web compiler flags: WEBFLAGS
 # -----------------------------------------------------------------------
 # -Os                        # size optimization
@@ -64,6 +64,11 @@ WEB_HEAP_SIZE = 134217728
 # --preload-file resources   # specify a resources folder for data compilation
 # --source-map-base          # allow debugging in browser with source map
 WEBFLAGS = -sUSE_GLFW=3 -sTOTAL_MEMORY=$(WEB_HEAP_SIZE) -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB -sEXPORTED_FUNCTIONS=_main,requestFullscreen
+# Use shell file for Web compilation page layout
+WEBFLAGS += --shell-file code/shell.html
+
+# 128MB of memory for emscripten, default is 16MB
+WEB_HEAP_SIZE = 134217728
 
 # Local raylib location
 RAYLIB_INC = raylib/include
@@ -98,26 +103,20 @@ endif
 # =============================================================================
 # MAKEFILE TARGETS
 # =============================================================================
-all: $(PROJ_EXE)$(PROJ_EXT)
+all: $(OUTPUT)$(EXTENSION)
 
 # Compile for desktop (default)
-$(PROJ_EXE)$(PROJ_EXT): $(PROJ_CODE) $(PROJ_HEADERS)
-	$(CC) -o $(PROJ_EXE)$(PROJ_EXT) $(PROJ_CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
+$(OUTPUT)$(EXTENSION): $(CODE) $(HEADERS)
+	$(CC) -o $(OUTPUT)$(EXTENSION) $(CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
 
 # Compile for Web:
 # Use a local copy of raylib's web library in case it isn't available
 web: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web:
-	emcc -o $(PROJ_EXE).html $(PROJ_CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS) --emrun
-	sed -i 's|<input type="checkbox" id="resize">|<input type="checkbox" id="resize" checked>|' $(PROJ_EXE).html
-
-web-release: LIBS = -lraylib -L$(RAYLIB_LIB)/web
-web-release:
-	emcc -o $(WEB_RELEASE).html $(PROJ_CODE) -O2 $(WEBFLAGS) $(INCLUDES) $(LIBS)
-	sed -i 's|<input type=checkbox id=resize>|<input type=checkbox id=resize checked>|' $(WEB_RELEASE).html
+	emcc -o $(WEB_OUT).html $(CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS)
 
 # Clean up old build files
 clean:
-	rm -rf $(PROJ_EXE)$(PROJ_EXT) $(PROJ_EXE).html $(PROJ_EXE).js $(PROJ_EXE).wasm
+	rm -rf $(OUTPUT)$(EXTENSION) $(OUTPUT).html $(OUTPUT).js $(OUTPUT).wasm $(OBJS)
 	@echo "Build files cleaned."
 

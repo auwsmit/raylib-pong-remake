@@ -12,13 +12,15 @@ though, so I would appreciate anyone who can confirm if it works there.
 
 - `Enter` to select
 
-- `Space`/`P` to pause
-
-- `Esc`/`Backspace` to go back to title
-
 - Player 1: Press `W`/`S` to move. Hold `A`/`D`/`LShift` to move faster
 
 - Player 2: Press `I`/`K` or `Up`/`Down` to move. Hold `J`/`L`/`Left`/`Right` to move faster
+
+- `Esc`/`Backspace` to go back to title
+
+- `Space`/`P` to pause
+
+- `Alt+Enter`/`F11` for fullscreen (desktop only)
 
 ## Build for Desktop
 - Either run `build.sh` or `build.bat`, depending on your platform.
@@ -28,7 +30,7 @@ though, so I would appreciate anyone who can confirm if it works there.
 ## Build for Browser
 - Same as desktop, but add `web` as an argument:
     - Run `build.sh web` or `make web`.
-- Run game with `emrun game.html`
+- Run game with `emrun index.html`
 
 ## Requirements to build:
 

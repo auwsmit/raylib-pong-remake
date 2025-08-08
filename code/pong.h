@@ -81,8 +81,8 @@ typedef struct GameState
     int scoreR;
     bool playerWon; // set after a player wins
     bool isPaused;
-    float pauseFade; // tracks time for the pause animation
-    float pauseFadeTimeElapsed; // tracks time for the pause animation
+    float textFade; // tracks time for the fade animation
+    float textFadeTimeElapsed; // tracks time for the fade animation
     float winTimer; // countdown after player wins
     float scoreTimer; // countdown after a score
     bool gameShouldExit; // flag to tell the game window to close
@@ -112,9 +112,9 @@ void UpdateBall(Ball *ball); // Moves the ball based on its direction, and norma
 void UpdatePongFrame(GameState *pong); // Updates all the game's data and objects for the current frame
 
 // Draw game
-void DrawDottedLine(bool isPaused);
+void DrawDottedLine(bool isPaused, bool isDemoMode);
 void DrawScores(GameState *pong);
-void DrawWinnerMessage(int scoreL, int scoreR);
+void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor);
 void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame
 
 // Game functions

@@ -58,8 +58,8 @@ GameState InitGameState(void)
         0, 0,              // scoreL, scoreR
         false,             // playerWon
         false,             // isPaused
-        0.0f,              // pauseFade
-        0.0f,              // pauseFadeTimeElapsed
+        0.0f,              // textFade
+        0.0f,              // textFadeTimeElapsed
         WIN_PAUSE_TIME,    // winTimer
         SCORE_PAUSE_TIME,  // scoreTimer
         false,             // gameShouldExit
@@ -334,28 +334,26 @@ void UpdatePongFrame(GameState *pong)
         if (pong->playerWon && pong->winTimer > 0)
             pong->winTimer -= GetFrameTime();
     }
-    else // isPaused
-    {
-        // Update pause fade animation
-        static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
-        static bool fadingOut = false;
-        float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
 
-        if (pong->pauseFade >= 1.0f)
-            fadingOut = true;
-        else if (pong->pauseFade <= 0.0f)
-            fadingOut = false;
-        if (fadingOut)
-            fadeIncrement *= -1;
+    // Update pause fade animation
+    static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
+    static bool fadingOut = false;
+    float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
 
-        pong->pauseFade += fadeIncrement;
-    }
+    if (pong->textFade >= 1.0f)
+        fadingOut = true;
+    else if (pong->textFade <= 0.0f)
+        fadingOut = false;
+    if (fadingOut)
+        fadeIncrement *= -1;
+
+    pong->textFade += fadeIncrement;
 
     // Press Space or P to pause
     if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
     {
         pong->isPaused = !pong->isPaused;
-        pong->pauseFade = 1;
+        pong->textFade = 1;
     }
 
     // Reset game after a player wins
@@ -372,7 +370,7 @@ void UpdatePongFrame(GameState *pong)
     // }
 }
 
-void DrawDottedLine(bool isPaused)
+void DrawDottedLine(bool isPaused, bool isDemoMode)
 {
     int dashHeight = 40;
     int spaceHeight = 40;
@@ -388,9 +386,11 @@ void DrawDottedLine(bool isPaused)
     {
         int y = offsetY + i * totalSegmentHeight;
 
-        // if dash overlaps with Paused message, do not draw
+        // if dash overlaps with "paused" or "demo mode" message, do not draw
         int pauseMessageYPos = RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2;
-        if ((isPaused && (y+dashHeight > pauseMessageYPos) && (y < pauseMessageYPos + SCORE_FONT_SIZE)))
+        if (((isPaused || isDemoMode) &&
+             (y+dashHeight > pauseMessageYPos) &&
+             (y < pauseMessageYPos + SCORE_FONT_SIZE)))
             continue;
 
         DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y,
@@ -416,7 +416,7 @@ void DrawScores(GameState *pong)
     DrawText(scoreRMsg, scoreRPosX, scorePosY, fontSize, RAYWHITE);
 }
 
-void DrawWinnerMessage(int scoreL, int scoreR)
+void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor)
 {
     char *msg = "Winner";
     int fontSize = 100; // this is also the font height because we're using the default font
@@ -425,19 +425,19 @@ void DrawWinnerMessage(int scoreL, int scoreR)
     if (scoreL == WIN_SCORE)
     {
         int textPosX = RENDER_WIDTH / 4 - textWidth / 2;
-        DrawText(msg, textPosX, textPosY, fontSize, RAYWHITE);
+        DrawText(msg, textPosX, textPosY, fontSize, fadeColor);
     }
     if (scoreR == WIN_SCORE)
     {
         int textPosX = RENDER_WIDTH / 4 * 3 - textWidth / 2;
-        DrawText(msg, textPosX, textPosY, fontSize, RAYWHITE);
+        DrawText(msg, textPosX, textPosY, fontSize, fadeColor);
     }
 }
 
 void DrawPongFrame(GameState *pong)
 {
     // Draw dotted line down middle
-    DrawDottedLine(pong->isPaused);
+    DrawDottedLine(pong->isPaused, pong->currentMode == MODE_DEMO);
 
     // Draw ball
     if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
@@ -481,19 +481,30 @@ void DrawPongFrame(GameState *pong)
                  DIFFICULTY_FONT_SIZE, RAYWHITE);
     }
 
+    // Draw fancy conditional text with a fade animation
+    Color fadeColor = Fade(RAYWHITE, pong->textFade);
+
     // Draw win message
     if (pong->playerWon)
-        DrawWinnerMessage(pong->scoreL, pong->scoreR);
+        DrawWinnerMessage(pong->scoreL, pong->scoreR, fadeColor);
 
     // Draw pause message
+    char *text;
     if (pong->isPaused)
     {
-        char *text = "PAUSED";
+        text = "PAUSED";
         int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
         DrawText(text, RENDER_WIDTH / 2 - textOffset,
                  RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
-                 SCORE_FONT_SIZE,
-                 Fade(RAYWHITE, pong->pauseFade));
+                 SCORE_FONT_SIZE, fadeColor);
+    }
+    else if (pong->currentMode == MODE_DEMO) // Draw demo mode message
+    {
+        text = "DEMO MODE";
+        int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
+        DrawText(text, RENDER_WIDTH / 2 - textOffset,
+                 RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
+                 SCORE_FONT_SIZE, fadeColor);
     }
 }
 

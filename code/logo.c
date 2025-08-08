@@ -1,3 +1,7 @@
+// EXPLANATION:
+// For the raylib logo animation at start of program.
+// See logo.h for more documentation/descriptions.
+
 #include "raylib.h"
 #include "config.h"
 #include "logo.h"

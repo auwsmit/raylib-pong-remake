@@ -1,5 +1,5 @@
 // EXPLANATION:
-// This file is for configuring aspects of the program outside of game logic
+// For configuring aspects of the program outside of game logic.
 
 #ifndef TEST_CONFIG_HEADER_GUARD
 #define TEST_CONFIG_HEADER_GUARD

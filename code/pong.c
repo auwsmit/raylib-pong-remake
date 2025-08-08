@@ -1,9 +1,11 @@
+// EXPLANATION:
+// All the game's logic, including how/when to draw to screen.
+// See pong.h for more documentation/descriptions.
+
 #include "raylib.h"
 #include "raymath.h" // needed for vector math
 #include "config.h"
 #include "pong.h"
-
-// See header for data type and function descriptions
 
 GameState InitGameState(void)
 {

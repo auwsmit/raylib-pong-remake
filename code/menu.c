@@ -1,4 +1,7 @@
-#include <stdio.h>
+// EXPLANATION:
+// For managing the title screen menu.
+// See menu.h for more documentation/descriptions.
+
 #include "raylib.h"
 #include "raymath.h"
 #include "config.h"
@@ -155,13 +158,13 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
                 pong->gameShouldExit = true;
             else if (selectedChoice == MENU_1PLAYER)
             {
-                pong->gameMode      = (GameMode)selectedChoice;
+                pong->currentMode   = (GameMode)selectedChoice;
                 menu->currentScreen = MENU_SS_DIFFICULTY;
                 menu->selectedIndex = (MenuOption)DIFFICULTY_MEDIUM;
             }
             else
             {
-                pong->gameMode = (GameMode)selectedChoice;
+                pong->currentMode = (GameMode)selectedChoice;
                 pong->currentScreen = SCREEN_GAMEPLAY;
             }
         }
@@ -173,7 +176,7 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
     }
 }
 
-void UpdateStartMenuFrame(MenuState *menu, GameState *pong)
+void UpdateTitleMenuFrame(MenuState *menu, GameState *pong)
 {
 
     UpdateMenuCursorMove(menu);
@@ -199,9 +202,9 @@ void DrawMenuElement(MenuButton *button)
 void DrawCursor(MenuState *menu)
 {
     float size = menu->cursorSize;
-    MenuButton *selected; // the option that the cursor is currently pointing at
+    MenuButton *selected = 0; // the option that the cursor is currently pointing at
     if (menu->currentScreen == MENU_SS_DEFAULT)
-        selected = &menu->options[menu->selectedIndex];
+        selected = &menu->buttons[menu->selectedIndex];
     else if (menu->currentScreen == MENU_SS_DIFFICULTY)
         selected = &menu->difficulties[menu->selectedIndex];
 
@@ -216,15 +219,20 @@ void DrawCursor(MenuState *menu)
                  RAYWHITE);
 }
 
-void DrawStartMenuFrame(MenuState *menu)
+void DrawTitleMenuFrame(MenuState *menu)
 {
     DrawMenuElement(&menu->title);
 
     if (menu->currentScreen == MENU_SS_DEFAULT)
     {
-        for (int i = 0; i < MENU_TOTAL_OPTIONS; i++)
+#if defined(PLATFORM_WEB)
+        const int menuTotalOptions = MENU_TOTAL_OPTIONS - 1;
+#else
+        const int menuTotalOptions = MENU_TOTAL_OPTIONS;
+#endif
+        for (int i = 0; i < menuTotalOptions; i++)
         {
-            DrawMenuElement(&menu->options[i]);
+            DrawMenuElement(&menu->buttons[i]);
         };
     }
     else if (menu->currentScreen == MENU_SS_DIFFICULTY)

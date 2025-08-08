@@ -1,11 +1,16 @@
-#include "raylib.h"
-#include "raymath.h"        // Required for: Vector2Clamp()
-#include "config.h"
-#include "logo.h"
-#include "menu.h"
-#include "pong.h"
+// EXPLANATION:
+// The main entry point for the game/program.
+// The meat of the game loop can be found in the "UpdateDrawFrame" function.
 
-#if defined(PLATFORM_WEB)
+#include "raylib.h"
+#include "raymath.h" // Required for: Vector2Clamp()
+
+#include "config.h"  // Program config, e.g. window title/size, fps, vsync
+#include "logo.h"    // Raylib logo animation
+#include "menu.h"    // Title menu logic
+#include "pong.h"    // Game logic
+
+#if defined(PLATFORM_WEB) // for compiling to wasm aka web assembly
     #include <emscripten/emscripten.h>
 #endif
 
@@ -18,15 +23,14 @@ typedef struct AppData // Local variables for the game loop in main()
     bool skipCurrentFrame;
     GameState pong;
     MenuState menu; // data for main menu
-    // Debug:
-    // int key;
 } AppData;
 
 // Local Functions Declaration
 // --------------------------------------------------------------------------------
-void CreateNewWindow(void);
-void RunGameLoop(AppData *app);
-void UpdateDrawFrame(AppData *app);
+void CreateNewWindow(void);     // Creates a new window with the proper initial settings
+void RunGameLoop(AppData *app); // Runs the game loop
+void UpdateDrawFrame(AppData *app); // Update and Draw the current frame.
+                                    // Most of the game loop's code is found in here
 
 // Main entry point
 // --------------------------------------------------------------------------------
@@ -144,7 +148,7 @@ void UpdateDrawFrame(AppData *app)
             break;
 
         case SCREEN_TITLE:
-            UpdateStartMenuFrame(&app->menu, &app->pong);
+            UpdateTitleMenuFrame(&app->menu, &app->pong);
             break;
 
         case SCREEN_GAMEPLAY:
@@ -174,7 +178,7 @@ void UpdateDrawFrame(AppData *app)
         {
             case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawStartMenuFrame(&app->menu);
+            case SCREEN_TITLE:    DrawTitleMenuFrame(&app->menu);
                                   break;
             case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
                                   break;
@@ -193,11 +197,7 @@ void UpdateDrawFrame(AppData *app)
                        (float)RENDER_WIDTH*scale, (float)RENDER_HEIGHT*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         // Debug:
-        DrawFPS(0,0);
-        // int temp_key = GetKeyPressed();
-        // if (temp_key != 0)
-        //     app->key = temp_key;
-        // DrawText(TextFormat("Current input: %i", app->key), 0, 20, 40, WHITE);
+        // DrawFPS(0,0);
     } EndDrawing();
     // --------------------------------------------------------------------------------
 }

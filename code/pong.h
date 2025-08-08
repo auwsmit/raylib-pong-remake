@@ -1,3 +1,6 @@
+// EXPLANATION:
+// All the game's logic, including how/when to draw to screen.
+
 #ifndef TEST_PONG_HEADER_GUARD
 #define TEST_PONG_HEADER_GUARD
 

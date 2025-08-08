@@ -32,6 +32,6 @@ if "%1"=="" ( :: Build for desktop
     rmdir /s /q build
     rmdir /s /q build\web
     del /q game.*
-    echo Build files cleaned.
+    echo CMake's build files cleaned.
     goto :eof
 )

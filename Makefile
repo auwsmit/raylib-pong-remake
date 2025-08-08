@@ -12,7 +12,7 @@ CODE = $(wildcard code/*.c)
 HEADERS = $(wildcard code/*.h)
 
 # Add object files from source files (not currently in use)
-OBJS = $(CODE:.c=.o)
+OBJS = $(CODE:.c=.o) $(CODE:.c=.obj)
 
 # Name of output executable
 OUTPUT = game
@@ -83,11 +83,11 @@ LIBS = -lraylib
 # =============================================================================
 # I only use Windows and Linux atm, but this might work on macOS
 
-# Detect compiler (gcc or clang preferred)
+# Detect compiler (clang or gcc expected, but cl.exe works with 'make msvc')
 ifeq ($(OS),Windows_NT)
-    CC ?= $(shell where gcc 2>nul || where clang 2>nul || echo cc)
+    CC ?= "$(shell where clang 2>nul || where gcc 2>nul || echo cc)"
 else
-    CC ?= $(shell command -v gcc || command -v clang || echo cc)
+    CC ?= "$(shell command -v clang || command -v gcc || echo cc)"
 endif
 
 # Platform-specific library flags
@@ -108,6 +108,14 @@ all: $(OUTPUT)$(EXTENSION)
 # Compile for desktop (default)
 $(OUTPUT)$(EXTENSION): $(CODE) $(HEADERS)
 	$(CC) -o $(OUTPUT)$(EXTENSION) $(CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
+# Use the MSVC C compiler (useful for getting .pdb debug info)
+# TODO: maybe auto-detect cl instead and move this into "Platform-specific" section?
+msvc: CFLAGS = /Fo:code\\ /Od /W3 /MD /Zi
+msvc: LIBS = /link /DEBUG /LIBPATH:".\raylib\lib\windows-msvc" raylib.lib \
+    opengl32.lib gdi32.lib winmm.lib user32.lib shell32.lib
+msvc:
+	cl /Fe:$(OUTPUT)$(EXTENSION) $(CODE) $(CFLAGS) /I".\raylib\include" $(LIBS)
+	@rm $(OUTPUT).ilk
 
 # Compile for Web:
 # Use a local copy of raylib's web library in case it isn't available
@@ -117,6 +125,6 @@ web:
 
 # Clean up old build files
 clean:
-	rm -rf $(OUTPUT)$(EXTENSION) $(OUTPUT).html $(OUTPUT).js $(OUTPUT).wasm $(OBJS)
-	@echo "Build files cleaned."
-
+	@rm -rf $(OUTPUT)$(EXTENSION) $(WEB_OUT).html $(WEB_OUT).js $(WEB_OUT).wasm \
+	    $(OBJS) $(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi
+	@echo "Make's build files cleaned."

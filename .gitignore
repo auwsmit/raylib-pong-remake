@@ -4,13 +4,20 @@ tags.*
 
 # build files
 build/
-build_web/
 out
 game
 *.exe
 game.html
 game.js
 game.wasm
+
+# debug files
+code/*.obj
+code/*.o
+*.o
+*.obj
+*.pdb
+*.rdi
 
 # swap files
 .swp

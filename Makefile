@@ -127,4 +127,4 @@ web:
 clean:
 	@rm -rf $(OUTPUT)$(EXTENSION) $(WEB_OUT).html $(WEB_OUT).js $(WEB_OUT).wasm \
 	    $(OBJS) $(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi
-	@echo "Make's build files cleaned."
+	@echo "Make build files cleaned."

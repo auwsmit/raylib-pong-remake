@@ -9,11 +9,11 @@
 
 #define WINDOW_TITLE "Raylib Pong Remake"
 #define ASPECT_RATIO (4.0f / 3.0f)
-#define RENDER_HEIGHT 1080 // The native resolution of the game itself.
-                           // This will scale to the game window.
+#define RENDER_HEIGHT 1080 // The native resolution of the game itself
+                           // This will scale to the game window
 #define RENDER_WIDTH (int)(RENDER_HEIGHT * ASPECT_RATIO)
 
-#define DEFAULT_HEIGHT 720 // Default size of the game window.
+#define DEFAULT_HEIGHT 720 // Default size of the game window
 #define DEFAULT_WIDTH (int)(DEFAULT_HEIGHT * ASPECT_RATIO)
 
 // there may be small bugs with very high FPS (uncapped + no vsync), but should work fine overall

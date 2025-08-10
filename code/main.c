@@ -27,11 +27,12 @@ typedef struct AppData // Local variables for the game loop in main()
 
 // Local Functions Declaration
 // --------------------------------------------------------------------------------
-void CreateNewWindow(void);     // Creates a new window with the proper initial settings
+void CreateNewWindow(void); // Creates a new window with the proper initial settings
+AppData InitGameLoop(void); // Initializes data for the game loop
 void RunGameLoop(AppData *app); // Runs the game loop
 void UpdateDrawFrame(AppData *app); // Update and Draw the current frame
                                     // Most of the game loop's code is found in here
-void HandleFullscreenToggle(AppData *app);
+void HandleToggleFullscreen(AppData *app);
 
 // Main entry point
 // --------------------------------------------------------------------------------
@@ -39,9 +40,36 @@ int main(void)
 {
     // Initialization
     // --------------------------------------------------------------------------------
-    AppData app = { 0 };
-
     CreateNewWindow();
+
+    AppData app = InitGameLoop();
+    RunGameLoop(&app);
+
+    // De-Initialization
+    // --------------------------------------------------------------------------------
+    CloseWindow();        // Close window and OpenGL context
+
+    return 0;
+}
+
+void CreateNewWindow(void)
+{
+#if defined(PLATFORM_WEB)
+    SetConfigFlags(0); // no vsync or window resize for web
+    InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
+    // SetWindowSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+#else
+    unsigned int windowFlags = FLAG_WINDOW_RESIZABLE;
+    if (VSYNC_ENABLED) windowFlags |= FLAG_VSYNC_HINT;
+    SetConfigFlags(windowFlags);
+    InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
+#endif
+    SetWindowMinSize(320, 240);
+}
+
+AppData InitGameLoop(void)
+{
+    AppData app = { 0 };
 
     // Initialize the render texture, used to hold the rendering result so we can easily resize it
     app.renderTarget = LoadRenderTexture(RENDER_WIDTH, RENDER_HEIGHT);
@@ -52,30 +80,7 @@ int main(void)
     app.titleMenu = InitMenuState();
     app.pong = InitGameState();
 
-    RunGameLoop(&app);
-
-    // De-Initialization
-    // --------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    // --------------------------------------------------------------------------------
-
-    return 0;
-}
-
-void CreateNewWindow(void)
-{
-#if defined(PLATFORM_WEB)
-    SetConfigFlags(0); // no vsync or window resize for web
-    InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
-    SetWindowSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-#else
-    unsigned int windowFlags = FLAG_WINDOW_RESIZABLE;
-    if (VSYNC_ENABLED)
-        windowFlags |= FLAG_VSYNC_HINT;
-    SetConfigFlags(windowFlags);
-    InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
-#endif
-    SetWindowMinSize(320, 240);
+    return app;
 }
 
 void RunGameLoop(AppData *app)
@@ -109,7 +114,7 @@ void UpdateDrawFrame(AppData *app)
     SetExitKey(KEY_Q);
     // SetExitKey(KEY_NULL); // No exit key
 
-    HandleFullscreenToggle(app);
+    HandleToggleFullscreen(app);
 
     if (app->skipCurrentFrame == true)
     {
@@ -166,7 +171,7 @@ void UpdateDrawFrame(AppData *app)
     // --------------------------------------------------------------------------------
 }
 
-void HandleFullscreenToggle(AppData *app)
+void HandleToggleFullscreen(AppData *app)
 {
 #if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy
                            // For now just use emscripten's fullscreen button

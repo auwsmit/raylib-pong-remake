@@ -1,10 +1,10 @@
 // EXPLANATION:
-// For managing the title screen menu.
+// For managing the title screen menu
 
-#ifndef TEST_MENU_HEADER_GUARD
-#define TEST_MENU_HEADER_GUARD
+#ifndef PONG_MENU_HEADER_GUARD
+#define PONG_MENU_HEADER_GUARD
 
-#include "pong.h" // needed for GameState struct
+#include "states.h"
 
 // Macros
 // --------------------------------------------------------------------------------
@@ -17,56 +17,24 @@
 // Menu spacing in pixels
 #define MENU_TITLE_SPACE_FROM_TOP 100 // space from the top of the screen
 #define MENU_SPACE_FROM_TITLE     200 // space between the first option and title text
-#define MENU_OPTION_SPACING       50  // spacing between each option
-
-#define MENU_TOTAL_OPTIONS 4
-#define ARRAY_SIZE(arr) (int)(sizeof(arr) / sizeof((arr)[0]))
-
-// Types and Structures
-// --------------------------------------------------------------------------------
-typedef enum MenuScreenState { MENU_SS_DEFAULT, MENU_SS_DIFFICULTY } MenuScreenState;
-
-typedef enum MenuOption // these correspond enum GameMode in pong.h
-{
-    MENU_1PLAYER, MENU_2PLAYER, MENU_DEMO, MENU_EXIT
-} MenuOption;
-
-typedef struct MenuButton // Holds data for a menu button
-{
-    const char *text;
-    int fontSize;
-    Vector2 position;
-    Vector2 offset;
-    Color color;
-} MenuButton;
-
-typedef struct MenuState // Holds data for the title screen menu
-{
-    MenuScreenState currentScreen;
-    MenuButton title;
-#if defined(PLATFORM_WEB)
-    MenuButton buttons[MENU_TOTAL_OPTIONS - 1];
-#else
-    MenuButton buttons[MENU_TOTAL_OPTIONS];
-#endif
-    MenuButton difficulties[3];
-    MenuOption selectedIndex;
-    float cursorSize;
-    float keyHeldTime;
-    int lastKeyHeld;
-    bool autoScroll;
-} MenuState;
+#define MENU_BUTTON_SPACING       50  // spacing between each button
 
 // Prototypes
 // --------------------------------------------------------------------------------
+
+// Initialize
 MenuState InitMenuState(void); // Initializes the entire title screen
-MenuButton InitMenuButtonTitle(char* text);
-MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offsetY);
-void UpdateMenuCursorMove(MenuState *menu);
-void UpdateMenuCursorSelect(MenuState *menu, GameState *pong);
-void UpdateTitleMenuFrame(MenuState *menu, GameState *pong);
+MenuButton InitMenuTitleButton(char* text);
+MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY);
+
+// Update
+void UpdateTitleMenuFrame(MenuState *menu, GameState *pong); // Updates the menu for the current frame
+void UpdateMenuCursorMove(MenuState *menu); // Updates the cursor for movement by user input
+void UpdateMenuCursorSelect(MenuState *menu, GameState *pong); // Updates the cursor for button selection
+
+// Draw
+void DrawTitleMenuFrame(MenuState *state); // Draws the menu for the current frame
 void DrawMenuElement(MenuButton *button);
 void DrawCursor(MenuState *menu);
-void DrawTitleMenuFrame(MenuState *state);
 
-#endif // TEST_MENU_HEADER_GUARD
+#endif // PONG_MENU_HEADER_GUARD

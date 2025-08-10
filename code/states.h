@@ -1,0 +1,106 @@
+// EXPLANATION:
+// Defines types and structs for state machines used across files
+
+#ifndef PONG_STATES_HEADER_GUARD
+#define PONG_STATES_HEADER_GUARD
+
+#include "raylib.h"
+
+// Title menu
+// --------------------------------------------------------------------------------
+
+#define ARRAY_SIZE(arr) (int)(sizeof(arr) / sizeof((arr)[0]))
+#define MENU_TOTAL_OPTIONS 4 // This is used so that there's no "Exit" button in the web/browser
+
+typedef enum MenuScreenState { MENU_SS_DEFAULT, MENU_SS_DIFFICULTY } MenuScreenState;
+
+typedef enum MenuOption // these correspond to enum GameMode (values start with MODE_)
+{
+    MENU_1PLAYER, MENU_2PLAYER, MENU_DEMO, MENU_EXIT
+} MenuOption;
+
+typedef struct MenuButton // Holds data for a menu button
+{
+    const char *text;
+    int fontSize;
+    Vector2 position;
+    Vector2 offset;
+    Color color;
+} MenuButton;
+
+typedef struct MenuState // Holds data for the title screen menu
+{
+    MenuScreenState currentScreen;
+    MenuButton title;
+#if defined(PLATFORM_WEB)
+    MenuButton buttons[MENU_TOTAL_OPTIONS - 1];
+#else
+    MenuButton buttons[MENU_TOTAL_OPTIONS];
+#endif
+    MenuButton difficulties[3];
+    MenuOption selectedIndex;
+    float cursorSize;
+    float keyHeldTime;
+    int lastKeyHeld;
+    bool autoScroll;
+} MenuState;
+
+// Pong game
+// --------------------------------------------------------------------------------
+
+typedef enum GameTurn { TURN_RIGHT_SIDE, TURN_LEFT_SIDE } GameTurn;
+
+typedef enum ScreenState
+{
+    SCREEN_LOGO, SCREEN_TITLE, SCREEN_GAMEPLAY, SCREEN_ENDING
+} ScreenState;
+
+typedef enum GameMode
+{
+    MODE_1PLAYER, MODE_2PLAYER, MODE_DEMO
+} GameMode;
+
+typedef enum Difficulty // Multiplier for CPU paddle speed
+{
+    DIFFICULTY_EASY, DIFFICULTY_MEDIUM, DIFFICULTY_HARD
+} Difficulty;
+
+typedef struct Paddle
+{
+    Vector2 position;
+    float nextHitPos; // Only used for Computer paddle
+                      // Determines the random spot on the paddle will aim to get the ball to hit
+    float speed;
+    int length;
+    int width;
+} Paddle;
+
+typedef struct Ball
+{
+    Vector2 position;
+    Vector2 direction;
+    float speed; // the ball is always set to this speed
+    int size;
+} Ball;
+
+typedef struct GameState
+{
+    Ball ball;
+    Paddle paddleL;
+    Paddle paddleR;
+    GameMode currentMode;
+    GameTurn currentTurn; // keeps track of whose turn it currently is
+    ScreenState currentScreen;
+    Difficulty difficulty; // unused for MODE_2PLAYER
+    int scoreL;
+    int scoreR;
+    bool playerWon;
+    bool isPaused;
+    float textFade;            // tracks fade value over time
+    float textFadeTimeElapsed; // tracks time for the fade animation
+    float winTimer;            // countdown after player wins
+    float scoreTimer;          // countdown after a score
+    bool gameShouldExit;       // flag to tell the game window to close
+} GameState;
+
+#endif // PONG_STATES_HEADER_GUARD

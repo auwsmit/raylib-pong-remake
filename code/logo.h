@@ -1,15 +1,10 @@
 // EXPLANATION:
-// For the raylib logo animation at start of program.
+// For the raylib logo animation at start of program
 
-#ifndef TEST_LOGO_HEADER_GUARD
-#define TEST_LOGO_HEADER_GUARD
+#ifndef PONG_LOGO_HEADER_GUARD
+#define PONG_LOGO_HEADER_GUARD
 
-// Macros
-// --------------------------------------------------------------------------------
-#define RAYLIB_LOGO_WIDTH 512 // takes multiples of 64
-                                 // 192 is the minimum size
-#define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH / 16)
-#define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
+#include "states.h"
 
 // Types and Structures
 // --------------------------------------------------------------------------------
@@ -32,10 +27,18 @@ typedef struct Logo {
     float alpha; // Useful for fading
 } Logo;
 
+// Macros
+// --------------------------------------------------------------------------------
+#define RAYLIB_LOGO_WIDTH 512 // takes multiples of 64
+                              // 192 is the minimum size
+#define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH / 16)
+#define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
+
 // Prototypes
 // --------------------------------------------------------------------------------
 Logo InitRaylibLogo(void); // Initialize the logo animation
-void UpdateRaylibLogo(Logo *logo); // Update logo animation for the current frame
+void UpdateRaylibLogo(Logo *logo, GameState *pong); // Update logo animation for the current frame
+                                                    // Also transitions to title screen when finished
 void DrawRaylibLogo(Logo *logo);
 
-#endif // TEST_LOGO_HEADER_GUARD
+#endif // PONG_LOGO_HEADER_GUARD

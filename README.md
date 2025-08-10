@@ -12,9 +12,13 @@ though, so I would appreciate anyone who can confirm if it works there.
 
 - `Enter` to select
 
-- Player 1: Press `W`/`S` to move. Hold `A`/`D`/`LShift` to move faster
+- Player 1:
+    - Press `W`/`S` to move
+    - Hold `A`/`D`/`LShift` to move faster
 
-- Player 2: Press `I`/`K` or `Up`/`Down` to move. Hold `J`/`L`/`Left`/`Right` to move faster
+- Player 2:
+    - Press `I`/`K` or `Up`/`Down` to move
+    - Hold `J`/`L`/`Left`/`Right` to move faster
 
 - `Esc`/`Backspace` to go back to title
 
@@ -35,11 +39,11 @@ though, so I would appreciate anyone who can confirm if it works there.
 ## Requirements to build:
 
 - Library: [raylib](https://www.raylib.com/), duh :P
-- A C compiler: [GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/), or [Visual Studio](https://visualstudio.microsoft.com/)
+- A C compiler: [GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/) ([llvm-mingw](https://github.com/mstorsjo/llvm-mingw) on Windows), or [Visual Studio](https://visualstudio.microsoft.com/)
 - Build system: [CMake](https://cmake.org/)
     - Alternatively, use [Make](https://en.wikipedia.org/wiki/Make_(software)) with GCC or Clang
 - [emscripten](https://emscripten.org/) for browser / web assembly compilation
 
 For Windows users with no build tools or less experience, [w64devkit](https://github.com/skeeto/w64devkit) is a fast and easy way to build this project. Just download and extract it anywhere. Then use the included unix-like terminal, or add the `w64devkit/bin` tools to your PATH. Now you can simply `make` this project like you would on Linux. As an added bonus, you now have access to many nice Unix command line tools.
 
-Also for Windows users, if you have GCC but not Visual Studio for some reason, you can use `build.bat gcc`.
+Also for Windows users, if you have GCC and CMake but not Visual Studio for some reason, you can use `build.bat gcc`.

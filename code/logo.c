@@ -1,10 +1,9 @@
 // EXPLANATION:
-// For the raylib logo animation at start of program.
-// See logo.h for more documentation/descriptions.
+// For the raylib logo animation at start of program
+// See logo.h for more documentation/descriptions
 
-#include "raylib.h"
-#include "config.h"
 #include "logo.h"
+#include "config.h"
 
 Logo InitRaylibLogo(void)
 {
@@ -13,8 +12,7 @@ Logo InitRaylibLogo(void)
         RENDER_WIDTH/2 - RAYLIB_LOGO_WIDTH/2,  // positionX
         RENDER_HEIGHT/2 - RAYLIB_LOGO_WIDTH/2, // positionY
 
-        0,  // framesCount
-        0,  // lettersCount
+        0, 0, // framesCount, lettersCount
 
         RAYLIB_LOGO_OUTLINE, // topSideRecWidth
         RAYLIB_LOGO_OUTLINE, // leftSideRecHeight
@@ -31,12 +29,16 @@ Logo InitRaylibLogo(void)
     return raylibLogo;
 }
 
-void UpdateRaylibLogo(Logo *logo)
+void UpdateRaylibLogo(Logo *logo, GameState *pong)
 {
     float deltaTime = GetFrameTime();
     const float growSpeed = RAYLIB_LOGO_WIDTH * 0.9375f; // Speed that lines grow
     const float letterDelay = 0.2f; // Time between each letter appearing
     const float fadeSpeed = 1.0f; // Fade out in 1 second
+
+    // Enter or space or click to skip logo animation
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
+        pong->currentScreen = SCREEN_TITLE;
 
     switch (logo->state)
     {
@@ -104,6 +106,7 @@ void UpdateRaylibLogo(Logo *logo)
             break;
 
         case END: // Animation is finished
+            pong->currentScreen = SCREEN_TITLE;
             break;
     }
 }

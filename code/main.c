@@ -1,16 +1,16 @@
 // EXPLANATION:
-// The main entry point for the game/program.
-// The meat of the game loop can be found in the "UpdateDrawFrame" function.
+// The main entry point for the game/program
+// The meat of the game loop can be found in the "UpdateDrawFrame" function
 
 #include "raylib.h"
 #include "raymath.h" // Required for: Vector2Clamp()
 
 #include "config.h"  // Program config, e.g. window title/size, fps, vsync
 #include "logo.h"    // Raylib logo animation
-#include "menu.h"    // Title menu logic
+#include "menu.h"    // Title menu
 #include "pong.h"    // Game logic
 
-#if defined(PLATFORM_WEB) // for compiling to wasm aka web assembly
+#if defined(PLATFORM_WEB) // for compiling to wasm (web assembly)
     #include <emscripten/emscripten.h>
 #endif
 
@@ -22,15 +22,16 @@ typedef struct AppData // Local variables for the game loop in main()
     Logo raylibLogo; // data for logo animation
     bool skipCurrentFrame;
     GameState pong;
-    MenuState menu; // data for main menu
+    MenuState titleMenu; // data for main menu
 } AppData;
 
 // Local Functions Declaration
 // --------------------------------------------------------------------------------
 void CreateNewWindow(void);     // Creates a new window with the proper initial settings
 void RunGameLoop(AppData *app); // Runs the game loop
-void UpdateDrawFrame(AppData *app); // Update and Draw the current frame.
+void UpdateDrawFrame(AppData *app); // Update and Draw the current frame
                                     // Most of the game loop's code is found in here
+void HandleFullscreenToggle(AppData *app);
 
 // Main entry point
 // --------------------------------------------------------------------------------
@@ -48,8 +49,8 @@ int main(void)
 
     app.skipCurrentFrame = false;
     app.raylibLogo = InitRaylibLogo();
+    app.titleMenu = InitMenuState();
     app.pong = InitGameState();
-    app.menu = InitMenuState();
 
     RunGameLoop(&app);
 
@@ -80,8 +81,8 @@ void CreateNewWindow(void)
 void RunGameLoop(AppData *app)
 {
 #if defined(PLATFORM_WEB)
-    int emscriptenFPS = 0; // Let emscripten handle the framerate because setting a specific one is kinda janky.
-                           // Generally, it will use whatever the monitor's refresh rate is.
+    int emscriptenFPS = 0; // Let emscripten handle the framerate because setting a specific one is kinda janky
+                           // Generally, it will use whatever the monitor's refresh rate is
     emscripten_set_main_loop_arg((em_arg_callback_func)UpdateDrawFrame, app, emscriptenFPS, 1);
 #else
     if (MAX_FRAMERATE > 0)
@@ -108,22 +109,7 @@ void UpdateDrawFrame(AppData *app)
     SetExitKey(KEY_Q);
     // SetExitKey(KEY_NULL); // No exit key
 
-#if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy.
-                           // For now just use emscripten's fullscreen button.
-    // Fullscreen input via F11, Alt+Enter, and Shift+F
-    bool fullscreenInputPressed = false;
-    fullscreenInputPressed |= IsKeyPressed(KEY_F11);
-    fullscreenInputPressed |=
-        ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
-        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
-    if (fullscreenInputPressed)
-    {
-        // Borderless Windowed is generally nicer to use on desktop
-        ToggleBorderlessWindowed();
-        // ToggleFullscreen();
-        app->skipCurrentFrame = true;
-    }
-#endif
+    HandleFullscreenToggle(app);
 
     if (app->skipCurrentFrame == true)
     {
@@ -135,34 +121,12 @@ void UpdateDrawFrame(AppData *app)
 
     switch(app->pong.currentScreen)
     {
-        case SCREEN_LOGO:
-            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
-            {
-                app->pong.currentScreen = SCREEN_TITLE;
-            }
-            UpdateRaylibLogo(&app->raylibLogo);
-            if (app->raylibLogo.state == END)
-            {
-                app->pong.currentScreen = SCREEN_TITLE;
-            }
-            break;
-
-        case SCREEN_TITLE:
-            UpdateTitleMenuFrame(&app->menu, &app->pong);
-            break;
-
-        case SCREEN_GAMEPLAY:
-            UpdatePongFrame(&app->pong);
-
-            // Escape or Backspace to title
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
-            {
-                app->raylibLogo = InitRaylibLogo();
-                app->pong = InitGameState();
-                app->menu = InitMenuState();
-                app->pong.currentScreen = SCREEN_TITLE;
-            }
-            break;
+        case SCREEN_LOGO:     UpdateRaylibLogo(&app->raylibLogo, &app->pong);
+                              break;
+        case SCREEN_TITLE:    UpdateTitleMenuFrame(&app->titleMenu, &app->pong);
+                              break;
+        case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->titleMenu);
+                              break;
 
         default: break;
     }
@@ -170,7 +134,7 @@ void UpdateDrawFrame(AppData *app)
 
     // Draw
     // --------------------------------------------------------------------------------
-    BeginTextureMode(app->renderTarget); // Draw to the render texture
+    BeginTextureMode(app->renderTarget); // Draw to the render texture for screen scaling
     {
         ClearBackground(BLACK); // Default background color
 
@@ -178,7 +142,7 @@ void UpdateDrawFrame(AppData *app)
         {
             case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawTitleMenuFrame(&app->menu);
+            case SCREEN_TITLE:    DrawTitleMenuFrame(&app->titleMenu);
                                   break;
             case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
                                   break;
@@ -186,7 +150,7 @@ void UpdateDrawFrame(AppData *app)
         }
     } EndTextureMode();
 
-    BeginDrawing();
+    BeginDrawing(); // Draw to screen
     {
         // Fill in any potential area outside of the render texture
         DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
@@ -200,5 +164,27 @@ void UpdateDrawFrame(AppData *app)
         // DrawFPS(0,0);
     } EndDrawing();
     // --------------------------------------------------------------------------------
+}
+
+void HandleFullscreenToggle(AppData *app)
+{
+#if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy
+                           // For now just use emscripten's fullscreen button
+
+    bool fullscreenInputPressed = false;
+    // Fullscreen inputs: F11, Alt+Enter, and Shift+F
+    fullscreenInputPressed |= IsKeyPressed(KEY_F11);
+    fullscreenInputPressed |=
+        ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
+        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
+    if (fullscreenInputPressed)
+    {
+        // Borderless Windowed is generally nicer to use on desktop
+        ToggleBorderlessWindowed();
+        // ToggleFullscreen();
+        app->skipCurrentFrame = true;
+    }
+
+#endif
 }
 

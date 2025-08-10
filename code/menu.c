@@ -1,28 +1,30 @@
 // EXPLANATION:
-// For managing the title screen menu.
-// See menu.h for more documentation/descriptions.
+// For managing the title screen menu
+// See menu.h for more documentation/descriptions
+
+#include "menu.h"
 
 #include "raylib.h"
-#include "raymath.h"
+#include "raymath.h" // needed for Vector math
+
 #include "config.h"
-#include "menu.h"
 
 MenuState InitMenuState(void)
 {
-    MenuButton title     = InitMenuButtonTitle("Pong Remake");
+    MenuButton title     = InitMenuTitleButton("Pong Remake");
 
     // Main buttons
-    MenuButton onePlayer = InitMenuButtonOption("One Player", &title, MENU_SPACE_FROM_TITLE);
-    MenuButton twoPlayer = InitMenuButtonOption("Two Player", &onePlayer, MENU_OPTION_SPACING);
-    MenuButton demo      = InitMenuButtonOption("Demo", &twoPlayer, MENU_OPTION_SPACING);
+    MenuButton onePlayer = InitMenuButton("One Player", &title, MENU_SPACE_FROM_TITLE);
+    MenuButton twoPlayer = InitMenuButton("Two Player", &onePlayer, MENU_BUTTON_SPACING);
+    MenuButton demo      = InitMenuButton("Demo", &twoPlayer, MENU_BUTTON_SPACING);
 #if !defined(PLATFORM_WEB)
-    MenuButton exitGame  = InitMenuButtonOption("Exit", &demo, MENU_OPTION_SPACING);
+    MenuButton exitGame  = InitMenuButton("Exit", &demo, MENU_BUTTON_SPACING);
 #endif
 
     // Difficulty buttons
-    MenuButton easy   = InitMenuButtonOption("Easy", &title, MENU_SPACE_FROM_TITLE);
-    MenuButton medium = InitMenuButtonOption("Medium", &easy, MENU_OPTION_SPACING);
-    MenuButton hard   = InitMenuButtonOption("Hard", &medium, MENU_OPTION_SPACING);
+    MenuButton easy   = InitMenuButton("Easy", &title, MENU_SPACE_FROM_TITLE);
+    MenuButton medium = InitMenuButton("Medium", &easy, MENU_BUTTON_SPACING);
+    MenuButton hard   = InitMenuButton("Hard", &medium, MENU_BUTTON_SPACING);
 
     MenuState state =
     {
@@ -46,13 +48,12 @@ MenuState InitMenuState(void)
     return state;
 }
 
-MenuButton InitMenuButtonTitle(char *text)
+MenuButton InitMenuTitleButton(char *text)
 {
     int fontSize = MENU_TITLE_SIZE;
     int textWidth = MeasureText(text, fontSize);
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
-    // int textPosY = (RENDER_HEIGHT / 2) - RENDER_HEIGHT / 2.5f;
-#if !defined(PLATFORM_WEB)
+#if !defined(PLATFORM_WEB) // different spacing for web
     float textPosY = MENU_TITLE_SPACE_FROM_TOP;
 #else
     float textPosY = MENU_TITLE_SPACE_FROM_TOP + MENU_BUTTON_SIZE;
@@ -69,7 +70,7 @@ MenuButton InitMenuButtonTitle(char *text)
     return button;
 }
 
-MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offsetY)
+MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY)
 {
     int fontSize = MENU_BUTTON_SIZE;
     int textWidth = MeasureText(text, fontSize);
@@ -85,6 +86,21 @@ MenuButton InitMenuButtonOption(char* text, MenuButton *originButton, float offs
     };
 
     return button;
+}
+
+void UpdateTitleMenuFrame(MenuState *menu, GameState *pong)
+{
+
+    UpdateMenuCursorMove(menu);
+    UpdateMenuCursorSelect(menu, pong);
+
+    // Escape or Backspace to go back
+    if ((IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) &&
+        menu->currentScreen != MENU_SS_DEFAULT)
+    {
+        menu->currentScreen = MENU_SS_DEFAULT;
+        menu->selectedIndex = 0;
+    }
 }
 
 void UpdateMenuCursorMove(MenuState *menu)
@@ -180,49 +196,6 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
     }
 }
 
-void UpdateTitleMenuFrame(MenuState *menu, GameState *pong)
-{
-
-    UpdateMenuCursorMove(menu);
-    UpdateMenuCursorSelect(menu, pong);
-
-    // Escape or Backspace to go back
-    if ((IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) &&
-        menu->currentScreen != MENU_SS_DEFAULT)
-    {
-        menu->currentScreen = MENU_SS_DEFAULT;
-        menu->selectedIndex = 0;
-    }
-}
-
-void DrawMenuElement(MenuButton *button)
-{
-    DrawText(button->text,
-             (int)button->position.x + (int)button->offset.x,
-             (int)button->position.y + (int)button->offset.y,
-             button->fontSize, RAYWHITE);
-}
-
-void DrawCursor(MenuState *menu)
-{
-    float size = menu->cursorSize;
-    MenuButton *selected = 0; // the option that the cursor is currently pointing at
-    if (menu->currentScreen == MENU_SS_DEFAULT)
-        selected = &menu->buttons[menu->selectedIndex];
-    else if (menu->currentScreen == MENU_SS_DIFFICULTY)
-        selected = &menu->difficulties[menu->selectedIndex];
-
-    Vector2 selectPointPos; // the corner/vertice pointing towards the right
-    Vector2 cursorOffset = (Vector2){-50.0f, (float)selected->fontSize / 2};
-    selectPointPos = Vector2Add(selected->position, cursorOffset);
-    selectPointPos = Vector2Add(selectPointPos, selected->offset);
-
-    DrawTriangle(Vector2Add(selectPointPos, (Vector2){ -size*2, size }),
-                 selectPointPos,
-                 Vector2Add(selectPointPos, (Vector2){ -size*2, -size }),
-                 RAYWHITE);
-}
-
 void DrawTitleMenuFrame(MenuState *menu)
 {
     DrawMenuElement(&menu->title);
@@ -251,4 +224,32 @@ void DrawTitleMenuFrame(MenuState *menu)
 
     // Debug:
     // DrawText(TextFormat("cursor selected: %i", menu->selectedIndex), 0, 40, 40, WHITE);
+}
+
+void DrawMenuElement(MenuButton *button)
+{
+    DrawText(button->text,
+             (int)button->position.x + (int)button->offset.x,
+             (int)button->position.y + (int)button->offset.y,
+             button->fontSize, RAYWHITE);
+}
+
+void DrawCursor(MenuState *menu)
+{
+    float size = menu->cursorSize;
+    MenuButton *selected = 0; // the option that the cursor is currently pointing at
+    if (menu->currentScreen == MENU_SS_DEFAULT)
+        selected = &menu->buttons[menu->selectedIndex];
+    else if (menu->currentScreen == MENU_SS_DIFFICULTY)
+        selected = &menu->difficulties[menu->selectedIndex];
+
+    Vector2 selectPointPos; // the corner/vertice pointing towards the right
+    Vector2 cursorOffset = (Vector2){-50.0f, (float)selected->fontSize / 2};
+    selectPointPos = Vector2Add(selected->position, cursorOffset);
+    selectPointPos = Vector2Add(selectPointPos, selected->offset);
+
+    DrawTriangle(Vector2Add(selectPointPos, (Vector2){ -size*2, size }),
+                 selectPointPos,
+                 Vector2Add(selectPointPos, (Vector2){ -size*2, -size }),
+                 RAYWHITE);
 }

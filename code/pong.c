@@ -1,11 +1,13 @@
 // EXPLANATION:
-// All the game's logic, including how/when to draw to screen.
-// See pong.h for more documentation/descriptions.
+// All the game's logic, including how/when to draw to screen
+// See pong.h for more documentation/descriptions
 
-#include "raylib.h"
-#include "raymath.h" // needed for vector math
-#include "config.h"
 #include "pong.h"
+
+#include "raymath.h" // needed for vector math
+
+#include "config.h"
+#include "menu.h" // needed to reset the title menu
 
 GameState InitGameState(void)
 {
@@ -173,6 +175,106 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
     ball->direction.x = (isLeftPaddle) ? cosf(newAngle) : -cosf(newAngle);
 }
 
+void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
+{
+    if (!pong->isPaused)
+    {
+        // Get the difficulty multiplier
+
+        // Update paddles
+        if (pong->currentMode == MODE_1PLAYER)
+        {
+            UpdatePaddlePlayer1(&pong->paddleL);
+            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
+                                 pong->currentTurn, pong->difficulty);
+        }
+        if (pong->currentMode == MODE_2PLAYER)
+        {
+            UpdatePaddlePlayer1(&pong->paddleL);
+            UpdatePaddlePlayer2(&pong->paddleR);
+        }
+        if (pong->currentMode == MODE_DEMO)
+        {
+            UpdatePaddleComputer(&pong->paddleL, &pong->ball,
+                                 pong->currentTurn, pong->difficulty);
+            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
+                                 pong->currentTurn, pong->difficulty);
+        }
+
+        // Update ball
+        if (pong->scoreTimer <= 0 ||
+            pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
+            UpdateBall(&pong->ball);
+
+        // Collision logic
+        BounceBallEdge(pong);
+        if (pong->playerWon == false)
+        {
+            BounceBallPaddle(&pong->ball, &pong->paddleL, &pong->currentTurn);
+            BounceBallPaddle(&pong->ball, &pong->paddleR, &pong->currentTurn);
+        }
+        EdgeCollisionPaddle(&pong->paddleL);
+        EdgeCollisionPaddle(&pong->paddleR);
+
+        // Check for winner
+        if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
+            pong->playerWon = true;
+
+        // Press Enter or Space to skip win screen
+        if (pong->playerWon == true && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)))
+            pong->winTimer = 0;
+
+        // Update timers for winning and scoring
+        if (pong->scoreTimer > 0)
+            pong->scoreTimer -= GetFrameTime();
+        if (pong->playerWon && pong->winTimer > 0)
+            pong->winTimer -= GetFrameTime();
+    }
+
+    // Update pause fade animation
+    static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
+    static bool fadingOut = false;
+    float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
+
+    if (pong->textFade >= 1.0f)
+        fadingOut = true;
+    else if (pong->textFade <= 0.0f)
+        fadingOut = false;
+    if (fadingOut)
+        fadeIncrement *= -1;
+
+    pong->textFade += fadeIncrement;
+
+    // Press Space or P to pause
+    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
+    {
+        pong->isPaused = !pong->isPaused;
+    }
+
+    // Reset game after a player wins
+    if (pong->playerWon == true && pong->winTimer <= 0)
+    {
+        Difficulty prevDifficulty = pong->difficulty;
+        *pong = InitGameState();
+        pong->currentScreen = SCREEN_GAMEPLAY;
+        pong->difficulty = prevDifficulty;
+    }
+
+    // Escape or Backspace to title
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
+    {
+        *titleMenu = InitMenuState();
+        *pong = InitGameState();
+        pong->currentScreen = SCREEN_TITLE;
+    }
+
+    // Debug: Press R to reset ball
+    // if (IsKeyPressed(KEY_R))
+    // {
+    //     ResetBall(&pong.ball);
+    // }
+}
+
 void UpdatePaddlePlayer1(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
@@ -233,17 +335,17 @@ void UpdatePaddleComputer(Paddle *paddle, Ball *ball, GameTurn currentTurn, Diff
     {
         paddle->speed = newSpeed * (difficulty + 1);
 
-        // Tweak difficulty speeds
+        // Tweak/adjust difficulty speeds
         if (difficulty == DIFFICULTY_EASY)
-            paddle->speed += paddle->speed * 0.50f;
-        else if (difficulty == DIFFICULTY_MEDIUM)
-            paddle->speed += paddle->speed * 0.00f;
+            paddle->speed += paddle->speed * 0.30f;
+        // else if (difficulty == DIFFICULTY_MEDIUM)
+        //     paddle->speed = paddle->speed * 0.05f;
         else if (difficulty == DIFFICULTY_HARD)
-            paddle->speed += paddle->speed * 0.00f;
+            paddle->speed -= paddle->speed * 0.10f;
 
         // Move slower after hitting ball
-        if (!movingTowardsPaddle && (distanceToBall < RENDER_WIDTH / 5))
-            paddle->speed += distanceToBall / PADDLE_SPEED / 4 * (difficulty + 1);
+        if (!movingTowardsPaddle && (distanceToBall < RENDER_WIDTH / 8))
+            paddle->speed /= 2;
 
         paddle->position.y += paddle->speed * GetFrameTime();
     }
@@ -276,162 +378,6 @@ void UpdateBall(Ball *ball)
     // Update ball's position based on direction
     Vector2 deltaTimeSpeed = Vector2Scale(ball->direction, GetFrameTime());
     ball->position = Vector2Add(ball->position, deltaTimeSpeed);
-
-}
-
-void UpdatePongFrame(GameState *pong)
-{
-    if (!pong->isPaused)
-    {
-        // Get the difficulty multiplier
-
-        // Update paddles
-        if (pong->currentMode == MODE_ONEPLAYER)
-        {
-            UpdatePaddlePlayer1(&pong->paddleL);
-            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
-                                 pong->currentTurn, pong->difficulty);
-        }
-        if (pong->currentMode == MODE_TWOPLAYER)
-        {
-            UpdatePaddlePlayer1(&pong->paddleL);
-            UpdatePaddlePlayer2(&pong->paddleR);
-        }
-        if (pong->currentMode == MODE_DEMO)
-        {
-            UpdatePaddleComputer(&pong->paddleL, &pong->ball,
-                                 pong->currentTurn, pong->difficulty);
-            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
-                                 pong->currentTurn, pong->difficulty);
-        }
-
-        // Update ball
-        if (pong->scoreTimer <= 0 ||
-            pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
-            UpdateBall(&pong->ball);
-
-        // Collision logic
-        BounceBallEdge(pong);
-        if (pong->playerWon == false)
-        {
-            BounceBallPaddle(&pong->ball, &pong->paddleL, &pong->currentTurn);
-            BounceBallPaddle(&pong->ball, &pong->paddleR, &pong->currentTurn);
-        }
-        EdgeCollisionPaddle(&pong->paddleL);
-        EdgeCollisionPaddle(&pong->paddleR);
-
-        // Check for winner
-        if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
-            pong->playerWon = true;
-
-        // Press Enter to skip win screen
-        if (pong->playerWon == true && (IsKeyPressed(KEY_ENTER)))
-            pong->winTimer = 0;
-
-        // Update timers for winning and scoring
-        if (pong->scoreTimer > 0)
-            pong->scoreTimer -= GetFrameTime();
-        if (pong->playerWon && pong->winTimer > 0)
-            pong->winTimer -= GetFrameTime();
-    }
-
-    // Update pause fade animation
-    static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
-    static bool fadingOut = false;
-    float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
-
-    if (pong->textFade >= 1.0f)
-        fadingOut = true;
-    else if (pong->textFade <= 0.0f)
-        fadingOut = false;
-    if (fadingOut)
-        fadeIncrement *= -1;
-
-    pong->textFade += fadeIncrement;
-
-    // Press Space or P to pause
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
-    {
-        pong->isPaused = !pong->isPaused;
-        pong->textFade = 1;
-    }
-
-    // Reset game after a player wins
-    if (pong->playerWon == true && pong->winTimer <= 0)
-    {
-        *pong = InitGameState();
-        pong->currentScreen = SCREEN_GAMEPLAY;
-    }
-
-    // Debug: Press R to reset ball
-    // if (IsKeyPressed(KEY_R))
-    // {
-    //     ResetBall(&pong.ball);
-    // }
-}
-
-void DrawDottedLine(bool isPaused, bool isDemoMode)
-{
-    int dashHeight = 40;
-    int spaceHeight = 40;
-    int lineWidth = 15;
-
-    // Calculate amount of dashes needed
-    int totalSegmentHeight = dashHeight + spaceHeight;
-    int totalSegments = (RENDER_HEIGHT - spaceHeight) / totalSegmentHeight;
-    int usedHeight = totalSegments * totalSegmentHeight - spaceHeight;
-    int offsetY = (RENDER_HEIGHT - usedHeight) / 2;
-
-    for (int i = 0; i < totalSegments; i++)
-    {
-        int y = offsetY + i * totalSegmentHeight;
-
-        // if dash overlaps with "paused" or "demo mode" message, do not draw
-        int pauseMessageYPos = RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2;
-        if (((isPaused || isDemoMode) &&
-             (y+dashHeight > pauseMessageYPos) &&
-             (y < pauseMessageYPos + SCORE_FONT_SIZE)))
-            continue;
-
-        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y,
-                      lineWidth, dashHeight, RAYWHITE);
-
-    }
-}
-
-void DrawScores(GameState *pong)
-{
-    int fontSize = 180;
-
-    const char *scoreLMsg = TextFormat("%i", pong->scoreL);
-    int scoreLWidth = MeasureText(scoreLMsg, fontSize);
-    int scoreLPosX = RENDER_WIDTH / 4 - scoreLWidth / 2;
-
-    const char *scoreRMsg = TextFormat("%i", pong->scoreR);
-    int scoreRWidth = MeasureText(scoreRMsg, fontSize);
-    int scoreRPosX = RENDER_WIDTH / 4 * 3 - scoreRWidth / 2;
-
-    int scorePosY = 50;
-    DrawText(scoreLMsg, scoreLPosX, scorePosY, fontSize, RAYWHITE);
-    DrawText(scoreRMsg, scoreRPosX, scorePosY, fontSize, RAYWHITE);
-}
-
-void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor)
-{
-    char *msg = "Winner";
-    int fontSize = 100; // this is also the font height because we're using the default font
-    int textWidth = MeasureText(msg, fontSize);
-    int textPosY = (RENDER_HEIGHT - fontSize) / 4;
-    if (scoreL == WIN_SCORE)
-    {
-        int textPosX = RENDER_WIDTH / 4 - textWidth / 2;
-        DrawText(msg, textPosX, textPosY, fontSize, fadeColor);
-    }
-    if (scoreR == WIN_SCORE)
-    {
-        int textPosX = RENDER_WIDTH / 4 * 3 - textWidth / 2;
-        DrawText(msg, textPosX, textPosY, fontSize, fadeColor);
-    }
 }
 
 void DrawPongFrame(GameState *pong)
@@ -458,7 +404,7 @@ void DrawPongFrame(GameState *pong)
     }
 
     // Draw difficulty mode
-    if (pong->currentMode == MODE_ONEPLAYER)
+    if (pong->currentMode == MODE_1PLAYER)
     {
         const char *difficultyText;
         int diffTextLength;
@@ -505,6 +451,70 @@ void DrawPongFrame(GameState *pong)
         DrawText(text, RENDER_WIDTH / 2 - textOffset,
                  RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
                  SCORE_FONT_SIZE, fadeColor);
+    }
+}
+
+void DrawDottedLine(bool isPaused, bool isDemoMode)
+{
+    int dashHeight = 40;
+    int spaceHeight = 40;
+    int lineWidth = 15;
+
+    // Calculate amount of dashes needed
+    int totalSegmentHeight = dashHeight + spaceHeight;
+    int totalSegments = (RENDER_HEIGHT - spaceHeight) / totalSegmentHeight;
+    int usedHeight = totalSegments * totalSegmentHeight - spaceHeight;
+    int offsetY = (RENDER_HEIGHT - usedHeight) / 2;
+
+    for (int i = 0; i < totalSegments; i++)
+    {
+        int y = offsetY + i * totalSegmentHeight;
+
+        // if dash overlaps with other text, do not draw
+        int pauseMessageYPos = RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2;
+        if (((isPaused || isDemoMode) &&
+             (y+dashHeight > pauseMessageYPos) &&
+             (y < pauseMessageYPos + SCORE_FONT_SIZE)))
+            continue;
+
+        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y,
+                      lineWidth, dashHeight, RAYWHITE);
+
+    }
+}
+
+void DrawScores(GameState *pong)
+{
+    int fontSize = 180;
+
+    const char *scoreLMsg = TextFormat("%i", pong->scoreL);
+    int scoreLWidth = MeasureText(scoreLMsg, fontSize);
+    int scoreLPosX = RENDER_WIDTH / 4 - scoreLWidth / 2;
+
+    const char *scoreRMsg = TextFormat("%i", pong->scoreR);
+    int scoreRWidth = MeasureText(scoreRMsg, fontSize);
+    int scoreRPosX = RENDER_WIDTH / 4 * 3 - scoreRWidth / 2;
+
+    int scorePosY = 50;
+    DrawText(scoreLMsg, scoreLPosX, scorePosY, fontSize, RAYWHITE);
+    DrawText(scoreRMsg, scoreRPosX, scorePosY, fontSize, RAYWHITE);
+}
+
+void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor)
+{
+    char *msg = "Winner";
+    int fontSize = 100; // this is also the font height because we're using the default font
+    int textWidth = MeasureText(msg, fontSize);
+    int textPosY = (RENDER_HEIGHT - fontSize) / 4;
+    if (scoreL == WIN_SCORE)
+    {
+        int textPosX = RENDER_WIDTH / 4 - textWidth / 2;
+        DrawText(msg, textPosX, textPosY, fontSize, fadeColor);
+    }
+    if (scoreR == WIN_SCORE)
+    {
+        int textPosX = RENDER_WIDTH / 4 * 3 - textWidth / 2;
+        DrawText(msg, textPosX, textPosY, fontSize, fadeColor);
     }
 }
 

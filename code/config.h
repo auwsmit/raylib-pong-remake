@@ -1,8 +1,8 @@
 // EXPLANATION:
-// For configuring aspects of the program outside of game logic.
+// For configuring aspects of the program outside of game logic
 
-#ifndef TEST_CONFIG_HEADER_GUARD
-#define TEST_CONFIG_HEADER_GUARD
+#ifndef PONG_CONFIG_HEADER_GUARD
+#define PONG_CONFIG_HEADER_GUARD
 
 // Global macros
 // --------------------------------------------------------------------------------
@@ -17,10 +17,10 @@
 #define DEFAULT_WIDTH (int)(DEFAULT_HEIGHT * ASPECT_RATIO)
 
 // there may be small bugs with very high FPS (uncapped + no vsync), but should work fine overall
-#define MAX_FRAMERATE 300 // Set to 0 for uncapped framerate
+#define MAX_FRAMERATE 420 // Set to 0 for uncapped framerate
 #define VSYNC_ENABLED true
 
 #define MAX(a, b) ((a)>(b)? (a) : (b)) // Used to calculate framebuffer scaling
 #define MIN(a, b) ((a)<(b)? (a) : (b))
 
-#endif // TEST_CONFIG_HEADER_GUARD
+#endif // PONG_CONFIG_HEADER_GUARD

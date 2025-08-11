@@ -5,6 +5,16 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Emscripten-Generated Code</title>
     <style>
+
+      body {
+        height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background-color: black;
+        color: white;
+      }
+
       .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
       textarea.emscripten { font-family: monospace; width: 80%; }
       div.emscripten { text-align: center; }
@@ -47,27 +57,28 @@
     </style>
   </head>
   <body>
-    <hr/>
     <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"><strong>emscripten</strong></center></figure>
     <div class="emscripten" id="status">Downloading...</div>
     <div class="emscripten">
-      <progress value="0" max="100" id="progress" hidden=1></progress>  
+      <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
     <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
-    <hr/>
-    <div class="emscripten">
-      <input type="checkbox" id="resize" checked>Resize canvas
-      <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer
+    <div class="controls">
+      <!-- <input type="checkbox" id="resize" checked>Resize canvas -->
+      <!-- <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer -->
       &nbsp;&nbsp;&nbsp;
-      <input type="button" value="Fullscreen" onclick="Module.requestFullscreen(document.getElementById('pointerLock').checked, 
-                                                                                document.getElementById('resize').checked)">
+      <!-- <input type="button" value="Fullscreen" onclick="Module.requestFullscreen(document.getElementById('pointerLock').checked, -->
+      <!--                                                                           document.getElementById('resize').checked)"> -->
+
+      <!-- NOTE: Always lock cursor and resize for fullscreen -->
+      <input type="button" value="Fullscreen" onclick="Module.requestFullscreen(true, true)">
+
     </div>
-    
-    <hr/>
-    <textarea class="emscripten" id="output" rows="8"></textarea>
-    <hr>
+    <!-- <hr/> -->
+    <!-- <textarea class="emscripten" id="output" rows="8"></textarea> -->
+    <!-- <hr> -->
     <script type='text/javascript'>
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');

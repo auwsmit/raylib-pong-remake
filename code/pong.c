@@ -84,18 +84,18 @@ bool CheckCollisionBallPaddle(Ball ball, Paddle paddle)
 
 void EdgeCollisionPaddle(Paddle *paddle)
 {
-    if (paddle->position.y <= 0)
-        paddle->position.y = 0; // Don't get stuck
-    if (paddle->position.y + paddle->length > RENDER_HEIGHT)
-        paddle->position.y = (float)RENDER_HEIGHT - paddle->length;
+    if (paddle->position.y <= FIELD_LINE_WIDTH)
+        paddle->position.y = FIELD_LINE_WIDTH; // Don't get stuck
+    if (paddle->position.y + paddle->length > RENDER_HEIGHT - FIELD_LINE_WIDTH)
+        paddle->position.y = (float)(RENDER_HEIGHT - FIELD_LINE_WIDTH - paddle->length);
 }
 
 void BounceBallEdge(GameState *pong)
 {
     int leftEdgeCollide = (pong->ball.position.x <= 0);
     int rightEdgeCollide = (pong->ball.position.x + pong->ball.size >= RENDER_WIDTH);
-    int topEdgeCollide = (pong->ball.position.y <= 0);
-    int bottomEdgeCollide = (pong->ball.position.y + pong->ball.size >= RENDER_HEIGHT);
+    int topEdgeCollide = (pong->ball.position.y <= FIELD_LINE_WIDTH);
+    int bottomEdgeCollide = (pong->ball.position.y + pong->ball.size >= RENDER_HEIGHT - FIELD_LINE_WIDTH);
 
     if (leftEdgeCollide && pong->ball.direction.x < 0)
     {
@@ -130,12 +130,12 @@ void BounceBallEdge(GameState *pong)
     if (topEdgeCollide && pong->ball.direction.y < 0)
     {
         pong->ball.direction.y *= -1;
-        pong->ball.position.y = 0;
+        pong->ball.position.y = FIELD_LINE_WIDTH;
     }
     if (bottomEdgeCollide && pong->ball.direction.y > 0)
     {
         pong->ball.direction.y *= -1;
-        pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size;
+        pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size - FIELD_LINE_WIDTH;
     }
 }
 
@@ -383,7 +383,7 @@ void UpdateBall(Ball *ball)
 void DrawPongFrame(GameState *pong)
 {
     // Draw dotted line down middle
-    DrawDottedLine(pong->isPaused, pong->currentMode == MODE_DEMO);
+    DrawFieldLines(pong->isPaused, pong->currentMode == MODE_DEMO);
 
     // Draw ball
     if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
@@ -403,7 +403,7 @@ void DrawPongFrame(GameState *pong)
                       (int)pong->paddleL.width,      (int)pong->paddleL.length, RAYWHITE);
     }
 
-    // Draw difficulty mode
+    // Draw difficulty mode text in lower right
     if (pong->currentMode == MODE_1PLAYER)
     {
         const char *difficultyText;
@@ -423,7 +423,7 @@ void DrawPongFrame(GameState *pong)
         diffTextLength = MeasureText(difficultyText, DIFFICULTY_FONT_SIZE);
         DrawText(difficultyText,
                  RENDER_WIDTH / 4 * 3 - diffTextLength / 2,
-                 RENDER_HEIGHT - DIFFICULTY_FONT_SIZE - 10,
+                 RENDER_HEIGHT - (DIFFICULTY_FONT_SIZE * 2),
                  DIFFICULTY_FONT_SIZE, RAYWHITE);
     }
 
@@ -454,31 +454,39 @@ void DrawPongFrame(GameState *pong)
     }
 }
 
-void DrawDottedLine(bool isPaused, bool isDemoMode)
+void DrawFieldLines(bool isPaused, bool isDemoMode)
 {
     int dashHeight = 40;
     int spaceHeight = 40;
-    int lineWidth = 15;
 
-    // Calculate amount of dashes needed
+    // Draw top and bottom lines
+    DrawRectangle(0, 0,
+                  RENDER_WIDTH, FIELD_LINE_WIDTH, RAYWHITE);
+    DrawRectangle(0, RENDER_HEIGHT - FIELD_LINE_WIDTH,
+                  RENDER_WIDTH, FIELD_LINE_WIDTH, RAYWHITE);
+
+    // Calculate amount of dashes needed for dotted line
     int totalSegmentHeight = dashHeight + spaceHeight;
     int totalSegments = (RENDER_HEIGHT - spaceHeight) / totalSegmentHeight;
     int usedHeight = totalSegments * totalSegmentHeight - spaceHeight;
     int offsetY = (RENDER_HEIGHT - usedHeight) / 2;
 
+    // Dotted line down the middle
     for (int i = 0; i < totalSegments; i++)
     {
         int y = offsetY + i * totalSegmentHeight;
 
-        // if dash overlaps with other text, do not draw
+        // do not draw dashes that overlap with text
+        // TODO: modify generalize for any UI elements on screen
+        //       will probably have to redo menu.h into ui.h or something
         int pauseMessageYPos = RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2;
         if (((isPaused || isDemoMode) &&
              (y+dashHeight > pauseMessageYPos) &&
              (y < pauseMessageYPos + SCORE_FONT_SIZE)))
             continue;
 
-        DrawRectangle(RENDER_WIDTH / 2 - lineWidth / 2, y,
-                      lineWidth, dashHeight, RAYWHITE);
+        DrawRectangle(RENDER_WIDTH / 2 - FIELD_LINE_WIDTH / 2, y,
+                      FIELD_LINE_WIDTH, dashHeight, RAYWHITE);
 
     }
 }

@@ -18,6 +18,8 @@
 #define BALL_SIZE 20      // Initial settings for ball
 #define BALL_SPEED 500
 
+#define FIELD_LINE_WIDTH  15 // Width of the field lines (top, bottom, dotted center-line)
+
 #define SCORE_FONT_SIZE 180     // Also used for pause font size
 #define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
 #define WIN_FONT_SIZE 100
@@ -57,7 +59,7 @@ void UpdateBall(Ball *ball); // Moves the ball based on its direction, and norma
 
 // Draw game
 void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame
-void DrawDottedLine(bool isPaused, bool isDemoMode);
+void DrawFieldLines(bool isPaused, bool isDemoMode);
 void DrawScores(GameState *pong);
 void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor);
 

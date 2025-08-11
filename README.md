@@ -40,8 +40,7 @@ though, so I would appreciate anyone who can confirm if it works there.
 
 - Library: [raylib](https://www.raylib.com/), duh :P
 - A C compiler: [GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/) ([llvm-mingw](https://github.com/mstorsjo/llvm-mingw) on Windows), or [Visual Studio](https://visualstudio.microsoft.com/)
-- Build system: [CMake](https://cmake.org/)
-    - Alternatively, use [Make](https://en.wikipedia.org/wiki/Make_(software)) with GCC or Clang
+- Build system: [CMake](https://cmake.org/) or [Make](https://en.wikipedia.org/wiki/Make_(software))
 - [emscripten](https://emscripten.org/) for browser / web assembly compilation
 
 For Windows users with no build tools or less experience, [w64devkit](https://github.com/skeeto/w64devkit) is a fast and easy way to build this project. Just download and extract it anywhere. Then use the included unix-like terminal, or add the `w64devkit/bin` tools to your PATH. Now you can simply `make` this project like you would on Linux. As an added bonus, you now have access to many nice Unix command line tools.

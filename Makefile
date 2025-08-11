@@ -102,7 +102,7 @@ endif
 # =============================================================================
 
 # NOTE: make alias syntax reminder
-# target: dependency1 dependency 2
+# target: dependency1 dependency2
 # $@ = target, $< = dependency1, $^ = all dependencies
 all: $(OUTPUT)$(EXTENSION)
 

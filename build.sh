@@ -20,5 +20,5 @@ elif [ $1 == "web" ]; then # Build for Web
     cp build/web/game.wasm .
 elif [ $1 == "clean" ]; then # Clean up old files
     rm -f game game.*
-    echo "CMake build files cleaned."
+    echo "CMake build files cleaned"
 fi

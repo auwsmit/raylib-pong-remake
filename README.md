@@ -34,7 +34,7 @@ though, so I would appreciate anyone who can confirm if it works there.
 ## Build for Browser
 - Same as desktop, but add `web` as an argument:
     - Run `build.sh web` or `make web`.
-- Run game with `emrun index.html`
+- Run game with `emrun game.html`
 
 ## Requirements to build:
 

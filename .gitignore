@@ -4,6 +4,7 @@ tags.*
 
 # build files
 build/
+build_web/
 out
 game
 *.exe

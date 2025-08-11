@@ -17,9 +17,6 @@ OBJS = $(CODE:.c=.o) $(CODE:.c=.obj)
 # Name of output executable
 OUTPUT = game
 
-# Name of output files for web assembly
-WEB_OUT = index
-
 # The executable's file extension (for Windows and Web platforms)
 EXTENSION =
 ifeq ($(OS),Windows_NT)
@@ -48,7 +45,7 @@ CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 # Define web compiler flags: WEBFLAGS
 # -----------------------------------------------------------------------
 # -Os                        # size optimization
-# -O2                        # optimization level 2, if used, also set --memory-init-file 0
+# -O2                        # optimization level 2
 # -sUSE_GLFW=3              # Use glfw3 library (context/input management)
 # -sALLOW_MEMORY_GROWTH=1   # to allow memory resizing -> WARNING: Audio buffers could FAIL!
 # -sTOTAL_MEMORY=16777216   # to specify heap memory size (default = 16MB) (67108864 = 64MB)
@@ -103,11 +100,16 @@ endif
 # =============================================================================
 # MAKEFILE TARGETS
 # =============================================================================
+
+# NOTE: make alias syntax reminder
+# target: dependency1 dependency 2
+# $@ = target, $< = dependency1, $^ = all dependencies
 all: $(OUTPUT)$(EXTENSION)
 
 # Compile for desktop (default)
 $(OUTPUT)$(EXTENSION): $(CODE) $(HEADERS)
-	$(CC) -o $(OUTPUT)$(EXTENSION) $(CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
+	$(CC) -o $@ $(CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
+
 # Use the MSVC C compiler (useful for getting .pdb debug info)
 # TODO: maybe auto-detect cl instead and move this into "Platform-specific" section?
 msvc: CFLAGS = /Fo:code\\ /Od /W3 /MD /Zi
@@ -115,16 +117,22 @@ msvc: LIBS = /link /DEBUG /LIBPATH:".\raylib\lib\windows-msvc" raylib.lib \
     opengl32.lib gdi32.lib winmm.lib user32.lib shell32.lib
 msvc:
 	cl /Fe:$(OUTPUT)$(EXTENSION) $(CODE) $(CFLAGS) /I".\raylib\include" $(LIBS)
-	@rm $(OUTPUT).ilk
 
 # Compile for Web:
 # Use a local copy of raylib's web library in case it isn't available
 web: LIBS = -lraylib -L$(RAYLIB_LIB)/web
 web:
-	emcc -o $(WEB_OUT).html $(CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS)
+	emcc -o $(OUTPUT).html $(CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS)
+
+# For deploying to GitHub Pages
+# See the related workflow file here: .github\workflows\deploy.yaml
+web-release: LIBS = -lraylib -L$(RAYLIB_LIB)/web
+web-release:
+	@mkdir -p build_web
+	emcc -o build_web/index.html $(CODE) $(WEBFLAGS) -O2 $(INCLUDES) $(LIBS)
 
 # Clean up old build files
 clean:
 	@rm -rf $(OUTPUT)$(EXTENSION) $(WEB_OUT).html $(WEB_OUT).js $(WEB_OUT).wasm \
-	    $(OBJS) $(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi
-	@echo "Make build files cleaned."
+	    $(OBJS) $(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi build_web/
+	@echo "Make build files cleaned"

@@ -115,16 +115,15 @@ void UpdateMenuCursorMove(MenuState *menu)
     if (menu->currentScreen == MENU_SS_DIFFICULTY)
         indexLimit = ARRAY_SIZE(menu->difficulties) - 1;
 
-
     // Move cursor
-    bool menuInputUp = (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP));
-    bool menuInputDown = (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN));
+    bool isMenuInputUp = (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP));
+    bool isMenuInputDown = (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN));
     const float autoScrollInitPause = 0.6f;
 
     if ((!menu->autoScroll && menu->keyHeldTime == 0) ||
         (menu->autoScroll && menu->keyHeldTime >= 0.1f))
     {
-        if (menuInputUp)
+        if (isMenuInputUp)
         {
             if (menu->selectedIndex > 0)
                 menu->selectedIndex--;
@@ -132,7 +131,7 @@ void UpdateMenuCursorMove(MenuState *menu)
                 menu->selectedIndex = indexLimit;
             menu->keyHeldTime = 0;
         }
-        else if (menuInputDown)
+        else if (isMenuInputDown)
         {
             if ((int)menu->selectedIndex < indexLimit)
                 menu->selectedIndex++;
@@ -143,7 +142,7 @@ void UpdateMenuCursorMove(MenuState *menu)
     }
 
     // Update data needed for auto scrolling after holding Up or Down
-    if (menuInputUp || menuInputDown)
+    if (isMenuInputUp || isMenuInputDown)
     {
         menu->keyHeldTime += GetFrameTime();
         if (IsKeyDown(menu->lastKeyHeld))
@@ -194,6 +193,9 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
             pong->currentScreen = SCREEN_GAMEPLAY;
         }
     }
+
+    if (pong->currentScreen == SCREEN_GAMEPLAY)
+        HideCursor();
 }
 
 void DrawTitleMenuFrame(MenuState *menu)

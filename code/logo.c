@@ -37,7 +37,7 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
     const float fadeSpeed = 1.0f; // Fade out in 1 second
 
     // Enter or space or click to skip logo animation
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
         pong->currentScreen = SCREEN_TITLE;
 
     switch (logo->state)

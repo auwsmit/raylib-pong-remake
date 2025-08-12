@@ -66,6 +66,7 @@ GameState InitGameState(void)
         SCORE_PAUSE_TIME,  // scoreTimer
         false,             // gameShouldExit
     };
+
     return state;
 }
 
@@ -185,6 +186,7 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         if (pong->currentMode == MODE_1PLAYER)
         {
             UpdatePaddlePlayer1(&pong->paddleL);
+            UpdatePaddleMouseInput(&pong->paddleL);
             UpdatePaddleComputer(&pong->paddleR, &pong->ball,
                                  pong->currentTurn, pong->difficulty);
         }
@@ -220,8 +222,9 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
             pong->playerWon = true;
 
-        // Press Enter or Space to skip win screen
-        if (pong->playerWon == true && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)))
+        // Press Enter or Space or Click to skip win screen
+        if (pong->playerWon == true &&
+            (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP)))
             pong->winTimer = 0;
 
         // Update timers for winning and scoring
@@ -266,6 +269,7 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         *titleMenu = InitMenuState();
         *pong = InitGameState();
         pong->currentScreen = SCREEN_TITLE;
+        ShowCursor();
     }
 
     // Debug: Press R to reset ball
@@ -312,6 +316,25 @@ void UpdatePaddlePlayer2(Paddle *paddle)
     // Update paddle
     paddle->speed = newSpeed;
     paddle->position.y += paddle->speed * GetFrameTime();
+}
+
+void UpdatePaddleMouseInput(Paddle *paddle)
+{
+    Vector2 scaledMousePos = GetMousePosition();
+    scaledMousePos.x *= (float)RENDER_WIDTH / GetScreenWidth();
+    scaledMousePos.y *= (float)RENDER_HEIGHT / GetScreenHeight();
+
+    // Only move if the mouse moved and if no keyboard input was detected
+    if (Vector2Length(GetMouseDelta()) > 0 && paddle->speed == 0)
+    {
+        paddle->position.y = scaledMousePos.y - paddle->length / 2;
+
+        // float distBetweenMousePaddle = fabsf(scaledMousePos.x - paddle->position.x);
+        // if (distBetweenMousePaddle < RENDER_WIDTH / 2)
+        //     HideCursor();
+        // else
+        //     ShowCursor();
+    }
 }
 
 void UpdatePaddleComputer(Paddle *paddle, Ball *ball, GameTurn currentTurn, Difficulty difficulty)

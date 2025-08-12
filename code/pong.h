@@ -51,9 +51,10 @@ void BounceBallPaddle(Ball *ball,     // Ball bounces off paddle
 
 // Update game
 void UpdatePongFrame(GameState *pong, MenuState *titleMenu); // Updates all the game's data and objects for the current frame
-void UpdatePaddlePlayer1(Paddle *paddle); // Paddle updates based on player input (W/S with Left Shift)
-void UpdatePaddlePlayer2(Paddle *paddle); // Paddle updates based on player input (O/L and Up/Down with Right Shift)
-void UpdatePaddleComputer(Paddle *paddle, // Paddle updates based on Computer AI
+void UpdatePaddleMouseInput(Paddle *paddle); // Updates paddle's position based on the mouse
+void UpdatePaddlePlayer1(Paddle *paddle); // Paddle speed updates based on player input (W/S with Left Shift)
+void UpdatePaddlePlayer2(Paddle *paddle); // Paddle speed updates based on player input (O/L and Up/Down with Right Shift)
+void UpdatePaddleComputer(Paddle *paddle, // Paddle speed updates based on Computer AI
                           Ball *ball, GameTurn currentTurn, Difficulty difficulty); // TODO: pass *pong instead?
 void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed
 

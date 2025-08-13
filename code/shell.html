@@ -6,13 +6,34 @@
     <title>Emscripten-Generated Code</title>
     <style>
 
+      * {
+        background-color: black;
+        color: white;
+      }
+
       body {
         height: 100vh;
         margin: 0;
         display: grid;
         place-items: center;
-        background-color: black;
-        color: white;
+      }
+
+      .game-container {
+        display: inline-block;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 8px;
+      }
+
+      .controls a,
+      .controls input {
+        font-size: 1.2rem;
+        padding: 0.4em 0.8em;
       }
 
       .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
@@ -57,29 +78,39 @@
     </style>
   </head>
   <body>
-    <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"><strong>emscripten</strong></center></figure>
-    <div class="emscripten" id="status">Downloading...</div>
-    <div class="emscripten">
-      <progress value="0" max="100" id="progress" hidden=1></progress>
-    </div>
-    <div class="emscripten_border">
-      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
-    </div>
-    <div class="controls">
-      <!-- <input type="checkbox" id="resize" checked>Resize canvas -->
-      <!-- <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer -->
-      &nbsp;&nbsp;&nbsp;
-      <!-- <input type="button" value="Fullscreen" onclick="Module.requestFullscreen(document.getElementById('pointerLock').checked, -->
-      <!--                                                                           document.getElementById('resize').checked)"> -->
 
-      <!-- NOTE: Disable cursor lock and enable resize for fullscreen -->
-      <input type="button" value="Fullscreen" onclick="Module.requestFullscreen(false, true)">
-
+    <div class="game-container">
+      <figure style="overflow:visible;" id="spinner">
+        <div class="spinner"></div>
+        <center style="margin-top:0.5em"><strong>emscripten</strong></center>
+      </figure>
+      <div class="emscripten" id="status">Downloading...</div>
+      <div class="emscripten">
+        <progress value="0" max="100" id="progress" hidden=1></progress>
+      </div>
+      <div class="emscripten_border">
+        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+      </div>
+      <div class="controls">
+        <div style="flex: 1; text-align: left;">
+          <a href="https://github.com/auwsmit/raylib-pong-remake" target="_blank">Source code on GitHub</a>
+        </div>
+        <div style="flex: 1; text-align: right; padding-right: 20px;">
+          <input type="button" value="Fullscreen"
+                 onclick="Module.requestFullscreen(DISABLE_POINTER_LOCK, ENABLE_RESIZE)">
+        </div>
+      </div>
     </div>
-    <!-- <hr/> -->
-    <!-- <textarea class="emscripten" id="output" rows="8"></textarea> -->
-    <!-- <hr> -->
+
     <script type='text/javascript'>
+
+      // Fullscreen option constants
+      const ENABLE_POINTER_LOCK = true;
+      const DISABLE_POINTER_LOCK = false;
+
+      const ENABLE_RESIZE = true;
+      const DISABLE_RESIZE = false;
+
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
       var spinnerElement = document.getElementById('spinner');

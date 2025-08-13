@@ -17,7 +17,7 @@
 #define DEFAULT_WIDTH (int)(DEFAULT_HEIGHT * ASPECT_RATIO)
 
 // there may be small bugs with very high FPS (uncapped + no vsync), but should work fine overall
-#define MAX_FRAMERATE 420 // Set to 0 for uncapped framerate
+#define MAX_FRAMERATE 120 // Set to 0 for uncapped framerate
 #define VSYNC_ENABLED true
 
 #define MAX(a, b) ((a)>(b)? (a) : (b)) // Used to calculate framebuffer scaling

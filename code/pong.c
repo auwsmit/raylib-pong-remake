@@ -178,10 +178,25 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
 
 void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
 {
+
+    // Input to go back to title screen
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) ||
+        (pong->currentMode == MODE_DEMO && (IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))))
+    {
+        *titleMenu = InitMenuState();
+        *pong = InitGameState();
+        pong->currentScreen = SCREEN_TITLE;
+        return;
+    }
+
+    // Press Space or P to pause
+    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
+    {
+        pong->isPaused = !pong->isPaused;
+    }
+
     if (!pong->isPaused)
     {
-        // Get the difficulty multiplier
-
         // Update paddles
         if (pong->currentMode == MODE_1PLAYER)
         {
@@ -248,12 +263,6 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
 
     pong->textFade += fadeIncrement;
 
-    // Press Space or P to pause
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
-    {
-        pong->isPaused = !pong->isPaused;
-    }
-
     // Reset game after a player wins
     if (pong->playerWon == true && pong->winTimer <= 0)
     {
@@ -261,18 +270,6 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         *pong = InitGameState();
         pong->currentScreen = SCREEN_GAMEPLAY;
         pong->difficulty = prevDifficulty;
-    }
-
-    // Escape or Backspace or Right click to title
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) ||
-        IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-    {
-        *titleMenu = InitMenuState();
-        *pong = InitGameState();
-        pong->currentScreen = SCREEN_TITLE;
-#if !defined(PLATFORM_WEB)
-        ShowCursor();
-#endif
     }
 
     // Debug: Press R to reset ball

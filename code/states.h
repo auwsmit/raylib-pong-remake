@@ -10,11 +10,10 @@
 // --------------------------------------------------------------------------------
 
 #define ARRAY_SIZE(arr) (int)(sizeof(arr) / sizeof((arr)[0]))
-#define MENU_TOTAL_OPTIONS 4 // This is used so that there's no "Exit" button in the web/browser
 
 typedef enum MenuScreenState { MENU_SS_DEFAULT, MENU_SS_DIFFICULTY } MenuScreenState;
 
-typedef enum MenuOption // these correspond to enum GameMode (values start with MODE_)
+typedef enum MenuOption // these correspond to enum GameMode (e.g. MODE_1PLAYER)
 {
     MENU_1PLAYER, MENU_2PLAYER, MENU_DEMO, MENU_EXIT
 } MenuOption;
@@ -24,7 +23,6 @@ typedef struct MenuButton // Holds data for a menu button
     const char *text;
     int fontSize;
     Vector2 position;
-    Vector2 offset;
     Color color;
 } MenuButton;
 
@@ -32,10 +30,11 @@ typedef struct MenuState // Holds data for the title screen menu
 {
     MenuScreenState currentScreen;
     MenuButton title;
-#if defined(PLATFORM_WEB)
-    MenuButton buttons[MENU_TOTAL_OPTIONS - 1];
+#if defined(PLATFORM_WEB) // No exit button for Web
+                          // TODO: dynamically allocate dis
+    MenuButton buttons[3];
 #else
-    MenuButton buttons[MENU_TOTAL_OPTIONS];
+    MenuButton buttons[4];
 #endif
     MenuButton difficulties[4];
     MenuOption selectedIndex;
@@ -43,7 +42,6 @@ typedef struct MenuState // Holds data for the title screen menu
     float keyHeldTime;
     bool firstFrame; // used for mouse selection
     bool autoScroll;
-    bool mouseWithinButton;
 } MenuState;
 
 // Pong game

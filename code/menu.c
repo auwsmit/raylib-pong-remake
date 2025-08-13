@@ -194,8 +194,10 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
         }
     }
 
+#if !defined(PLATFORM_WEB)
     if (pong->currentScreen == SCREEN_GAMEPLAY)
         HideCursor();
+#endif
 }
 
 void DrawTitleMenuFrame(MenuState *menu)
@@ -230,9 +232,16 @@ void DrawTitleMenuFrame(MenuState *menu)
 
 void DrawMenuElement(MenuButton *button)
 {
-    DrawText(button->text,
-             (int)button->position.x + (int)button->offset.x,
-             (int)button->position.y + (int)button->offset.y,
+    int elementPosX = (int)button->position.x + (int)button->offset.x;
+    int elementPosY = (int)button->position.y + (int)button->offset.y;
+
+    // // Draw box around text
+    // int padding = 20;
+    // DrawRectangle(elementPosX-padding, elementPosY-padding,
+    //               MeasureText(button->text, button->fontSize) + padding * 2,
+    //               button->fontSize + padding * 2, Fade(BLACK,0.0f));
+
+    DrawText(button->text, elementPosX, elementPosY,
              button->fontSize, RAYWHITE);
 }
 

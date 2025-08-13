@@ -269,7 +269,9 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         *titleMenu = InitMenuState();
         *pong = InitGameState();
         pong->currentScreen = SCREEN_TITLE;
+#if !defined(PLATFORM_WEB)
         ShowCursor();
+#endif
     }
 
     // Debug: Press R to reset ball

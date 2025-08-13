@@ -25,6 +25,7 @@ MenuState InitMenuState(void)
     MenuButton easy   = InitMenuButton("Easy", &title, MENU_SPACE_FROM_TITLE);
     MenuButton medium = InitMenuButton("Medium", &easy, MENU_BUTTON_SPACING);
     MenuButton hard   = InitMenuButton("Hard", &medium, MENU_BUTTON_SPACING);
+    MenuButton back   = InitMenuButton("Back", &hard, MENU_BUTTON_SPACING);
 
     MenuState state =
     {
@@ -37,14 +38,16 @@ MenuState InitMenuState(void)
 #endif
         },
         { // difficulties
-            easy, medium, hard
+            easy, medium, hard, back
         },
         0,     // selectedIndex
         MENU_CURSOR_SIZE, // cursorSize
         0.0f,  // keyHeldTime
-        0,     // lastKeyHeld
+        true, // firstFrame
         false, // autoScroll
+        false, // mouseWithinButton
     };
+
     return state;
 }
 
@@ -90,32 +93,61 @@ MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY)
 
 void UpdateTitleMenuFrame(MenuState *menu, GameState *pong)
 {
-
-    UpdateMenuCursorMove(menu);
-    UpdateMenuCursorSelect(menu, pong);
-
     // Escape or Backspace to go back
     if ((IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) &&
         menu->currentScreen != MENU_SS_DEFAULT)
     {
         menu->currentScreen = MENU_SS_DEFAULT;
-        menu->selectedIndex = 0;
+        menu->firstFrame = true;
     }
+
+    UpdateMenuCursorSelect(menu, pong);
+    UpdateMenuCursorMove(menu);
 }
 
 void UpdateMenuCursorMove(MenuState *menu)
 {
-    int indexLimit; // used to determine the beginning/end of list
-    if (menu->currentScreen == MENU_SS_DEFAULT)
-#if defined(PLATFORM_WEB)
-        indexLimit = MENU_TOTAL_OPTIONS - 2;
-#else
-        indexLimit = MENU_TOTAL_OPTIONS - 1;
-#endif
-    if (menu->currentScreen == MENU_SS_DIFFICULTY)
-        indexLimit = ARRAY_SIZE(menu->difficulties) - 1;
+    if (menu->firstFrame == true )
+    {
+        if (menu->currentScreen == MENU_SS_DEFAULT)
+            menu->selectedIndex = 0;
+        else if (menu->currentScreen == MENU_SS_DIFFICULTY)
+            menu->selectedIndex = (MenuOption)DIFFICULTY_MEDIUM;
+    }
 
-    // Move cursor
+    int totalButtons;
+    if (menu->currentScreen == MENU_SS_DEFAULT)
+        totalButtons = ARRAY_SIZE(menu->buttons);
+    else if (menu->currentScreen == MENU_SS_DIFFICULTY)
+        totalButtons = ARRAY_SIZE(menu->difficulties);
+
+    // Move cursor via mouse
+    bool mouseMoved = Vector2Length(GetMouseDelta()) > 0;
+    if (mouseMoved || menu->firstFrame)
+    {
+        menu->mouseWithinButton = false;
+        Vector2 scaleFactor = { (float)RENDER_WIDTH / GetScreenWidth(),
+            (float)RENDER_HEIGHT / GetScreenHeight() };
+        Vector2 mousePos = Vector2Multiply(GetMousePosition(), scaleFactor);
+
+        for (int i = 0; i < totalButtons; i++)
+        {
+            MenuButton *currentButton;
+            if (menu->currentScreen == MENU_SS_DEFAULT)
+                currentButton = &menu->buttons[i];
+            else if (menu->currentScreen == MENU_SS_DIFFICULTY)
+                currentButton = &menu->difficulties[i];
+
+            if (isMouseWithinButton(mousePos, currentButton))
+            {
+                menu->mouseWithinButton = true;
+                menu->selectedIndex = i;
+                menu->autoScroll = false;
+            }
+        }
+    }
+
+    // Move cursor via keyboard
     bool isMenuInputUp = (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP));
     bool isMenuInputDown = (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN));
     const float autoScrollInitPause = 0.6f;
@@ -128,12 +160,12 @@ void UpdateMenuCursorMove(MenuState *menu)
             if (menu->selectedIndex > 0)
                 menu->selectedIndex--;
             else
-                menu->selectedIndex = indexLimit;
+                menu->selectedIndex = totalButtons - 1;
             menu->keyHeldTime = 0;
         }
-        else if (isMenuInputDown)
+        if (isMenuInputDown)
         {
-            if ((int)menu->selectedIndex < indexLimit)
+            if ((int)menu->selectedIndex < totalButtons - 1)
                 menu->selectedIndex++;
             else
                 menu->selectedIndex = 0;
@@ -141,56 +173,57 @@ void UpdateMenuCursorMove(MenuState *menu)
         }
     }
 
-    // Update data needed for auto scrolling after holding Up or Down
+    // Update auto-scroll timer when holding keys
     if (isMenuInputUp || isMenuInputDown)
     {
         menu->keyHeldTime += GetFrameTime();
-        if (IsKeyDown(menu->lastKeyHeld))
+        if (menu->keyHeldTime >= autoScrollInitPause)
         {
-            if (menu->keyHeldTime >= autoScrollInitPause)
-            {
-                menu->autoScroll = true;
-            }
+            menu->autoScroll = true;
         }
-
-        // Update last key held
-        int currentKey = GetKeyPressed();
-        if (currentKey != 0)
-            menu->lastKeyHeld = currentKey;
     }
     else
     {
-        menu->lastKeyHeld = 0;
         menu->keyHeldTime = 0;
         menu->autoScroll = false;
     }
+
+    menu->firstFrame = false;
 }
 
 void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
 {
-    MenuOption selectedChoice = menu->selectedIndex;
-    if (IsKeyPressed(KEY_ENTER))
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) ||
+        (IsGestureDetected(GESTURE_TAP) && menu->mouseWithinButton))
     {
         if (menu->currentScreen == MENU_SS_DEFAULT)
         {
-            if (selectedChoice == MENU_EXIT)
+            if (menu->selectedIndex == MENU_EXIT)
                 pong->gameShouldExit = true;
-            else if (selectedChoice == MENU_1PLAYER)
+            else if (menu->selectedIndex == MENU_1PLAYER)
             {
-                pong->currentMode   = (GameMode)selectedChoice;
+                pong->currentMode   = (GameMode)menu->selectedIndex;
                 menu->currentScreen = MENU_SS_DIFFICULTY;
-                menu->selectedIndex = (MenuOption)DIFFICULTY_MEDIUM;
+                menu->firstFrame = true;
             }
             else
             {
-                pong->currentMode = (GameMode)selectedChoice;
+                pong->currentMode = (GameMode)menu->selectedIndex;
                 pong->currentScreen = SCREEN_GAMEPLAY;
             }
         }
         else if (menu->currentScreen == MENU_SS_DIFFICULTY)
         {
-            pong->difficulty = (Difficulty)selectedChoice;
-            pong->currentScreen = SCREEN_GAMEPLAY;
+            if (menu->selectedIndex == MENU_EXIT)
+            {
+                    menu->currentScreen = MENU_SS_DEFAULT;
+                    menu->firstFrame = true;
+            }
+            else
+            {
+                pong->difficulty = (Difficulty)menu->selectedIndex;
+                pong->currentScreen = SCREEN_GAMEPLAY;
+            }
         }
     }
 
@@ -198,6 +231,20 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
     if (pong->currentScreen == SCREEN_GAMEPLAY)
         HideCursor();
 #endif
+}
+
+bool isMouseWithinButton(Vector2 mousePos, MenuButton *button)
+{
+    int padding = 20;
+    int buttonWidth = MeasureText(button->text, button->fontSize);
+    Vector2 buttonPos = Vector2Add(button->position, button->offset);
+    if ((mousePos.x >= buttonPos.x - padding) &&
+        (mousePos.x <= buttonPos.x + buttonWidth + padding) &&
+        (mousePos.y >= buttonPos.y - padding) &&
+        (mousePos.y <= buttonPos.y + button->fontSize + padding))
+        return true;
+    else
+        return false;
 }
 
 void DrawTitleMenuFrame(MenuState *menu)
@@ -234,12 +281,6 @@ void DrawMenuElement(MenuButton *button)
 {
     int elementPosX = (int)button->position.x + (int)button->offset.x;
     int elementPosY = (int)button->position.y + (int)button->offset.y;
-
-    // // Draw box around text
-    // int padding = 20;
-    // DrawRectangle(elementPosX-padding, elementPosY-padding,
-    //               MeasureText(button->text, button->fontSize) + padding * 2,
-    //               button->fontSize + padding * 2, Fade(BLACK,0.0f));
 
     DrawText(button->text, elementPosX, elementPosY,
              button->fontSize, RAYWHITE);

@@ -37,12 +37,13 @@ typedef struct MenuState // Holds data for the title screen menu
 #else
     MenuButton buttons[MENU_TOTAL_OPTIONS];
 #endif
-    MenuButton difficulties[3];
+    MenuButton difficulties[4];
     MenuOption selectedIndex;
     float cursorSize;
     float keyHeldTime;
-    int lastKeyHeld;
+    bool firstFrame; // used for mouse selection
     bool autoScroll;
+    bool mouseWithinButton;
 } MenuState;
 
 // Pong game
@@ -69,7 +70,7 @@ typedef struct Paddle
 {
     Vector2 position;
     float nextHitPos; // Only used for Computer paddle
-                      // Determines the random spot on the paddle will aim to get the ball to hit
+                      // Determines how the computer will angle its next bounce
     float speed;
     int length;
     int width;
@@ -96,11 +97,11 @@ typedef struct GameState
     int scoreR;
     bool playerWon;
     bool isPaused;
+    bool gameShouldExit;       // flag to tell the game window to close
     float textFade;            // tracks fade value over time
     float textFadeTimeElapsed; // tracks time for the fade animation
     float winTimer;            // countdown after player wins
     float scoreTimer;          // countdown after a score
-    bool gameShouldExit;       // flag to tell the game window to close
 } GameState;
 
 #endif // PONG_STATES_HEADER_GUARD

@@ -27,10 +27,11 @@ MenuState InitMenuState(void); // Initializes the entire title screen
 MenuButton InitMenuTitleButton(char* text);
 MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY);
 
-// Update
+// Update / Input
 void UpdateTitleMenuFrame(MenuState *menu, GameState *pong); // Updates the menu for the current frame
 void UpdateMenuCursorMove(MenuState *menu); // Updates the cursor for movement by user input
 void UpdateMenuCursorSelect(MenuState *menu, GameState *pong); // Updates the cursor for button selection
+bool isMouseWithinButton(Vector2 mousePos, MenuButton *button);
 
 // Draw
 void DrawTitleMenuFrame(MenuState *state); // Draws the menu for the current frame

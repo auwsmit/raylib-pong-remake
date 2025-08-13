@@ -60,11 +60,11 @@ GameState InitGameState(void)
         0, 0,              // scoreL, scoreR
         false,             // playerWon
         false,             // isPaused
+        false,             // gameShouldExit
         0.0f,              // textFade
         0.0f,              // textFadeTimeElapsed
         WIN_PAUSE_TIME,    // winTimer
         SCORE_PAUSE_TIME,  // scoreTimer
-        false,             // gameShouldExit
     };
 
     return state;
@@ -263,8 +263,9 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         pong->difficulty = prevDifficulty;
     }
 
-    // Escape or Backspace to title
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE))
+    // Escape or Backspace or Right click to title
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) ||
+        IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {
         *titleMenu = InitMenuState();
         *pong = InitGameState();
@@ -322,14 +323,14 @@ void UpdatePaddlePlayer2(Paddle *paddle)
 
 void UpdatePaddleMouseInput(Paddle *paddle)
 {
-    Vector2 scaledMousePos = GetMousePosition();
-    scaledMousePos.x *= (float)RENDER_WIDTH / GetScreenWidth();
-    scaledMousePos.y *= (float)RENDER_HEIGHT / GetScreenHeight();
+    Vector2 scaleFactor = { (float)RENDER_WIDTH / GetScreenWidth(),
+                            (float)RENDER_HEIGHT / GetScreenHeight() };
+    Vector2 mousePos = Vector2Multiply(GetMousePosition(), scaleFactor);
 
     // Only move if the mouse moved and if no keyboard input was detected
     if (Vector2Length(GetMouseDelta()) > 0 && paddle->speed == 0)
     {
-        paddle->position.y = scaledMousePos.y - paddle->length / 2;
+        paddle->position.y = mousePos.y - paddle->length / 2;
 
         // float distBetweenMousePaddle = fabsf(scaledMousePos.x - paddle->position.x);
         // if (distBetweenMousePaddle < RENDER_WIDTH / 2)

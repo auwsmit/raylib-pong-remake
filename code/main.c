@@ -105,8 +105,6 @@ void RunGameLoop(AppData *app)
 // Update data and draw elements to the screen for the current frame
 void UpdateDrawFrame(AppData *app)
 {
-    // Update
-    // --------------------------------------------------------------------------------
     // Compute required framebuffer scaling
     float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
 
@@ -119,38 +117,27 @@ void UpdateDrawFrame(AppData *app)
     if (app->skipCurrentFrame == true)
     {
         app->skipCurrentFrame = false;
-        BeginDrawing();
-        EndDrawing(); // This is required for raylib to properly update for the next frame
+        PollInputEvents();
         return;
     }
 
-    switch(app->pong.currentScreen)
-    {
-        case SCREEN_LOGO:     UpdateRaylibLogo(&app->raylibLogo, &app->pong);
-                              break;
-        case SCREEN_TITLE:    UpdateTitleMenuFrame(&app->titleMenu, &app->pong);
-                              break;
-        case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->titleMenu);
-                              break;
-
-        default: break;
-    }
-    // --------------------------------------------------------------------------------
-
-    // Draw
-    // --------------------------------------------------------------------------------
+    // Update and Draw
     BeginTextureMode(app->renderTarget); // Draw to the render texture for screen scaling
     {
         ClearBackground(BLACK); // Default background color
 
         switch(app->pong.currentScreen)
         {
-            case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
+            case SCREEN_LOGO:     UpdateRaylibLogo(&app->raylibLogo, &app->pong);
+                                  DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawTitleMenuFrame(&app->titleMenu);
+            case SCREEN_TITLE:    UpdateTitleMenuFrame(&app->titleMenu, &app->pong);
+                                  DrawTitleMenuFrame(&app->titleMenu);
                                   break;
-            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
+            case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->titleMenu);
+                                  DrawPongFrame(&app->pong);
                                   break;
+
             default: break;
         }
     } EndTextureMode();

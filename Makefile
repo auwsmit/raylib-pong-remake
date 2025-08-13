@@ -4,6 +4,25 @@
 .PHONY: all web web-release clean
 
 # =============================================================================
+# PLATFORM DETECTION AND SETUP
+# =============================================================================
+
+# Detect platform and set variables accordingly
+PLATFORM_DESKTOP = 1
+ifeq ($(OS),Windows_NT)
+    PLATFORM = WINDOWS
+    EXTENSION = .exe
+    OBJ_EXT = .obj
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        PLATFORM = LINUX
+    endif
+    EXTENSION =
+    OBJ_EXT = .o
+endif
+
+# =============================================================================
 # DEFINE ENVIRONMENT VARIABLES:
 # =============================================================================
 
@@ -11,17 +30,11 @@
 CODE = $(wildcard code/*.c)
 HEADERS = $(wildcard code/*.h)
 
-# Add object files from source files (not currently in use)
-OBJS = $(CODE:.c=.o) $(CODE:.c=.obj)
+# # Object files for intermediate compilation
+OBJS = $(CODE:.c=$(OBJ_EXT))
 
 # Name of output executable
 OUTPUT = game
-
-# The executable's file extension (for Windows and Web platforms)
-EXTENSION =
-ifeq ($(OS),Windows_NT)
-    EXTENSION = .exe
-endif
 
 # Define C compiler flags: CFLAGS
 # ------------------------------------------------------------------------
@@ -55,17 +68,14 @@ CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 # -sFORCE_FILESYSTEM=1      # force filesystem to load/save files data
 # -sASSERTIONS=1            # enable runtime checks for common memory allocation errors (-O1 and above turn it off)
 # -sGL_ENABLE_GET_PROC_ADDRESS # enable using the *glGetProcAddress() family of functions, required for extensions loading
-# -sEXPORTED_FUNCTIONS       # require functions which are not included in order to reduce code size
+# -sEXPORTED_FUNCTIONS       # export needed functions (only for newer versions of emscripten to help reduce filesize)
 # --profiling                # include information for code profiling
 # --memory-init-file 0       # to avoid an external memory initialization code file (.mem)
 # --preload-file resources   # specify a resources folder for data compilation
 # --source-map-base          # allow debugging in browser with source map
-WEBFLAGS = -sUSE_GLFW=3 -sTOTAL_MEMORY=$(WEB_HEAP_SIZE) -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB -sEXPORTED_FUNCTIONS=_main,requestFullscreen
+WEBFLAGS = -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB -sEXPORTED_FUNCTIONS=_main,requestFullscreen
 # Use shell file for Web compilation page layout
 WEBFLAGS += --shell-file code/shell.html
-
-# 128MB of memory for emscripten, default is 16MB
-WEB_HEAP_SIZE = 134217728
 
 # Local raylib location
 RAYLIB_INC = raylib/include
@@ -76,25 +86,18 @@ INCLUDES = -I$(RAYLIB_INC)
 LIBS = -lraylib
 
 # =============================================================================
-# CROSS-PLATFORM COMPATIBILITY
+# COMPILER AND LIBRARY SETUP
 # =============================================================================
-# I only use Windows and Linux atm, but this might work on macOS
 
 # Detect compiler (clang or gcc expected, but cl.exe works with 'make msvc')
-ifeq ($(OS),Windows_NT)
-    CC ?= "$(shell where clang 2>nul || where gcc 2>nul || echo cc)"
-else
-    CC ?= "$(shell command -v clang || command -v gcc || echo cc)"
-endif
+CC ?= gcc
 
 # Platform-specific library flags
-ifeq ($(OS),Windows_NT)
+ifeq ($(PLATFORM),WINDOWS)
     LIBS += -L$(RAYLIB_LIB)/windows
     LIBS += -lopengl32 -lgdi32 -lwinmm
-else
-    ifeq ($(shell uname),Linux)
-        LIBS += -lGL -lm -lpthread -ldl -lrt -lX11
-    endif
+else ifeq ($(PLATFORM),LINUX)
+    LIBS += -lGL -lm -lpthread -ldl -lrt -lX11
 endif
 
 # =============================================================================
@@ -103,12 +106,18 @@ endif
 
 # NOTE: make alias syntax reminder
 # target: dependency1 dependency2
+# % = wildcard match for target and dependency
 # $@ = target, $< = dependency1, $^ = all dependencies
+
 all: $(OUTPUT)$(EXTENSION)
 
 # Compile for desktop (default)
-$(OUTPUT)$(EXTENSION): $(CODE) $(HEADERS)
-	$(CC) -o $@ $(CODE) $(CFLAGS) $(INCLUDES) $(LIBS) -DPLATFORM_DESKTOP
+$(OUTPUT)$(EXTENSION): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBS) -DPLATFORM_DESKTOP
+
+# Rule to compile individual .c files to object files
+code/%$(OBJ_EXT): code/%.c $(HEADERS)
+	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDES) -DPLATFORM_DESKTOP
 
 # Use the MSVC C compiler (useful for getting .pdb debug info)
 # TODO: maybe auto-detect cl instead and move this into "Platform-specific" section?
@@ -121,18 +130,19 @@ msvc:
 # Compile for Web:
 # Use a local copy of raylib's web library in case it isn't available
 web: LIBS = -lraylib -L$(RAYLIB_LIB)/web
-web:
+web: $(CODE) $(HEADERS)
 	emcc -o $(OUTPUT).html $(CODE) $(WEBFLAGS) $(INCLUDES) $(LIBS)
 
 # For deploying to GitHub Pages
 # See the related workflow file here: .github\workflows\deploy.yaml
 web-release: LIBS = -lraylib -L$(RAYLIB_LIB)/web
-web-release:
+web-release: $(CODE) $(HEADERS)
 	@mkdir -p build_web
 	emcc -o build_web/index.html $(CODE) $(WEBFLAGS) -O2 $(INCLUDES) $(LIBS)
 
 # Clean up old build files
 clean:
-	@rm -rf $(OUTPUT)$(EXTENSION) $(WEB_OUT).html $(WEB_OUT).js $(WEB_OUT).wasm \
-	    $(OBJS) $(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi build_web/
+	@rm -rf $(OUTPUT)$(EXTENSION) $(OBJS) \
+	$(OUTPUT).html $(OUTPUT).js $(OUTPUT).wasm build_web/ \
+	$(OUTPUT).ilk $(OUTPUT).pdb vc140.pdb *.rdi \
 	@echo "Make build files cleaned"

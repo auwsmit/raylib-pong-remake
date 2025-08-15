@@ -23,9 +23,10 @@
 // --------------------------------------------------------------------------------
 
 // Initialize
-MenuState InitMenuState(void); // Initializes the entire title screen
+MenuState InitMenuState(void); // Initializes the title screen and allocates memory for buttons
 MenuButton InitMenuTitleButton(char* text);
-MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY);
+MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY, int *buttonCount);
+void DeallocateMenuButtons(MenuState *menu); // Releases memory for menu buttons
 
 // Update / Input
 void UpdateTitleMenuFrame(MenuState *menu, GameState *pong); // Updates the menu for the current frame

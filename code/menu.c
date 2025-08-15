@@ -13,41 +13,48 @@ MenuState InitMenuState(void)
 {
     MenuButton title     = InitMenuTitleButton("Pong Remake");
 
-    // Main buttons
-    MenuButton onePlayer = InitMenuButton("One Player", &title, MENU_SPACE_FROM_TITLE);
-    MenuButton twoPlayer = InitMenuButton("Two Player", &onePlayer, MENU_BUTTON_SPACING);
-    MenuButton demo      = InitMenuButton("Demo", &twoPlayer, MENU_BUTTON_SPACING);
-#if !defined(PLATFORM_WEB)
-    MenuButton exitGame  = InitMenuButton("Exit", &demo, MENU_BUTTON_SPACING);
-#endif
-
-    // Difficulty buttons
-    MenuButton easy   = InitMenuButton("Easy", &title, MENU_SPACE_FROM_TITLE);
-    MenuButton medium = InitMenuButton("Medium", &easy, MENU_BUTTON_SPACING);
-    MenuButton hard   = InitMenuButton("Hard", &medium, MENU_BUTTON_SPACING);
-    MenuButton back   = InitMenuButton("Back", &hard, MENU_BUTTON_SPACING);
-
-    MenuState state =
+    MenuState menu =
     {
         MENU_SS_DEFAULT, // currentScreen
         title, // title
-        { // buttons
-            onePlayer, twoPlayer, demo,
-#if !defined(PLATFORM_WEB)
-            exitGame
-#endif
-        },
-        { // difficulties
-            easy, medium, hard, back
-        },
+        0, // buttons
+        0, // difficulties
         0,     // selectedIndex
         MENU_CURSOR_SIZE, // cursorSize
         0.0f,  // keyHeldTime
+        0,     // buttonCount
+        0,     // diffCount
         true,  // firstFrame
         false, // autoScroll
     };
 
-    return state;
+    // Main buttons
+    MenuButton onePlayer = InitMenuButton("One Player", &title, MENU_SPACE_FROM_TITLE, &menu.buttonCount);
+    MenuButton twoPlayer = InitMenuButton("Two Player", &onePlayer, MENU_BUTTON_SPACING, &menu.buttonCount);
+    MenuButton demo      = InitMenuButton("Demo", &twoPlayer, MENU_BUTTON_SPACING, &menu.buttonCount);
+#if !defined(PLATFORM_WEB)
+    MenuButton exitGame  = InitMenuButton("Exit", &demo, MENU_BUTTON_SPACING, &menu.buttonCount);
+#endif
+
+    // Difficulty buttons
+    MenuButton easy   = InitMenuButton("Easy", &title, MENU_SPACE_FROM_TITLE, &menu.diffCount);
+    MenuButton medium = InitMenuButton("Medium", &easy, MENU_BUTTON_SPACING, &menu.diffCount);
+    MenuButton hard   = InitMenuButton("Hard", &medium, MENU_BUTTON_SPACING, &menu.diffCount);
+    MenuButton back   = InitMenuButton("Back", &hard, MENU_BUTTON_SPACING, &menu.diffCount);
+
+    // Allocate memory for buttons
+    menu.buttons = MemAlloc(menu.buttonCount * sizeof(MenuButton));
+    menu.difficulties = MemAlloc(menu.diffCount * sizeof(MenuButton));
+
+    menu.buttons[0] = onePlayer;    menu.difficulties[0] = easy;
+    menu.buttons[1] = twoPlayer;    menu.difficulties[1] = medium;
+    menu.buttons[2] = demo;         menu.difficulties[2] = hard;
+                                    menu.difficulties[3] = back;
+#if !defined(PLATFORM_WEB)
+    menu.buttons[3] = exitGame;
+#endif
+
+    return menu;
 }
 
 MenuButton InitMenuTitleButton(char *text)
@@ -66,16 +73,24 @@ MenuButton InitMenuTitleButton(char *text)
     return button;
 }
 
-MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY)
+MenuButton InitMenuButton(char* text, MenuButton *originButton, float offsetY, int *elementCount)
 {
+
     int fontSize = MENU_BUTTON_SIZE;
     int textWidth = MeasureText(text, fontSize);
     float textPosX = (RENDER_WIDTH - (float)textWidth) / 2;
     float textPosY = originButton->position.y + originButton->fontSize;
 
     MenuButton button = { text, fontSize, { textPosX, textPosY + offsetY }, RAYWHITE };
+    *elementCount += 1;
 
     return button;
+}
+
+void DeallocateMenuButtons(MenuState *menu)
+{
+    MemFree(menu->buttons);
+    MemFree(menu->difficulties);
 }
 
 void UpdateTitleMenuFrame(MenuState *menu, GameState *pong)
@@ -103,13 +118,13 @@ void UpdateMenuCursorMove(MenuState *menu)
             menu->selectedIndex = (MenuOption)DIFFICULTY_MEDIUM;
     }
 
+    // Move cursor via mouse
     int totalButtons;
     if (menu->currentScreen == MENU_SS_DEFAULT)
-        totalButtons = ARRAY_SIZE(menu->buttons);
+        totalButtons = menu->buttonCount;
     else if (menu->currentScreen == MENU_SS_DIFFICULTY)
-        totalButtons = ARRAY_SIZE(menu->difficulties);
+        totalButtons = menu->diffCount;
 
-    // Move cursor via mouse
     bool mouseMoved = Vector2Length(GetMouseDelta()) > 0;
     if (mouseMoved || menu->firstFrame)
     {
@@ -199,27 +214,33 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
                 pong->gameShouldExit = true;
             else if (menu->selectedIndex == MENU_1PLAYER)
             {
+                // Main menu -> difficulty menu
                 pong->currentMode   = (GameMode)menu->selectedIndex;
                 menu->currentScreen = MENU_SS_DIFFICULTY;
                 menu->firstFrame = true;
             }
             else
             {
+                // Main menu -> gameplay
                 pong->currentMode = (GameMode)menu->selectedIndex;
                 pong->currentScreen = SCREEN_GAMEPLAY;
+                DeallocateMenuButtons(menu);
             }
         }
         else if (menu->currentScreen == MENU_SS_DIFFICULTY)
         {
             if (menu->selectedIndex == MENU_EXIT)
             {
-                    menu->currentScreen = MENU_SS_DEFAULT;
-                    menu->firstFrame = true;
+                // Difficulty menu -> main menu
+                menu->currentScreen = MENU_SS_DEFAULT;
+                menu->firstFrame = true;
             }
             else
             {
+                // Main menu -> gameplay
                 pong->difficulty = (Difficulty)menu->selectedIndex;
                 pong->currentScreen = SCREEN_GAMEPLAY;
+                DeallocateMenuButtons(menu);
             }
         }
     }
@@ -244,14 +265,14 @@ void DrawTitleMenuFrame(MenuState *menu)
 
     if (menu->currentScreen == MENU_SS_DEFAULT)
     {
-        for (int i = 0; i < ARRAY_SIZE(menu->buttons); i++)
+        for (int i = 0; i < menu->buttonCount; i++)
         {
             DrawMenuElement(&menu->buttons[i]);
         };
     }
     else if (menu->currentScreen == MENU_SS_DIFFICULTY)
     {
-        for (int i = 0; i < ARRAY_SIZE(menu->difficulties); i++)
+        for (int i = 0; i < menu->diffCount; i++)
         {
             DrawMenuElement(&menu->difficulties[i]);
         };
@@ -265,8 +286,7 @@ void DrawTitleMenuFrame(MenuState *menu)
 
 void DrawMenuElement(MenuButton *button)
 {
-    DrawText(button->text,
-             button->position.x, button->position.y,
+    DrawText(button->text, (int)button->position.x, (int)button->position.y,
              button->fontSize, RAYWHITE);
 }
 

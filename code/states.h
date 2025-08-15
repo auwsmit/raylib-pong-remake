@@ -9,8 +9,6 @@
 // Title menu
 // --------------------------------------------------------------------------------
 
-#define ARRAY_SIZE(arr) (int)(sizeof(arr) / sizeof((arr)[0]))
-
 typedef enum MenuScreenState { MENU_SS_DEFAULT, MENU_SS_DIFFICULTY } MenuScreenState;
 
 typedef enum MenuOption // these correspond to enum GameMode (e.g. MODE_1PLAYER)
@@ -30,16 +28,13 @@ typedef struct MenuState // Holds data for the title screen menu
 {
     MenuScreenState currentScreen;
     MenuButton title;
-#if defined(PLATFORM_WEB) // No exit button for Web
-                          // TODO: dynamically allocate dis
-    MenuButton buttons[3];
-#else
-    MenuButton buttons[4];
-#endif
-    MenuButton difficulties[4];
+    MenuButton *buttons;      // allocate memory for buttons when created
+    MenuButton *difficulties;
     MenuOption selectedIndex;
     float cursorSize;
     float keyHeldTime;
+    int buttonCount;
+    int diffCount;
     bool firstFrame; // used for mouse selection
     bool autoScroll;
 } MenuState;

@@ -1,18 +1,31 @@
+# README:
+# This is the CMake configuration file for this game project.
+# See the file build.bat or build.sh for info on how to build with CMake.
+
+# CMake Project Settings
+# --------------------------------------------------------------------------------
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 
-# Name of the project, also using C
-project("Raylib Test" C)
+# Name of the project, using C
+project("Pong Remake with raylib" C)
 
-if (${PLATFORM} STREQUAL "Web")
-  set(OUTPUT_NAME index)
-else ()
-  set(OUTPUT_NAME game)
+# Output executable name
+set(OUTPUT_NAME game)
+
+# Libraries to link
+set(LIBRARIES raylib)
+if(NOT MSVC) # math library for Unix
+  list(APPEND LIBRARIES m)
 endif()
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Dependencies
+# --------------------------------------------------------------------------------
+
+# Download and build raylib if needed
+set(raylib_VERBOSE 1) # Uncomment this for more detailed raylib build output
 set(RAYLIB_VERSION 5.5)
 find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
 if (NOT raylib_FOUND) # If there's none, fetch and build raylib
@@ -30,15 +43,19 @@ if (NOT raylib_FOUND) # If there's none, fetch and build raylib
   endif()
 endif()
 
-# Our Project
+# Setup our Project
+# --------------------------------------------------------------------------------
+
 file(GLOB SRC_FILES code/*.c)
 add_executable(${OUTPUT_NAME} ${SRC_FILES})
-#set(raylib_VERBOSE 1)
-target_link_libraries(${OUTPUT_NAME} raylib)
+target_link_libraries(${OUTPUT_NAME} ${LIBRARIES})
 
-# Web Configurations
+# Cross-platform Configurations
+# --------------------------------------------------------------------------------
+
+# Web
 if (${PLATFORM} STREQUAL "Web")
-  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".html") # Tell Emscripten to build an example.html file.
+  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".html") # Tell Emscripten to build an html file.
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY -s GL_ENABLE_GET_PROC_ADDRESS=1 -sEXPORTED_FUNCTIONS=_main,requestFullscreen")
 endif()
 

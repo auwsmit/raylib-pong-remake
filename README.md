@@ -1,47 +1,52 @@
-# Raylib Pong Remake
+# Pong Remake with raylib
 
 [**Click here to play in the browser!**](https://auwsmit.github.io/raylib-pong-remake/)
 
-This is my first Raylib project, made to learn about the library and basic game
-development. Still a work in progress.
+This is my first [raylib](https://www.raylib.com/) project, made to learn about
+the library and basic game development. Expect lots of overly explanatory
+comments within. Still a work in progress.
 
 Runs on Windows, Linux, MacOS, and web browsers. I don't have a Mac to test on
-though, so I would appreciate anyone who can confirm if it works there.
+though, so I would appreciate if anyone can confirm it works there. I'll also
+gladly take any advice/feedback/tips/pointers on things to do differently or
+improve.
 
 ## Controls
 
-- `Enter` to select
+- **Select/Confirm:** `Enter` or mouse click
 
-- Player 1:
-    - Press `W`/`S` to move
+- **Move Player 1:**
+    - Mouse movement (only in single player mode)
+    - Press `W`/`S` to move up and down
     - Hold `A`/`D`/`LShift` to move faster
 
-- Player 2:
-    - Press `I`/`K` or `Up`/`Down` to move
-    - Hold `J`/`L`/`Left`/`Right` to move faster
+- **Move Player 2:**
+    - Press `I`/`K` or `↑`/`↓` to move up and down
+    - Hold `J`/`L`/`←`/`→` to move faster
 
-- `Esc`/`Backspace` to go back to title
+- **Go back:** `Esc`/`Backspace`
 
-- `Space`/`P` to pause
+- **Pause:** `Space`/`P`
 
-- `Alt+Enter`/`F11` for fullscreen (desktop only)
+- **Toggle fullscreen:** `Alt+Enter`/`F11`/`Shift+F` (desktop only)
 
 ## Build for Desktop
-- Either run `build.sh` or `build.bat`, depending on your platform.
-    - You can also use `make` to build the game.
-- Run `game` or `game.exe` to start the game.
+- Either run `build.sh` or `build.bat`, depending on your platform
+    - Or `make` to build the game (but not on Mac...)
+- Run `game` or `game.exe` to start the game
 
 ## Build for Browser
 - Same as desktop, but add `web` as an argument:
-    - Run `build.sh web` or `make web`.
+    - Run `build.sh web` or `make web`
 - Run game with `emrun game.html`
 
 ## Requirements to build:
 
 - Library: [raylib](https://www.raylib.com/), duh :P
-- A C compiler: [GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/) ([llvm-mingw](https://github.com/mstorsjo/llvm-mingw) on Windows), or [Visual Studio](https://visualstudio.microsoft.com/)
+- A C compiler: [GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/) ([llvm-mingw](https://github.com/mstorsjo/llvm-mingw)
+on Windows), or [Visual Studio](https://visualstudio.microsoft.com/)
+    - [emscripten](https://emscripten.org/) (only for browser / web assembly compilation)
 - Build system: [CMake](https://cmake.org/) or [Make](https://en.wikipedia.org/wiki/Make_(software))
-- [emscripten](https://emscripten.org/) for browser / web assembly compilation
 
 For Windows users with no build tools or less experience, [w64devkit](https://github.com/skeeto/w64devkit) is a fast and easy way to build this project. Just download and extract it anywhere. Then use the included unix-like terminal, or add the `w64devkit/bin` tools to your PATH. Now you can simply `make` this project like you would on Linux. As an added bonus, you now have access to many nice Unix command line tools.
 

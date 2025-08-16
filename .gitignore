@@ -3,6 +3,10 @@ tags
 tags.*
 
 # build files
+code/*.obj
+code/*.o
+*.o
+*.obj
 build/
 build_web/
 out
@@ -13,10 +17,6 @@ game.js
 game.wasm
 
 # debug files
-code/*.obj
-code/*.o
-*.o
-*.obj
 *.pdb
 *.rdi
 *.ilk

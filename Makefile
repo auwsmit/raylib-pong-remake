@@ -116,7 +116,7 @@ WEB_LIBS    := -lraylib -L$(RAYLIB_LIB)/web
 # /W3    Set warning level to 3 (default is 1, max is 4)
 # /MD    Link against MSVCRT.DLL (multithreaded DLL runtime)
 # /Zi    Generate complete debugging information (.pdb files)
-MSVC_CFLAGS := /Od /W3 /MD /Zi
+MSVC_CFLAGS := /Fo"$(SRC_DIR)\\" /Od /W3 /MD /Zi
 MSVC_LIBS   := /link /DEBUG /LIBPATH:"$(RAYLIB_LIB)/windows-msvc" \
                raylib.lib gdi32.lib winmm.lib user32.lib shell32.lib
 

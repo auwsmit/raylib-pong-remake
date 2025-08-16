@@ -6,9 +6,9 @@
 ::
 :: With no arguments, running `build` will download and build raylib if needed,
 :: generate a Visual Studio solution for the game, build it with MSVC, and then
-:: place a copy of the game executable in the repo directory. This script takes
-:: a single argument that specifies which compiler to use, or which platform to
-:: compile for.
+:: place a copy of the game executable in the repo directory. This script can
+:: take a single argument that specifies which compiler to use, or which
+:: platform to compile for.
 ::
 :: You can find the generated Visual Studio solution within build\desktop\
 ::
@@ -46,10 +46,10 @@ if "%1"=="gcc" (
 :: ----------------------------------------------------------------------------
 if "%1"=="web" (
     mkdir build\web
-    cd build\web
+    pushd build\web
     call emcmake cmake ..\.. -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXECUTABLE_SUFFIX=".html"
     call emmake make
-    cd ..\..
+    popd
     del /q game.html game.js game.wasm
     copy build\web\game.html .
     copy build\web\game.js .

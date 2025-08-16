@@ -2,7 +2,7 @@
 # This is the CMake configuration file for this game project.
 # See the file build.bat or build.sh for info on how to build with CMake.
 
-# CMake Project Settings
+# Project Settings
 # --------------------------------------------------------------------------------
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 
@@ -25,7 +25,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # --------------------------------------------------------------------------------
 
 # Download and build raylib if needed
-set(raylib_VERBOSE 1) # Uncomment this for more detailed raylib build output
+# set(raylib_VERBOSE 1) # Uncomment this for more detailed raylib build output
 set(RAYLIB_VERSION 5.5)
 find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
 if (NOT raylib_FOUND) # If there's none, fetch and build raylib
@@ -43,7 +43,7 @@ if (NOT raylib_FOUND) # If there's none, fetch and build raylib
   endif()
 endif()
 
-# Setup our Project
+# Setup Project
 # --------------------------------------------------------------------------------
 
 file(GLOB SRC_FILES code/*.c)
@@ -52,6 +52,10 @@ target_link_libraries(${OUTPUT_NAME} ${LIBRARIES})
 
 # Cross-platform Configurations
 # --------------------------------------------------------------------------------
+
+# Windows / Visual Studio
+set_target_properties(${OUTPUT_NAME} PROPERTIES
+  VS_DEBUGGER_WORKING_DIRECTORY ./) # working directory set to repo directory
 
 # Web
 if (${PLATFORM} STREQUAL "Web")

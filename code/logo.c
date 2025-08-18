@@ -35,10 +35,32 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
     const float growSpeed = RAYLIB_LOGO_WIDTH * 0.9375f; // Speed that lines grow
     const float letterDelay = 0.2f; // Time between each letter appearing
     const float fadeSpeed = 1.0f; // Fade out in 1 second
+    static bool skipped = false;
 
     // Enter or space or click to skip logo animation
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
-        pong->currentScreen = SCREEN_TITLE;
+    {
+        if (logo->state >= TEXT)
+            pong->currentScreen = SCREEN_TITLE;
+        else
+        {
+            logo->topSideRecWidth = RAYLIB_LOGO_WIDTH;
+            logo->leftSideRecHeight = RAYLIB_LOGO_WIDTH;
+            logo->bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
+            logo->rightSideRecHeight = RAYLIB_LOGO_WIDTH;
+            logo->lettersCount = 10;
+            logo->elapsedTime = 0;
+            logo->state = TEXT;
+            skipped = true;
+        }
+    }
+
+    // https://github.com/sponsors/raysan5 https://www.patreon.com/raylib :)
+    if (skipped == true && logo->elapsedTime < 1.5)
+    {
+        logo->elapsedTime += GetFrameTime();
+        return;
+    }
 
     switch (logo->state)
     {
@@ -120,17 +142,18 @@ void DrawRaylibLogo(Logo *logo)
     int offsetC   = (int)(RAYLIB_LOGO_WIDTH*0.171875);
     int offsetD   = (int)(RAYLIB_LOGO_WIDTH*0.1875);
 
-    DrawText("powered by",
-             (int)((RENDER_WIDTH / 2) - (RAYLIB_LOGO_WIDTH / 2)),
-             (int)((RENDER_HEIGHT / 2) - (RAYLIB_LOGO_WIDTH / 2) - offsetB - lineWidth / 4),
-             (int)(fontSize / 2), RAYWHITE);
-
     int posX        = (int)logo->positionX;
     int posY        = (int)logo->positionY;
     int topWidth    = (int)logo->topSideRecWidth;
     int leftHeight  = (int)logo->leftSideRecHeight;
     int rightHeight = (int)logo->rightSideRecHeight;
     int bottomWidth = (int)logo->bottomSideRecWidth;
+
+    if (logo->state != PAUSE)
+        DrawText("powered by",
+                 (int)((RENDER_WIDTH / 2) - (RAYLIB_LOGO_WIDTH / 2)),
+                 (int)((RENDER_HEIGHT / 2) - (RAYLIB_LOGO_WIDTH / 2) - offsetB - lineWidth / 4),
+                 (int)(fontSize / 2), RAYWHITE);
 
     switch (logo->state)
     {
@@ -165,7 +188,7 @@ void DrawRaylibLogo(Logo *logo)
             DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, logo->alpha));
             break;
         case PAUSE:
-            DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
+            // DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
             break;
         case END:
             break;

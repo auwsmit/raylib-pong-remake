@@ -1,3 +1,5 @@
+<!-- BEWARE: This file was largely vibe-coded -->
+
 <!doctype html>
 <html lang="en-us">
   <head>
@@ -14,12 +16,19 @@
       body {
         height: 100vh;
         margin: 0;
-        display: grid;
-        place-items: center;
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
 
       .game-container {
-        display: inline-block;
+        display: flex;
+        flex-direction: column;
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 20px);
+        box-sizing: border-box;
       }
 
       .controls {
@@ -36,12 +45,26 @@
         padding: 0.4em 0.8em;
       }
 
+      .emscripten_border {
+        border: 1px solid black;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 0;
+      }
       .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
       textarea.emscripten { font-family: monospace; width: 80%; }
       div.emscripten { text-align: center; }
       div.emscripten_border { border: 1px solid black; }
       /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-      canvas.emscripten { border: 0px none; background-color: black; }
+      canvas.emscripten {
+        border: 0px none;
+        background-color: black;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
 
       .spinner {
         height: 50px;

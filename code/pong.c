@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "menu.h" // needed to reset the title menu
+#include "beep.h"
 
 GameState InitGameState(void)
 {
@@ -93,10 +94,10 @@ void EdgeCollisionPaddle(Paddle *paddle)
 
 void BounceBallEdge(GameState *pong)
 {
-    int leftEdgeCollide = (pong->ball.position.x <= 0);
-    int rightEdgeCollide = (pong->ball.position.x + pong->ball.size >= RENDER_WIDTH);
-    int topEdgeCollide = (pong->ball.position.y <= FIELD_LINE_WIDTH);
-    int bottomEdgeCollide = (pong->ball.position.y + pong->ball.size >= RENDER_HEIGHT - FIELD_LINE_WIDTH);
+    bool leftEdgeCollide = (pong->ball.position.x <= 0);
+    bool rightEdgeCollide = (pong->ball.position.x + pong->ball.size >= RENDER_WIDTH);
+    bool topEdgeCollide = (pong->ball.position.y <= FIELD_LINE_WIDTH);
+    bool bottomEdgeCollide = (pong->ball.position.y + pong->ball.size >= RENDER_HEIGHT - FIELD_LINE_WIDTH);
 
     if (leftEdgeCollide && pong->ball.direction.x < 0)
     {
@@ -138,6 +139,11 @@ void BounceBallEdge(GameState *pong)
         pong->ball.direction.y *= -1;
         pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size - FIELD_LINE_WIDTH;
     }
+
+    if (leftEdgeCollide || rightEdgeCollide)
+        PlayBeepSound(BEEP_FREQUENCY_EDGE+100, 0.4f);
+    if (topEdgeCollide || bottomEdgeCollide)
+        PlayBeepSound(BEEP_FREQUENCY_EDGE, 0.1f);
 }
 
 void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
@@ -174,6 +180,8 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
     // Apply new direction
     ball->direction.y = sinf(newAngle);
     ball->direction.x = (isLeftPaddle) ? cosf(newAngle) : -cosf(newAngle);
+
+    PlayBeepSound(BEEP_FREQUENCY_PADDLE, 0.1f);
 }
 
 void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
@@ -186,7 +194,7 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         *titleMenu = InitMenuState();
         *pong = InitGameState();
         pong->currentScreen = SCREEN_TITLE;
-        return;
+        return; // back to main game loop
     }
 
     // Press Space or P to pause

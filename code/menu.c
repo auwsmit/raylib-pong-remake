@@ -221,7 +221,7 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
             }
             else
             {
-                // Main menu -> gameplay
+                // Main menu -> pong gameplay
                 pong->currentMode = (GameMode)menu->selectedIndex;
                 pong->currentScreen = SCREEN_GAMEPLAY;
                 DeallocateMenuButtons(menu);
@@ -237,7 +237,7 @@ void UpdateMenuCursorSelect(MenuState *menu, GameState *pong)
             }
             else
             {
-                // Main menu -> gameplay
+                // Main menu -> pong gameplay
                 pong->difficulty = (Difficulty)menu->selectedIndex;
                 pong->currentScreen = SCREEN_GAMEPLAY;
                 DeallocateMenuButtons(menu);

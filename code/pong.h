@@ -11,18 +11,12 @@
 // --------------------------------------------------------------------------------
 #define WIN_SCORE 5 // Score needed to win
 
+// Game object properties
 #define PADDLE_LENGTH 120 // Initial settings for paddles
 #define PADDLE_WIDTH 20
 #define PADDLE_SPEED 500  // Paddle's default speed in pixels per second
-
 #define BALL_SIZE 20      // Initial settings for ball
 #define BALL_SPEED 500
-
-#define FIELD_LINE_WIDTH  15 // Width of the field lines (top, bottom, dotted center-line)
-
-#define SCORE_FONT_SIZE 180     // Also used for pause font size
-#define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
-#define WIN_FONT_SIZE 100
 
 // Ball physics tweaks for game feel
 #define BOUNCE_MULTIPLIER 1.1f       // How much faster the ball gets after hitting a paddle
@@ -32,9 +26,16 @@
 #define RETURN_POSITION_VARIATION 50 // How much the ball's vertical position can change after scoring
 #define RETURN_ANGLE_VARIATION 500   // How much the ball's angle can change after scoring
 
+// UI element size
+#define FIELD_LINE_WIDTH  15 // Width of the field lines (top, bottom, dotted center-line)
+#define SCORE_FONT_SIZE 180     // Also used for pause font size
+#define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
+#define WIN_FONT_SIZE 100
+
 #define SCORE_PAUSE_TIME 1.0f  // Time to pause after a score
 #define WIN_PAUSE_TIME 10.0f   // Time to pause after a win
-
+#define BEEP_FREQUENCY_EDGE   500 // Frequency for beep when the ball hits the screen edge
+#define BEEP_FREQUENCY_PADDLE 450 // Frequency for beep when the ball hits a paddle
 // Prototypes
 // --------------------------------------------------------------------------------
 
@@ -46,7 +47,7 @@ bool CheckCollisionBallPaddle(Ball ball, Paddle paddle); // Check if ball and pa
 void EdgeCollisionPaddle(Paddle *paddle); // Paddles collide with screen edges
 void BounceBallEdge(GameState *pong); // Ball bounces off screen edges and updates the score
 void BounceBallPaddle(Ball *ball,     // Ball bounces off paddle
-                      Paddle *paddle, // TODO: just pass *pong instead?
+                      Paddle *paddle,
                       GameTurn *currentTurn);
 
 // Update game

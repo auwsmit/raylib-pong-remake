@@ -43,7 +43,7 @@ OUTPUT     := game
 
 # Source code, headers, and object file paths
 SRC_DIR    := code
-SRC        := $(wildcard $(SRC_DIR)/*.c)
+SRC        ?= $(wildcard $(SRC_DIR)/*.c)
 HEADERS    := $(wildcard $(SRC_DIR)/*.h)
 OBJS       := $(SRC:.c=$(OBJ_EXT))
 
@@ -99,14 +99,15 @@ endif
 # -sFORCE_FILESYSTEM=1        force filesystem to load/save files data
 # -sASSERTIONS=1              enable runtime checks for common memory allocation errors (-O1 and above turn it off)
 # -sGL_ENABLE_GET_PROC_ADDRESS  enable using the *glGetProcAddress() family of functions, required for extensions loading
-# -sEXPORTED_FUNCTIONS        export needed functions (only for newer versions of emscripten to help reduce filesize)
+# -sEXPORTED_FUNCTIONS=       export needed functions (only for newer versions of emscripten to help reduce filesize)
+# -sEXPORTED_RUNTIME_METHODS= export runtime functions
 # --profiling                 include information for code profiling
 # --memory-init-file 0        to avoid an external memory initialization code file (.mem)
 # --preload-file resources    specify a resources folder for data compilation
 # --source-map-base           allow debugging in browser with source map
-WEBFLAGS    := -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY \
-               -DPLATFORM_WEB -sEXPORTED_FUNCTIONS=_main,requestFullscreen \
-               --shell-file $(SRC_DIR)/shell.html
+WEBFLAGS    := -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB \
+               -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sTOTAL_MEMORY=67108864 \
+	       -sEXPORTED_RUNTIME_METHODS=HEAPF32 --shell-file $(SRC_DIR)/shell.html
 WEB_LIBS    := -lraylib -L$(RAYLIB_LIB)/web
 
 # MSVC Flags
@@ -153,12 +154,12 @@ msvc:
 
 # Build to web assembly with emscripten
 web:
-	emcc -o $(OUTPUT).html $(SRC) $(WEBFLAGS) $(CPPFLAGS) $(WEB_LIBS)
+	emcc -o $(OUTPUT).html $(SRC) $(CFLAGS) $(WEBFLAGS) $(CPPFLAGS) $(WEB_LIBS)
 
 # Build for upload to GitHub pages (see .github/workflows/deploy.yaml)
 web-release:
 	@mkdir -p build_web
-	emcc -o build_web/index.html $(SRC) $(WEBFLAGS) -O2 $(CPPFLAGS) $(WEB_LIBS)
+	emcc -o build_web/index.html $(SRC) $(CFLAGS) $(WEBFLAGS) -O3 $(CPPFLAGS) $(WEB_LIBS)
 
 # Clean up generated build files
 clean:

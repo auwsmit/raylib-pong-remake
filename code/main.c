@@ -6,8 +6,10 @@
 #include "raymath.h" // Required for: Vector2Clamp()
 
 #include "config.h"  // Program config, e.g. window title/size, fps, vsync
+#include "states.h"  // State machines shared across files
 #include "logo.h"    // Raylib logo animation
 #include "menu.h"    // Title menu
+#include "beep.h"    // Pong beep sound
 #include "pong.h"    // Game logic
 
 #if defined(PLATFORM_WEB) // for compiling to wasm (web assembly)
@@ -41,12 +43,16 @@ int main(void)
     // Initialization
     // --------------------------------------------------------------------------------
     CreateNewWindow();
+    InitAudioDevice();
+    InitBeepSound();
 
     AppData app = InitGameLoop();
     RunGameLoop(&app);
 
     // De-Initialization
     // --------------------------------------------------------------------------------
+    CloseBeepSound();
+    CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context
 
     return 0;
@@ -110,18 +116,21 @@ void UpdateDrawFrame(AppData *app)
     // Compute required framebuffer scaling
     float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
 
+    SetExitKey(KEY_NULL); // No exit key (use alt+F4 or in-game exit)
+
     // Debug: q for fast quitting
-    SetExitKey(KEY_Q);
-    // SetExitKey(KEY_NULL); // No exit key
+    // SetExitKey(KEY_Q);
 
     HandleToggleFullscreen(app);
 
     if (app->skipCurrentFrame == true)
     {
         app->skipCurrentFrame = false;
-        PollInputEvents();
+        PollInputEvents(); // Skip the current frame's input
         return;
     }
+
+    UpdateBeepSound();
 
     switch(app->pong.currentScreen)
     {
@@ -157,12 +166,16 @@ void UpdateDrawFrame(AppData *app)
     BeginDrawing(); // Draw to screen
     {
         // Fill in any potential area outside of the render texture
-        DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
+        ClearBackground(BLACK); // Default background color
+        // DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
 
         // Draw render texture to screen, properly scaled
-        DrawTexturePro(app->renderTarget.texture, (Rectangle){ 0.0f, 0.0f, (float)app->renderTarget.texture.width,
-                       (float)-app->renderTarget.texture.height }, (Rectangle){ (GetScreenWidth() - ((float)RENDER_WIDTH*scale))*0.5f, (GetScreenHeight() - ((float)RENDER_HEIGHT*scale))*0.5f,
-                       (float)RENDER_WIDTH*scale, (float)RENDER_HEIGHT*scale }, (Vector2){ 0, 0 }, 0.0f, WHITE);
+        float destPosX = (GetScreenWidth() - ((float)RENDER_WIDTH*scale))*0.5f;
+        float destPosY = (GetScreenHeight() - ((float)RENDER_HEIGHT*scale))*0.5f;
+        DrawTexturePro(app->renderTarget.texture,
+                       (Rectangle){ 0.0f, 0.0f, (float)app->renderTarget.texture.width, (float)-app->renderTarget.texture.height },
+                       (Rectangle){ destPosX, destPosY, (float)RENDER_WIDTH*scale, (float)RENDER_HEIGHT*scale },
+                       (Vector2){ 0, 0 }, 0.0f, WHITE);
 
         // Debug:
         // DrawFPS(0,0);
@@ -175,13 +188,10 @@ void HandleToggleFullscreen(AppData *app)
 #if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy
                            // For now just use emscripten's fullscreen button
 
-    bool fullscreenInputPressed = false;
     // Fullscreen inputs: F11, Alt+Enter, and Shift+F
-    fullscreenInputPressed |= IsKeyPressed(KEY_F11);
-    fullscreenInputPressed |=
-        ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER)) ||
-        ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
-    if (fullscreenInputPressed)
+    bool isPressedAltEnter = ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER));
+    bool isPressedShiftF = ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
+    if (IsKeyPressed(KEY_F11) || isPressedAltEnter || isPressedShiftF)
     {
         // Borderless Windowed is generally nicer to use on desktop
         ToggleBorderlessWindowed();

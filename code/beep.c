@@ -1,128 +1,152 @@
 // EXPLANATION:
-// For the pong beep sound effect. Only plays one beep at a time.
+// Generates and manages pong beeps.
 
 #include "beep.h"
 
+#include <limits.h>
 #include "raymath.h"
 
-// Global beep state, used by AudioBeepInputCallback which can't take extra arguments
-AudioBeepState pongBeep = { 0 };
+#define ARRAY_SIZE(arr) (unsigned int)(sizeof(arr) / sizeof((arr)[0]))
 
-// Audio input processing callback with smooth fade in/out and frequency transitions
+// Global beep state
+AudioBeepState beepState = { 0 };
+
 void AudioBeepInputCallback(void *buffer, unsigned int frames)
 {
     short *samples = (short *)buffer;
-    static int fadeSamples = 256; // This controls how long the fade in/out lasts
-    static int frequencyTransitionSamples = 256;
+    static int fadeSamples = 256; // fade duration
+
+    // clear output buffer
+    for (unsigned int i = 0; i < frames; i++)
+        samples[i] = 0;
 
     for (unsigned int i = 0; i < frames; i++)
     {
-        // Handle frequency transitions
-        if (pongBeep.transitioningFrequency)
+        float mix = 0.0f;
+
+        for (unsigned int j = 0; j < ARRAY_SIZE(beepState.beeps); j++)
         {
-            float transitionProgress = (float)pongBeep.frequencyTransitionCounter / frequencyTransitionSamples;
-            pongBeep.frequency = Lerp(pongBeep.startFrequency, pongBeep.targetFrequency, transitionProgress);
+            PongBeep *beep = &beepState.beeps[j];
+            if (!beep->isPlaying) continue;
 
-            if (++pongBeep.frequencyTransitionCounter >= frequencyTransitionSamples)
+            float incr = (beep->frequency * 0.95f) / 44100.0f;
+            float amplitude = SHRT_MAX / 4; // individual beep volume
+            float sample = sinf(2 * PI * beep->sineIndex);
+
+            // fade in/out
+            if (beep->fadingIn || beep->fadingOut)
             {
-                pongBeep.frequency = pongBeep.targetFrequency;
-                pongBeep.transitioningFrequency = false;
-                pongBeep.frequencyTransitionCounter = 0;
-            }
-        }
-
-        float incr = (pongBeep.frequency * 0.95f) / 44100.0f;
-        float amplitude = 32000.0f;
-        float sample = sinf(2 * PI * pongBeep.sineIdx);
-
-        // Handle fade in/out
-        if (pongBeep.fadingIn || pongBeep.fadingOut)
-        {
-            float fadeProgress = (float)pongBeep.fadeCounter / fadeSamples;
-            if (pongBeep.fadingIn)
-            {
-                amplitude *= fadeProgress;
-                if (++pongBeep.fadeCounter >= fadeSamples)
+                float fadeProgress = (float)beep->fadeCounter / fadeSamples;
+                if (beep->fadingIn)
                 {
-                    pongBeep.fadingIn = false;
-                    pongBeep.fadeCounter = 0;
+                    amplitude *= fadeProgress;
+                    if (++beep->fadeCounter >= fadeSamples) {
+                        beep->fadingIn = false;
+                        beep->fadeCounter = 0;
+                    }
+                }
+                else // fadingOut
+                {
+                    amplitude *= (1.0f - fadeProgress);
+                    if (++beep->fadeCounter >= fadeSamples) {
+                        amplitude = 0.0f;
+                        beep->isPlaying = false;
+                    }
                 }
             }
-            else // pongBeep.fadingOut
-            {
-                amplitude *= (1.0f - fadeProgress);
-                if (++pongBeep.fadeCounter >= fadeSamples)
-                {
-                    amplitude = 0.0f;
-                    pongBeep.isPlaying = false;
-                }
-            }
+
+            mix += amplitude * sample;
+
+            beep->sineIndex += incr;
+            if (beep->sineIndex > 1.0f) beep->sineIndex -= 1.0f;
         }
 
-        samples[i] = (short)(amplitude * sample);
-        pongBeep.sineIdx += incr;
-        if (pongBeep.sineIdx > 1.0f) pongBeep.sineIdx -= 1.0f;
+        // limiter to avoid clipping
+        if (mix > SHRT_MAX) mix = SHRT_MAX;
+        if (mix < SHRT_MIN) mix = SHRT_MIN;
+
+        samples[i] = (short)mix;
     }
+}
+
+PongBeep *FindBeepSlot(void)
+{
+    PongBeep *oldest = &beepState.beeps[0];
+    for (unsigned int i = 0; i < ARRAY_SIZE(beepState.beeps); i++)
+    {
+        PongBeep *beep = &beepState.beeps[i];
+        if (beep->beepTimer < oldest->beepTimer)
+            oldest = &beepState.beeps[i];
+        if (!beep->isPlaying)
+        {
+            return &beepState.beeps[i];
+        }
+    }
+
+    // if all beeps are playing, overwrite the oldest one
+    return oldest;
 }
 
 void PlayBeepSound(float argFrequency, float beepLength)
 {
-    pongBeep.beepTimer = beepLength;
+    PongBeep *beep = FindBeepSlot();
 
-    if (pongBeep.isPlaying)
-    {
-        // If already playing, smoothly transition to new frequency
-        pongBeep.startFrequency = pongBeep.frequency;
-        pongBeep.targetFrequency = argFrequency;
-        pongBeep.transitioningFrequency = true;
-        pongBeep.frequencyTransitionCounter = 0;
-    }
-    else
-    {
-        // If not playing, start fresh
-        static int maxSamplesPerUpdate = 4096;
-        pongBeep.frequency = argFrequency;
-        pongBeep.targetFrequency = argFrequency;
-        pongBeep.fadeCounter = 0;
-        pongBeep.fadingOut = false;
-        pongBeep.fadingIn = true;
-
-        SetAudioStreamBufferSizeDefault(maxSamplesPerUpdate);
-        SetAudioStreamCallback(pongBeep.stream, AudioBeepInputCallback);
-        PlayAudioStream(pongBeep.stream);
-        pongBeep.isPlaying = true;
-    }
+    beep->beepTimer = beepLength;
+    beep->frequency = argFrequency;
+    beep->fadeCounter = 0;
+    beep->fadingOut = false;
+    beep->fadingIn = true;
+    beep->isPlaying = true;
 }
 
 void InitBeepSound(void)
 {
     AudioBeepState new = { 0 };
-    pongBeep = new;
-    pongBeep.stream = LoadAudioStream(44100, 16, 1);
+    beepState = new;
+    beepState.stream = LoadAudioStream(44100, 16, 1);
+    static int maxSamplesPerUpdate = 4096;
+    SetAudioStreamBufferSizeDefault(maxSamplesPerUpdate);
+    SetAudioStreamCallback(beepState.stream, AudioBeepInputCallback);
 }
 
 void CloseBeepSound(void)
 {
-    UnloadAudioStream(pongBeep.stream);
+    UnloadAudioStream(beepState.stream);
 }
 
 void UpdateBeepSound(void)
 {
-    // Update beep timer
-    if (pongBeep.beepTimer < 0)
-        pongBeep.beepTimer = 0;
-    else if (pongBeep.beepTimer > 0)
-        pongBeep.beepTimer -= GetFrameTime();
+    bool anyBeepActive = false;
 
-    // Fade out and stop after timer ends
-    if (pongBeep.beepTimer == 0)
+    for (unsigned int i = 0; i < ARRAY_SIZE(beepState.beeps); i++)
     {
-        pongBeep.fadingOut = true;
-        pongBeep.fadingIn = false;
+        PongBeep *beep = &beepState.beeps[i];
+        if (!beep->isPlaying)
+            continue;
+        else
+            anyBeepActive = true;
+
+        // Update beep timer
+        if (beep->beepTimer < 0)
+            beep->beepTimer = 0;
+        else if (beep->beepTimer > 0)
+            beep->beepTimer -= GetFrameTime();
+
+        // Fade out and stop after timer ends
+        if (beep->beepTimer == 0)
+        {
+            beep->fadingOut = true;
+            beep->fadingIn = false;
+        }
     }
-    else if (!pongBeep.isPlaying && IsAudioStreamPlaying(pongBeep.stream))
+
+    if (!anyBeepActive && IsAudioStreamPlaying(beepState.stream))
     {
-        StopAudioStream(pongBeep.stream);
+        StopAudioStream(beepState.stream);
+    }
+    else if (anyBeepActive && !IsAudioStreamPlaying(beepState.stream))
+    {
+        PlayAudioStream(beepState.stream);
     }
 }
 

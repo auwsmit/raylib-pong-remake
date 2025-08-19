@@ -20,7 +20,7 @@ Logo InitRaylibLogo(void)
         RAYLIB_LOGO_OUTLINE, // bottomSideRecWidth
         RAYLIB_LOGO_OUTLINE, // rightSideRecHeight
 
-        START, // state
+        LOGO_START, // state
                // Tracking animation states (State Machine)
 
         0.0f,  // alpha
@@ -40,7 +40,7 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
     // Enter or space or click to skip logo animation
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
     {
-        if (logo->state >= TEXT)
+        if (logo->state >= LOGO_TEXT)
             pong->currentScreen = SCREEN_TITLE;
         else
         {
@@ -50,13 +50,14 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
             logo->rightSideRecHeight = RAYLIB_LOGO_WIDTH;
             logo->lettersCount = 10;
             logo->elapsedTime = 0;
-            logo->state = TEXT;
+            logo->state = LOGO_TEXT;
             skipped = true;
         }
     }
 
+    // Support raylib!
     // https://github.com/sponsors/raysan5 https://www.patreon.com/raylib :)
-    if (skipped == true && logo->elapsedTime < 1.5)
+    if (skipped == true && logo->elapsedTime < 1.0f)
     {
         logo->elapsedTime += GetFrameTime();
         return;
@@ -64,16 +65,16 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
 
     switch (logo->state)
     {
-        case START: // Small box blinking
+        case LOGO_START: // Small box blinking
             logo->elapsedTime += deltaTime;
             if (logo->elapsedTime >= 2.0f) // 2 seconds delay
             {
-                logo->state = GROW1;
+                logo->state = LOGO_GROW1;
                 logo->elapsedTime = 0.0f; // Reset counter... will be used later...
             }
             break;
 
-        case GROW1: // Top and left bars growing
+        case LOGO_GROW1: // Top and left bars growing
             logo->topSideRecWidth += growSpeed * deltaTime;
             logo->leftSideRecHeight += growSpeed * deltaTime;
 
@@ -81,12 +82,12 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
             {
                 logo->topSideRecWidth = RAYLIB_LOGO_WIDTH;
                 logo->leftSideRecHeight = RAYLIB_LOGO_WIDTH;
-                logo->state = GROW2;
+                logo->state = LOGO_GROW2;
                 logo->elapsedTime = 0.0f;
             }
             break;
 
-        case GROW2: // Bottom and right bars growing
+        case LOGO_GROW2: // Bottom and right bars growing
             logo->bottomSideRecWidth += growSpeed * deltaTime;
             logo->rightSideRecHeight += growSpeed * deltaTime;
 
@@ -94,12 +95,12 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
             {
                 logo->bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
                 logo->rightSideRecHeight = RAYLIB_LOGO_WIDTH;
-                logo->state = TEXT;
+                logo->state = LOGO_TEXT;
                 logo->elapsedTime = 0.0f;
             }
             break;
 
-        case TEXT: // Letters appearing (one by one)
+        case LOGO_TEXT: // Letters appearing (one by one)
             logo->elapsedTime += deltaTime;
 
             if (logo->lettersCount < 10 && logo->elapsedTime >= letterDelay)
@@ -115,19 +116,19 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
                 if (logo->alpha >= 1.0f)
                 {
                     logo->alpha = 1.0f;
-                    logo->state = PAUSE;
+                    logo->state = LOGO_PAUSE;
                     logo->elapsedTime = 0.0f;
                 }
             }
             break;
 
-        case PAUSE: // Pause at end of animation
+        case LOGO_PAUSE: // Pause at end of animation
             logo->elapsedTime += deltaTime;
             if (logo->elapsedTime >= 1.5f)
-                logo->state = END;
+                logo->state = LOGO_END;
             break;
 
-        case END: // Animation is finished
+        case LOGO_END: // Animation is finished
             pong->currentScreen = SCREEN_TITLE;
             break;
     }
@@ -149,7 +150,7 @@ void DrawRaylibLogo(Logo *logo)
     int rightHeight = (int)logo->rightSideRecHeight;
     int bottomWidth = (int)logo->bottomSideRecWidth;
 
-    if (logo->state != PAUSE)
+    if (logo->state != LOGO_PAUSE)
         DrawText("powered by",
                  (int)((RENDER_WIDTH / 2) - (RAYLIB_LOGO_WIDTH / 2)),
                  (int)((RENDER_HEIGHT / 2) - (RAYLIB_LOGO_WIDTH / 2) - offsetB - lineWidth / 4),
@@ -157,24 +158,24 @@ void DrawRaylibLogo(Logo *logo)
 
     switch (logo->state)
     {
-        case START:
+        case LOGO_START:
             if (((int)(logo->elapsedTime * 4)) % 2)
                 DrawRectangle(posX, posY, lineWidth, lineWidth, RAYWHITE);
             else
                 DrawRectangle(posX, posY, lineWidth, lineWidth, BLACK);
             break;
-        case GROW1:
+        case LOGO_GROW1:
             DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
             DrawRectangle(posX, posY, lineWidth, leftHeight, RAYWHITE);
             break;
-        case GROW2:
+        case LOGO_GROW2:
             DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
             DrawRectangle(posX, posY, lineWidth, leftHeight, RAYWHITE);
 
             DrawRectangle(posX + offsetA, posY, lineWidth, rightHeight, RAYWHITE);
             DrawRectangle(posX, posY + offsetA, bottomWidth, lineWidth, RAYWHITE);
             break;
-        case TEXT:
+        case LOGO_TEXT:
             DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
             DrawRectangle(posX, posY + lineWidth, lineWidth, leftHeight - offsetB, RAYWHITE);
 
@@ -187,10 +188,10 @@ void DrawRaylibLogo(Logo *logo)
 
             DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, logo->alpha));
             break;
-        case PAUSE:
+        case LOGO_PAUSE:
             // DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
             break;
-        case END:
+        case LOGO_END:
             break;
     }
 }

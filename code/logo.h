@@ -8,7 +8,7 @@
 
 // Types and Structures
 // --------------------------------------------------------------------------------
-typedef enum LogoState { START, GROW1, GROW2, TEXT, PAUSE, END } LogoState;
+typedef enum LogoState { LOGO_START, LOGO_GROW1, LOGO_GROW2, LOGO_TEXT, LOGO_PAUSE, LOGO_END } LogoState;
 
 typedef struct Logo {
     float positionX;

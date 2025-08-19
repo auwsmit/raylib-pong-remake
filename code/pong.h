@@ -20,7 +20,7 @@
 
 // Ball physics tweaks for game feel
 #define BOUNCE_MULTIPLIER 1.1f       // How much faster the ball gets after hitting a paddle
-#define PADDLE_HIT_MAX_ANGLE 45.0f   // How much the ball's angle is affected by where it hits the paddle (0 to 90 degrees)
+#define PADDLE_HIT_MAX_ANGLE 40.0f   // How much the ball's angle is affected by where it hits the paddle (0 to 90 degrees)
                                      // This is the angle the ball will deflect at if it hits the top or bottom of the paddle
 #define MINIMUM_VERTICAL_ANGLE 25.0f // The minimum vertical angle the ball can move (1 degree minimum)
 #define RETURN_POSITION_VARIATION 50 // How much the ball's vertical position can change after scoring
@@ -36,6 +36,7 @@
 #define WIN_PAUSE_TIME 10.0f   // Time to pause after a win
 #define BEEP_FREQUENCY_EDGE   500 // Frequency for beep when the ball hits the screen edge
 #define BEEP_FREQUENCY_PADDLE 450 // Frequency for beep when the ball hits a paddle
+
 // Prototypes
 // --------------------------------------------------------------------------------
 
@@ -55,8 +56,7 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu); // Updates all the 
 void UpdatePaddleMouseInput(Paddle *paddle); // Updates paddle's position based on the mouse
 void UpdatePaddlePlayer1(Paddle *paddle); // Paddle speed updates based on player input (W/S with Left Shift)
 void UpdatePaddlePlayer2(Paddle *paddle); // Paddle speed updates based on player input (O/L and Up/Down with Right Shift)
-void UpdatePaddleComputer(Paddle *paddle, // Paddle speed updates based on Computer AI
-                          Ball *ball, GameTurn currentTurn, Difficulty difficulty); // TODO: pass *pong instead?
+void UpdatePaddleComputer(Paddle *paddle, GameState *pong); // Paddle speed updates based on Computer AI
 void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed
 
 // Draw game

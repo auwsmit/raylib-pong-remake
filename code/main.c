@@ -121,7 +121,14 @@ void UpdateDrawFrame(AppData *app)
     // Debug: q for fast quitting
     // SetExitKey(KEY_Q);
 
+    // Debug: reset ball
+    // if (IsKeyPressed(KEY_R))
+    //     ResetBall(&app->pong.ball);
+
+#if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy
+                           // For now just use emscripten's fullscreen button
     HandleToggleFullscreen(app);
+#endif
 
     if (app->skipCurrentFrame == true)
     {
@@ -185,9 +192,6 @@ void UpdateDrawFrame(AppData *app)
 
 void HandleToggleFullscreen(AppData *app)
 {
-#if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy
-                           // For now just use emscripten's fullscreen button
-
     // Fullscreen inputs: F11, Alt+Enter, and Shift+F
     bool isPressedAltEnter = ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER));
     bool isPressedShiftF = ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
@@ -198,7 +202,5 @@ void HandleToggleFullscreen(AppData *app)
         // ToggleFullscreen();
         app->skipCurrentFrame = true;
     }
-
-#endif
 }
 

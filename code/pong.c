@@ -8,7 +8,7 @@
 
 #include "config.h"
 #include "menu.h" // needed to reset the title menu
-#include "beep.h"
+#include "beep.h" // le beep
 
 GameState InitGameState(void)
 {
@@ -140,10 +140,14 @@ void BounceBallEdge(GameState *pong)
         pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size - FIELD_LINE_WIDTH;
     }
 
-    if (leftEdgeCollide || rightEdgeCollide)
-        PlayBeepSound(BEEP_FREQUENCY_EDGE+100, 0.4f);
-    if (topEdgeCollide || bottomEdgeCollide)
-        PlayBeepSound(BEEP_FREQUENCY_EDGE, 0.1f);
+    float beepLength = 0.1f;
+    if (leftEdgeCollide || rightEdgeCollide || topEdgeCollide || bottomEdgeCollide)
+    {
+        if (topEdgeCollide || bottomEdgeCollide || pong->playerWon)
+            PlayBeepSound(BEEP_FREQUENCY_EDGE, beepLength);
+        else if (leftEdgeCollide || rightEdgeCollide)
+            PlayBeepSound(BEEP_FREQUENCY_EDGE+100, beepLength*4);
+    }
 }
 
 void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
@@ -186,10 +190,11 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
 
 void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
 {
-
     // Input to go back to title screen
     if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) ||
-        (pong->currentMode == MODE_DEMO && (IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))))
+        (pong->currentMode == MODE_DEMO && (IsKeyPressed(KEY_SPACE) ||
+                                            IsKeyPressed(KEY_ENTER) ||
+                                            IsGestureDetected(GESTURE_TAP))))
     {
         *titleMenu = InitMenuState();
         *pong = InitGameState();
@@ -210,8 +215,7 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         {
             UpdatePaddlePlayer1(&pong->paddleL);
             UpdatePaddleMouseInput(&pong->paddleL);
-            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
-                                 pong->currentTurn, pong->difficulty);
+            UpdatePaddleComputer(&pong->paddleR, pong);
         }
         if (pong->currentMode == MODE_2PLAYER)
         {
@@ -220,13 +224,14 @@ void UpdatePongFrame(GameState *pong, MenuState *titleMenu)
         }
         if (pong->currentMode == MODE_DEMO)
         {
-            UpdatePaddleComputer(&pong->paddleL, &pong->ball,
-                                 pong->currentTurn, pong->difficulty);
-            UpdatePaddleComputer(&pong->paddleR, &pong->ball,
-                                 pong->currentTurn, pong->difficulty);
+            UpdatePaddleComputer(&pong->paddleL, pong);
+            UpdatePaddleComputer(&pong->paddleR, pong);
         }
 
         // Update ball
+        if (pong->playerWon && (pong->ball.speed < BALL_SPEED * 4))
+            pong->ball.speed = BALL_SPEED * 4;
+
         if (pong->scoreTimer <= 0 ||
             pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
             UpdateBall(&pong->ball);
@@ -345,44 +350,46 @@ void UpdatePaddleMouseInput(Paddle *paddle)
     }
 }
 
-void UpdatePaddleComputer(Paddle *paddle, Ball *ball, GameTurn currentTurn, Difficulty difficulty)
+void UpdatePaddleComputer(Paddle *paddle, GameState *pong)
 {
     float newSpeed = 0.0f; // Not moving by default
     bool paddleIsLeft = paddle->position.x < RENDER_WIDTH / 2;
     // Follow the ball
-    if ((paddle->position.y + paddle->nextHitPos) > ball->position.y + ball->size)
+    if ((paddle->position.y + paddle->nextHitPos) > pong->ball.position.y + pong->ball.size)
         newSpeed = -PADDLE_SPEED;
-    if ((paddle->position.y + paddle->length - paddle->nextHitPos) < ball->position.y)
+    if ((paddle->position.y + paddle->length - paddle->nextHitPos) < pong->ball.position.y)
         newSpeed = PADDLE_SPEED;
 
     // Update Paddle
-    float distanceToBall = fabsf(paddle->position.x - ball->position.x);
-    float ballIsHalfway = (float)(distanceToBall < RENDER_WIDTH / 2);
+    float distanceToBall = fabsf(paddle->position.x - pong->ball.position.x);
+    float ballIsHalfway = (float)(distanceToBall < RENDER_WIDTH/2 - pong->ball.size*2);
     bool movingTowardsPaddle =
-        ((paddleIsLeft && currentTurn == TURN_RIGHT_SIDE) ||
-        (!paddleIsLeft && currentTurn == TURN_LEFT_SIDE));
+        ((paddleIsLeft && pong->currentTurn == TURN_RIGHT_SIDE) ||
+        (!paddleIsLeft && pong->currentTurn == TURN_LEFT_SIDE));
 
     if (ballIsHalfway)
     {
-        paddle->speed = newSpeed * (difficulty + 1);
+        Difficulty diff = pong->difficulty;
+        paddle->speed = newSpeed * (diff + 1);
 
-        // Tweak/adjust difficulty speeds
-        if (difficulty == DIFFICULTY_EASY)
+        // Tweak/adjust diff speeds
+        if (diff == DIFFICULTY_EASY)
             paddle->speed += paddle->speed * 0.30f;
-        // else if (difficulty == DIFFICULTY_MEDIUM)
+        // else if (diff == DIFFICULTY_MEDIUM)
         //     paddle->speed = paddle->speed * 0.05f;
-        else if (difficulty == DIFFICULTY_HARD)
+        else if (diff == DIFFICULTY_HARD)
             paddle->speed -= paddle->speed * 0.10f;
 
         // Move slower after hitting ball
         if (!movingTowardsPaddle && (distanceToBall < RENDER_WIDTH / 8))
-            paddle->speed /= 2;
+            paddle->speed /= 3;
 
+        // if (pong->scoreTimer <= 0)
         paddle->position.y += paddle->speed * GetFrameTime();
     }
 
     // // Perfect computer
-    // paddle->position.y = ball->position.y;
+    // paddle->position.y = pong->ball.position.y;
 
     // TODO: make computer behavior more interesting/varied
 }
@@ -565,5 +572,9 @@ void ResetBall(Ball *ball)
     // Change the ball's return position and angle a bit
     ball->position.y += GetRandomValue(-RETURN_POSITION_VARIATION, RETURN_POSITION_VARIATION);
     ball->direction.y += GetRandomValue(-RETURN_ANGLE_VARIATION, RETURN_ANGLE_VARIATION);
+    if (ball->position.y <= FIELD_LINE_WIDTH)
+        ball->position.y = FIELD_LINE_WIDTH + ball->size;
+    else if (ball->position.y >= RENDER_HEIGHT - FIELD_LINE_WIDTH)
+        ball->position.y = RENDER_HEIGHT - FIELD_LINE_WIDTH - ball->size*2;
     ball->speed = BALL_SPEED;
 }

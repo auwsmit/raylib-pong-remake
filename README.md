@@ -13,10 +13,10 @@ improve.
 
 ## Controls
 
-- **Select/Confirm:** `Enter` or mouse click
+- **Select/Confirm:** `Mouse click` or `Enter`
 
 - **Move Player 1:**
-    - Mouse movement (only in single player mode)
+    - `Mouse movement` (single player only)
     - Press `W`/`S` to move up and down
     - Hold `A`/`D`/`LShift` to move faster
 
@@ -31,14 +31,14 @@ improve.
 - **Toggle fullscreen:** `Alt+Enter`/`F11`/`Shift+F` (desktop only)
 
 ## Build for Desktop
-- Either run `build.sh` or `build.bat`, depending on your platform
-    - Or `make` to build the game (but not on Mac...)
-- Run `game` or `game.exe` to start the game
+1. Build by running `build.sh` or `build.bat` to use CMake
+    - Alternatively, just run `make` to build the game
+2. Play by running `game` or `game.exe`
 
 ## Build for Browser
-- Same as desktop, but add `web` as an argument:
+1. Same as desktop, but add `web` as an argument:
     - Run `build.sh web` or `make web`
-- Run game with `emrun game.html`
+2. Play by running `emrun game.html`
 
 ## Requirements to build:
 
@@ -46,7 +46,7 @@ improve.
 - A C compiler: [GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/) ([llvm-mingw](https://github.com/mstorsjo/llvm-mingw)
 on Windows), or [Visual Studio](https://visualstudio.microsoft.com/)
     - [emscripten](https://emscripten.org/) (only for browser / web assembly compilation)
-- Build system: [CMake](https://cmake.org/) or [Make](https://en.wikipedia.org/wiki/Make_(software))
+- Build system: [CMake](https://cmake.org/) or [Make](https://en.wikipedia.org/wiki/Make_(software)) (macOS must use CMake)
 
 For Windows users with no build tools or less experience, [w64devkit](https://github.com/skeeto/w64devkit) is a fast and easy way to build this project. Just download and extract it anywhere. Then use the included unix-like terminal, or add the `w64devkit/bin` tools to your PATH. Now you can simply `make` this project like you would on Linux. As an added bonus, you now have access to many nice Unix command line tools.
 

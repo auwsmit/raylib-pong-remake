@@ -6,40 +6,7 @@
 
 #include "raylib.h"
 
-// Title menu
-// --------------------------------------------------------------------------------
-
-typedef enum MenuScreenState { MENU_SS_DEFAULT, MENU_SS_DIFFICULTY } MenuScreenState;
-
-typedef enum MenuOption // these correspond to enum GameMode (e.g. MODE_1PLAYER)
-{
-    MENU_1PLAYER, MENU_2PLAYER, MENU_DEMO, MENU_EXIT
-} MenuOption;
-
-typedef struct MenuButton // Holds data for a menu button
-{
-    const char *text;
-    int fontSize;
-    Vector2 position;
-    Color color;
-} MenuButton;
-
-typedef struct MenuState // Holds data for the title screen menu
-{
-    MenuScreenState currentScreen;
-    MenuButton title;
-    MenuButton *buttons;      // allocate memory for buttons when created
-    MenuButton *difficulties;
-    MenuOption selectedIndex;
-    float cursorSize;
-    float keyHeldTime;
-    int buttonCount;
-    int diffCount;
-    bool firstFrame; // used for mouse selection
-    bool autoScroll;
-} MenuState;
-
-// Pong game
+// Pong Game
 // --------------------------------------------------------------------------------
 
 typedef enum GameTurn { TURN_RIGHT_SIDE, TURN_LEFT_SIDE } GameTurn;
@@ -54,10 +21,10 @@ typedef enum GameMode
     MODE_1PLAYER, MODE_2PLAYER, MODE_DEMO
 } GameMode;
 
-typedef enum Difficulty // Multiplier for CPU paddle speed
+typedef enum GameDifficulty // Multiplier for CPU paddle speed
 {
     DIFFICULTY_EASY, DIFFICULTY_MEDIUM, DIFFICULTY_HARD
-} Difficulty;
+} GameDifficulty;
 
 typedef struct Paddle
 {
@@ -79,13 +46,13 @@ typedef struct Ball
 
 typedef struct GameState
 {
+    ScreenState currentScreen;
     Ball ball;
     Paddle paddleL;
     Paddle paddleR;
     GameMode currentMode;
     GameTurn currentTurn; // keeps track of whose turn it currently is
-    ScreenState currentScreen;
-    Difficulty difficulty; // unused for MODE_2PLAYER
+    GameDifficulty difficulty; // unused for MODE_2PLAYER
     int scoreL;
     int scoreR;
     bool playerWon;
@@ -96,5 +63,46 @@ typedef struct GameState
     float winTimer;            // countdown after player wins
     float scoreTimer;          // countdown after a score
 } GameState;
+
+// User Interface
+// --------------------------------------------------------------------------------
+
+typedef enum UiMenuId { MENU_TITLE, MENU_DIFFICULTY } UiMenuId;
+
+typedef enum UiOptionId
+{
+    MENUID_1PLAYER, MENUID_2PLAYER, MENUID_DEMO, MENUID_EXIT
+} UiOptionId;
+
+typedef enum UiDifficultyId
+{
+    MENUID_EASY, MENUID_MEDIUM, MENUID_HARD, MENUID_BACK
+} UiDifficultyId;
+
+typedef struct UiButton // Holds data for a menu button
+{
+    const char *text;
+    int fontSize;
+    Vector2 position;
+    Color color;
+} UiButton;
+
+typedef struct UiMenu // Holds data for a menu of buttons
+{
+    UiButton *buttons;
+    unsigned int buttonCount;
+} UiMenu;
+
+typedef struct UiState // Holds data for the title screen menu
+{
+    UiMenuId currentMenu;
+    UiMenu menus[2]; // title and difficulty menus
+    UiButton text[2]; // Title and Paused text
+    unsigned int selectedId;
+    float cursorSize;
+    float keyHeldTime;
+    bool firstFrame; // used for mouse selection
+    bool autoScroll;
+} UiState;
 
 #endif // PONG_STATES_HEADER_GUARD

@@ -11,7 +11,7 @@ typedef struct PongBeep
     bool isPlaying;
     float frequency;
     float beepTimer;
-    float sineIndex;
+    float sineId;
 
     // Fade control
     int fadeCounter;
@@ -37,7 +37,7 @@ void AudioBeepInputCallback(void *buffer, unsigned int frames);
 PongBeep *FindBeepSlot(void);
 void PlayBeepSound(float argFrequency, float beepLength);
 void InitBeepSound(void);
-void CloseBeepSound(void);
+void FreeBeepSound(void);
 void UpdateBeepSound(void);
 
 #endif // PONG_BEEP_HEADER_GUARD

@@ -8,7 +8,7 @@
 #include "config.h"  // Program config, e.g. window title/size, fps, vsync
 #include "states.h"  // State machines shared across files
 #include "logo.h"    // Raylib logo animation
-#include "menu.h"    // Title menu
+#include "ui.h"      // User interface (menus and buttons)
 #include "beep.h"    // Pong beep sound
 #include "pong.h"    // Game logic
 
@@ -24,13 +24,14 @@ typedef struct AppData // Local variables for the game loop in main()
     Logo raylibLogo; // data for logo animation
     bool skipCurrentFrame;
     GameState pong;
-    MenuState titleMenu; // data for main menu
+    UiState ui; // data for main menu
 } AppData;
 
 // Local Functions Declaration
 // --------------------------------------------------------------------------------
 void CreateNewWindow(void); // Creates a new window with the proper initial settings
 AppData InitGameLoop(void); // Initializes data for the game loop
+void CloseGameLoop(AppData *app); // Frees allocated data for the game loop
 void RunGameLoop(AppData *app); // Runs the game loop
 void UpdateDrawFrame(AppData *app); // Update and Draw the current frame
                                     // Most of the game loop's code is found in here
@@ -51,7 +52,8 @@ int main(void)
 
     // De-Initialization
     // --------------------------------------------------------------------------------
-    CloseBeepSound();
+    FreeBeepSound();
+    FreeUiElements(&app.ui);
     CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context
 
@@ -83,8 +85,9 @@ AppData InitGameLoop(void)
 
     app.skipCurrentFrame = false;
     app.raylibLogo = InitRaylibLogo();
-    app.titleMenu = InitMenuState();
+    app.ui = InitUiState();
     app.pong = InitGameState();
+
 
     return app;
 }
@@ -123,12 +126,17 @@ void UpdateDrawFrame(AppData *app)
 
     // Debug: reset ball
     // if (IsKeyPressed(KEY_R))
+    // {
+    //     app->pong.scoreTimer = SCORE_PAUSE_TIME;
     //     ResetBall(&app->pong.ball);
+    // }
 
 #if !defined(PLATFORM_WEB) // No fullscreen input for web because it's buggy
                            // For now just use emscripten's fullscreen button
     HandleToggleFullscreen(app);
 #endif
+
+    UpdateBeepSound();
 
     if (app->skipCurrentFrame == true)
     {
@@ -137,15 +145,13 @@ void UpdateDrawFrame(AppData *app)
         return;
     }
 
-    UpdateBeepSound();
-
     switch(app->pong.currentScreen)
     {
         case SCREEN_LOGO:     UpdateRaylibLogo(&app->raylibLogo, &app->pong);
                               break;
-        case SCREEN_TITLE:    UpdateTitleMenuFrame(&app->titleMenu, &app->pong);
+        case SCREEN_TITLE:    UpdateUiFrame(&app->ui, &app->pong);
                               break;
-        case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->titleMenu);
+        case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->ui);
                               break;
 
         default: break;
@@ -162,9 +168,9 @@ void UpdateDrawFrame(AppData *app)
         {
             case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawTitleMenuFrame(&app->titleMenu);
+            case SCREEN_TITLE:    DrawUiFrame(&app->ui, MENU_TITLE);
                                   break;
-            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
+            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong, &app->ui);
                                   break;
             default: break;
         }

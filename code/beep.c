@@ -31,7 +31,7 @@ void AudioBeepInputCallback(void *buffer, unsigned int frames)
 
             float incr = (beep->frequency * 0.95f) / 44100.0f;
             float amplitude = SHRT_MAX / 4; // individual beep volume
-            float sample = sinf(2 * PI * beep->sineIndex);
+            float sample = sinf(2 * PI * beep->sineId);
 
             // fade in/out
             if (beep->fadingIn || beep->fadingOut)
@@ -57,8 +57,8 @@ void AudioBeepInputCallback(void *buffer, unsigned int frames)
 
             mix += amplitude * sample;
 
-            beep->sineIndex += incr;
-            if (beep->sineIndex > 1.0f) beep->sineIndex -= 1.0f;
+            beep->sineId += incr;
+            if (beep->sineId > 1.0f) beep->sineId -= 1.0f;
         }
 
         // limiter to avoid clipping
@@ -109,7 +109,7 @@ void InitBeepSound(void)
     SetAudioStreamCallback(beepState.stream, AudioBeepInputCallback);
 }
 
-void CloseBeepSound(void)
+void FreeBeepSound(void)
 {
     UnloadAudioStream(beepState.stream);
 }

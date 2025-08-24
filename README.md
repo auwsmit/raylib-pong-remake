@@ -31,13 +31,13 @@ improve.
 - **Toggle fullscreen:** `Alt+Enter`/`F11`/`Shift+F` (desktop only)
 
 ## Build for Desktop
-1. Build by running `build.sh` or `build.bat` to use CMake
+1. Build by running `./build.sh cmake` or `.\build.bat cmake` to use CMake
     - Alternatively, just run `make` to build the game
-2. Play by running `game` or `game.exe`
+2. Play by running `./game` or `.\game.exe`
 
 ## Build for Browser
 1. Same as desktop, but add `web` as an argument:
-    - Run `build.sh web` or `make web`
+    - Run `build.sh cmake web` or `make web`
 2. Play by running `emrun game.html`
 
 ## Requirements to build:
@@ -50,4 +50,4 @@ on Windows), or [Visual Studio](https://visualstudio.microsoft.com/)
 
 For Windows users with no build tools or less experience, [w64devkit](https://github.com/skeeto/w64devkit) is a fast and easy way to build this project. Just download and extract it anywhere. Then use the included unix-like terminal, or add the `w64devkit/bin` tools to your PATH. Now you can simply `make` this project like you would on Linux. As an added bonus, you now have access to many nice Unix command line tools.
 
-Also for Windows users, if you have GCC and CMake but not Visual Studio for some reason, you can use `build.bat gcc`.
+Also for Windows users, if you have GCC and CMake but not Visual Studio for some reason, you can use `build.bat cmake gcc`.

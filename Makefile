@@ -1,5 +1,12 @@
-# Credit to raylib's makefiles and the RAD Debugger for many pointers and ideas
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# =============================================================================
+# NOTE: This makefile is deprecated!
+# Instead use the build script (build.sh or build.bat) for your platform!
+# =============================================================================
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+# Credit to raylib's makefiles and the RAD Debugger for many pointers and ideas
 # --- Usage Notes -------------------------------------------------------------
 #
 # This makefile is used to build this game project on Windows and Linux.
@@ -39,7 +46,7 @@ endif
 # ==============================================================================
 
 # Output executable name
-OUTPUT     := game
+OUTPUT     := pong
 
 # Source code, headers, and object file paths
 SRC_DIR    := code

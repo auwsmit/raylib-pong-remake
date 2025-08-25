@@ -7,7 +7,7 @@ set script_dir=%~dp0
 :: Usage Notes
 :: ----------------------------------------------------------------------------
 ::
-:: This is the build script for Pong Remake with raylib.
+:: This is the build script for Pong Remake with raylib for Windows.
 ::
 :: It can be used in two main ways:
 :: 1. `.\build` to simply compile the game with a C compiler
@@ -37,7 +37,7 @@ set script_dir=%~dp0
 
 :: Project Config
 :: ----------------------------------------------------------------------------
-set output=game
+set output=pong
 set cmake_build_dir=build
 set web_shell=code\shell.html
 set source_code=
@@ -123,9 +123,9 @@ if "%gcc%"=="1"      set compile=gcc %cc_common%
 if "%clang%"=="1"    set compile=clang %cc_common%
 if "%web%"=="1"      set compile=emcc %cc_common% %cc_web%
 if "%web%"=="1"      set compile_link=%cc_weblink%
+if not "%web%"=="1" if not "%msvc%"=="1" set compile_link=%cc_link%
 if "%web%"=="1"      set compile_out=%cc_out% %output%.html
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_out=%cc_out% %output%.exe
-if not "%web%"=="1" if not "%msvc%"=="1" set compile_link=%cc_link%
 if not "%msvc%"=="1" set compile_debug=%cc_debug%
 if not "%msvc%"=="1" set compile_release=%cc_release%
 
@@ -145,9 +145,7 @@ if "%cmake%"=="1" (
     %cmake_setup_cmd% %cmake_setup_flags%
     %cmake_build_cmd% %cmake_build_flags%
     if "%web%"=="1" (
-        del /q "%output%.html"
-        del /q "%output%.js"
-        del /q "%output%.wasm"
+        del /q "%output%.html" "%output%.js" "%output%.wasm"
         copy "%output_dir%\%output%.html" .
         copy "%output_dir%\%output%.js" .
         copy "%output_dir%\%output%.wasm" .

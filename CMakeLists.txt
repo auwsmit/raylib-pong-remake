@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 project("Pong Remake with raylib" C)
 
 # Output executable name
-set(OUTPUT_NAME game)
+set(OUTPUT_NAME pong)
 
 # Libraries to link
 set(LIBRARIES raylib)

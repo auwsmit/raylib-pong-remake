@@ -10,11 +10,11 @@ code/*.o
 build/
 build_web/
 out
-game
+pong
 *.exe
-game.html
-game.js
-game.wasm
+pong.html
+pong.js
+pong.wasm
 
 # debug files
 *.pdb

@@ -48,21 +48,21 @@ for %%f in ("%script_dir%\code\*.c") do set source_code=!source_code! "%%f"
 for %%a in (%*) do set "%%a=1"
 if "%clean%"=="1"       echo [clean mode] && goto :clean
 if not "%release%"=="1" set "debug=1"
-if "%debug%"=="1"       echo [debug mode]   && set "release=0"
-if "%release%"=="1"     echo [release mode] && set "debug=0"
+if "%release%"=="1"     set "debug=0" && echo [release mode]
+if "%debug%"=="1"       set "release=0"   && echo [debug mode]
 if "%cmake%"=="1" (
     echo [cmake build]
-    if not "%web%"=="1" if not "%gcc%"=="1" (
-        echo [msvc compile] && set "msvc=1"
-    )
     if "%gcc%"=="1" echo [gcc compile]
+    if not "%web%"=="1" if not "%gcc%"=="1" (
+        set "msvc=1" && echo [msvc compile]
+    )
 ) else (
-    echo [simple build] && set "simple_build=1"
-    if "%clang%"=="1" echo [clang compile] && set "msvc=0"
-    if "%msvc%"=="1"  echo [msvc compile] && set "clang=0"
+    set "simple_build=1" && echo [simple build]
+    if "%clang%"=="1" set "msvc=0" && echo [clang compile]
+    if "%msvc%"=="1"  set "clang=0" && echo [msvc compile]
     if "%web%"=="1"   set "clang=0" && set "msvc=0"
     if not "%clang%"=="1" if not "%msvc%"=="1" if not "%web%"=="1" (
-        echo [gcc compile] && set "gcc=1"
+        set "gcc=1" && echo [gcc compile]
     )
 )
 if "%web%"=="1" echo [web compile]
@@ -119,21 +119,22 @@ set cl_out=     /out:
 
 :: Choose Compile/Link Lines
 :: ----------------------------------------------------------------------------
-if "%gcc%"=="1"      set compile=gcc %cc_common%
-if "%clang%"=="1"    set compile=clang %cc_common%
-if "%web%"=="1"      set compile=emcc %cc_common% %cc_web%
-if "%web%"=="1"      set compile_link=%cc_weblink%
+if     "%gcc%"=="1"   set compile=gcc %cc_common%
+if     "%clang%"=="1" set compile=clang %cc_common%
+if     "%web%"=="1"   set compile=emcc %cc_common% %cc_web%
+if     "%web%"=="1"                      set compile_link=%cc_weblink%
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_link=%cc_link%
-if "%web%"=="1"      set compile_out=%cc_out% %output%.html
+if     "%web%"=="1"                      set compile_out=%cc_out% %output%.html
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_out=%cc_out% %output%.exe
-if not "%msvc%"=="1" set compile_debug=%cc_debug%
-if not "%msvc%"=="1" set compile_release=%cc_release%
 
 if "%msvc%"=="1"     set compile=%cl_common%
-if "%msvc%"=="1"     set compile_debug=%cl_debug%
-if "%msvc%"=="1"     set compile_release=%cl_release%
 if "%msvc%"=="1"     set compile_link=%cl_link%
 if "%msvc%"=="1"     set compile_out=%cl_out%%output%.exe
+
+if not "%msvc%"=="1" set compile_debug=%cc_debug%
+if     "%msvc%"=="1" set compile_debug=%cl_debug%
+if not "%msvc%"=="1" set compile_release=%cc_release%
+if     "%msvc%"=="1" set compile_release=%cl_release%
 
 if "%debug%"=="1"    set compile=%compile% %compile_debug%
 if "%release%"=="1"  set compile=%compile% %compile_release%
@@ -168,7 +169,7 @@ if not "%clean%"=="1" goto :eof
 pushd "%script_dir%"
 if "%cmake%"=="1" (
     rmdir /s /q build
-    del /q %output%.*
+    del /q %output%.exe
     echo CMake build files cleaned
 ) else (
     rmdir /s /q build_web

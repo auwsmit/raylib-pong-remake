@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
+# Credit to RAD Debugger for many pointers and ideas
+
 # Usage Notes
 # -----------------------------------------------------------------------------
 #
@@ -57,34 +59,37 @@ main()
 script_unpack_args()
 {
     for arg in "$@"; do eval "$arg=1"; done
-    [[ "$clean" == 1 ]] &&    echo "[clean mode]" && goto_script_build_cleanup
-    [[ "$release" != 1 ]] && debug=1
-    [[ "$debug" == 1 ]] &&    echo "[debug mode]" && release=0
-    [[ "$release" == 1 ]] &&  echo "[release mode]" && debug=0
-    if [[ "$cmake" == 1 ]]; then
+    if [[ "$clean" == 1 ]]; then
+        echo "[clean mode]" && script_build_cleanup
+        exit 0
+    fi
+    if [[ "$release" != 1 ]]; then debug=1; fi
+    if [[ "$release" == 1 ]]; then debug=0 && echo "[release mode]"; fi
+    if [[ "$debug" == 1   ]]; then release=0 && echo "[debug mode]"; fi
+    if [[ "$cmake" == 1   ]]; then
         echo "[cmake build]"
-        [[ "$web" != 1 ]] &&  echo "[gcc compile]" && gcc=1
+        if [[ "$web" != 1 ]]; then gcc=1 && echo "[gcc compile]"; fi
     else
-        echo "[simple build]" && simple_build=1
-        [[ "$clang" == 1 ]] && echo "[clang compile]" && gcc=0
-        [[ "$web" == 1 ]] &&   clang=0
-        if [[ "$clang" != 1 && "$web" != 1 ]]; then
-            echo "[gcc compile]" && gcc=1
+        simple_build=1 && echo "[simple build]"
+        if [[ "$clang" == 1 ]]; then gcc=0 && echo "[clang compile]"; fi
+        if [[ "$web" == 1   ]]; then clang=0; fi
+        if [[ "$web" != 1 && "$clang" != 1 ]]; then
+            gcc=1 && echo "[gcc compile]"
         fi
     fi
-    [[ "$web" == 1 ]] && echo "[web compile]"
+    if [[ "$web" == 1 ]]; then echo "[web compile]"; fi
 }
 
 # Define and Choose CMake Lines
 script_choose_cmake_lines()
 {
-    # CMake Line Definitions
+    # Line Definitions
     cmake_setup_desktop="cmake -DOUTPUT_NAME=$output -B \"$cmake_build_dir/desktop\" -DPLATFORM=Desktop"
     cmake_build_desktop="cmake --build \"$cmake_build_dir/desktop\""
     cmake_setup_web="emcmake cmake -DOUTPUT_NAME=$output -DCMAKE_EXECUTABLE_SUFFIX=\".html\" -B \"$cmake_build_dir/web\" -DPLATFORM=Web"
     cmake_build_web="emmake make -C \"$cmake_build_dir/web\""
 
-    # Choose CMake Lines
+    # Choose Lines
     if [[ "$web" == 1 ]]; then
         output_dir=$cmake_build_dir/web
         cmake_setup_cmd=$cmake_setup_web
@@ -94,14 +99,14 @@ script_choose_cmake_lines()
         cmake_setup_cmd=$cmake_setup_desktop
         cmake_build_cmd=$cmake_build_desktop
     fi
-    [[ "$release" == 1 ]] && cmake_setup_flags='-DCMAKE_BUILD_TYPE=Release'
-    [[ "$debug" == 1 ]] &&   cmake_setup_flags='-DCMAKE_BUILD_TYPE=Debug'
+    if [[ "$release" == 1 ]]; then cmake_setup_flags='-DCMAKE_BUILD_TYPE=Release'; fi
+    if [[ "$debug" == 1 ]]; then cmake_setup_flags='-DCMAKE_BUILD_TYPE=Debug'; fi
 }
 
 # Define and Choose Compile/Link Lines
 script_choose_simple_lines()
 {
-    # Compile/Link Line Definitions
+    # Line Definitions
     cc_common='-I"raylib/include" -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result -Wextra -Wmissing-prototypes -Wstrict-prototypes'
     cc_link='-lraylib -lGL -lm -lpthread -ldl -lrt -lX11'
     cc_debug='-g -O0'
@@ -110,16 +115,16 @@ script_choose_simple_lines()
     cc_weblink='-L"raylib/lib/web" -lraylib'
     cc_out='-o'
 
-    # Choose Compile/Link Lines
-    [[ "$gcc" == 1 ]] &&     compile="gcc $cc_common"
-    [[ "$clang" == 1 ]] &&   compile="clang $cc_common"
-    [[ "$web" == 1 ]] &&     compile="emcc $cc_common $cc_web"
-    [[ "$web" == 1 ]] &&     compile_link="$cc_weblink"
-    [[ "$web" != 1 ]] &&     compile_link="$cc_link"
-    [[ "$web" == 1 ]] &&     compile_out="$cc_out $output.html"
-    [[ "$web" != 1 ]] &&     compile_out="$cc_out $output.exe"
-    [[ "$debug" == 1 ]] &&   compile="$compile $cc_debug"
-    [[ "$release" == 1 ]] && compile="$compile $cc_release"
+    # Choose Lines
+    if [[ "$gcc" == 1     ]]; then compile="gcc $cc_common"; fi
+    if [[ "$clang" == 1   ]]; then compile="clang $cc_common"; fi
+    if [[ "$web" == 1     ]]; then compile="emcc $cc_common $cc_web"; fi
+    if [[ "$web" == 1     ]]; then compile_link="$cc_weblink"; fi
+    if [[ "$web" != 1     ]]; then compile_link="$cc_link"; fi
+    if [[ "$web" == 1     ]]; then compile_out="$cc_out $output.html"; fi
+    if [[ "$web" != 1     ]]; then compile_out="$cc_out $output.exe"; fi
+    if [[ "$debug" == 1   ]]; then compile="$compile $cc_debug"; fi
+    if [[ "$release" == 1 ]]; then compile="$compile $cc_release"; fi
 }
 
 script_cmake_config_and_build()
@@ -142,7 +147,7 @@ script_simple_build()
     eval $compile $source_code $compile_link $compile_out
 }
 
-goto_script_build_cleanup()
+script_build_cleanup()
 {
     pushd "$script_dir" > /dev/null
     if [[ "$cmake" == 1 ]]; then
@@ -153,7 +158,6 @@ goto_script_build_cleanup()
         echo "Build files cleaned"
     fi
     popd
-    exit 0
 }
 
 main "$@"

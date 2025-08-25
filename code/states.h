@@ -9,8 +9,6 @@
 // Pong Game
 // --------------------------------------------------------------------------------
 
-typedef enum GameTurn { TURN_RIGHT_SIDE, TURN_LEFT_SIDE } GameTurn;
-
 typedef enum ScreenState
 {
     SCREEN_LOGO, SCREEN_TITLE, SCREEN_GAMEPLAY, SCREEN_ENDING
@@ -25,6 +23,11 @@ typedef enum GameDifficulty // Multiplier for CPU paddle speed
 {
     DIFFICULTY_EASY, DIFFICULTY_MEDIUM, DIFFICULTY_HARD
 } GameDifficulty;
+
+typedef enum PongBeep
+{
+    BEEP_MENU, BEEP_PADDLE, BEEP_EDGE, BEEP_SCORE
+} PongBeep;
 
 typedef struct Paddle
 {
@@ -47,11 +50,12 @@ typedef struct Ball
 typedef struct GameState
 {
     ScreenState currentScreen;
+    Sound beeps[4];
     Ball ball;
     Paddle paddleL;
     Paddle paddleR;
     GameMode currentMode;
-    GameTurn currentTurn; // keeps track of whose turn it currently is
+    bool leftSideServe; // keeps track of whose turn it currently is
     GameDifficulty difficulty; // unused for MODE_2PLAYER
     int scoreL;
     int scoreR;

@@ -9,7 +9,6 @@
 #include "states.h"  // State machines shared across files
 #include "logo.h"    // Raylib logo animation
 #include "ui.h"      // User interface (menus and buttons)
-#include "beep.h"    // Pong beep sound
 #include "pong.h"    // Game logic
 
 #if defined(PLATFORM_WEB) // for compiling to wasm (web assembly)
@@ -45,14 +44,12 @@ int main(void)
     // --------------------------------------------------------------------------------
     CreateNewWindow();
     InitAudioDevice();
-    InitBeepSound();
-
     AppData app = InitGameLoop();
     RunGameLoop(&app);
 
     // De-Initialization
     // --------------------------------------------------------------------------------
-    FreeBeepSound();
+    FreeBeeps(&app.pong);
     FreeUiElements(&app.ui);
     CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context
@@ -135,8 +132,6 @@ void UpdateDrawFrame(AppData *app)
                            // For now just use emscripten's fullscreen button
     HandleToggleFullscreen(app);
 #endif
-
-    UpdateBeepSound();
 
     if (app->skipCurrentFrame == true)
     {

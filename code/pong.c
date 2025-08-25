@@ -4,21 +4,20 @@
 
 #include "pong.h"
 
+#include <limits.h> // for SHRT_MAX
 #include "raymath.h" // needed for vector math
 
 #include "config.h"
 #include "ui.h" // needed to reset the title menu
-#include "beep.h" // le beep
+
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 GameState InitGameState(void)
 {
-    // Random player starts the game
-    int startingTurn = GetRandomValue(TURN_RIGHT_SIDE, TURN_LEFT_SIDE);
-
     // Start the ball in any random direction
-    float ballStartDirectionX = (float)(startingTurn * 2 - 1) * 100; // either -100 or +100
+    float ballStartDirectionX = (float)(GetRandomValue(0, 1) * 2 - 1) * 100; // either -100 or +100
     float ballStartDirectionY = (float)GetRandomValue(-100, 100);
-    GameState state =
+    GameState pong =
     {
         .currentScreen = SCREEN_LOGO,
         .ball = {
@@ -56,7 +55,6 @@ GameState InitGameState(void)
             .width = PADDLE_WIDTH,
         },
         .currentMode = 0, // (selected at title screen)
-        .currentTurn = (GameTurn)startingTurn,
         .difficulty = DIFFICULTY_MEDIUM,
         .scoreL = 0,
         .scoreR = 0,
@@ -69,7 +67,58 @@ GameState InitGameState(void)
         .scoreTimer = SCORE_PAUSE_TIME,
     };
 
-    return state;
+    // Allocate memory for beep sine waves
+    pong.beeps[BEEP_MENU] = GenBeep(200.0f, 0.03f);
+    pong.beeps[BEEP_PADDLE] = GenBeep(450.0f, 0.1f);
+    pong.beeps[BEEP_EDGE] = GenBeep(500.0f, 0.1f);
+    pong.beeps[BEEP_SCORE] = GenBeep(600.0f, 0.4f);
+
+    return pong;
+}
+
+// Generate a sine wave buffer for a beep
+Sound GenBeep(float freq, float lengthSec)
+{
+    int sampleRate = 44100;
+    int samples = (int)(lengthSec * sampleRate);
+    short *data = MemAlloc(samples * sizeof(short));
+
+    // fade length in samples (5 ms)
+    int fadeSamples = (int)(0.005f * sampleRate);
+
+    for (int i = 0; i < samples; i++)
+    {
+        float timeInSeconds = (float)i / sampleRate;
+        float sample = sinf(2.0f * PI * freq * timeInSeconds);
+
+        // envelope factor
+        float amp = 1.0f;
+        if (i < fadeSamples) {
+            amp = (float)i / fadeSamples; // fade in
+        } else if (i > samples - fadeSamples) {
+            amp = (float)(samples - i) / fadeSamples; // fade out
+        }
+
+        data[i] = (short)(sample * amp * SHRT_MAX * 0.25f);
+    }
+
+    Wave w = {
+        .frameCount = samples,
+        .sampleRate = sampleRate,
+        .sampleSize = 16,
+        .channels = 1,
+        .data = data
+    };
+
+    Sound beep = LoadSoundFromWave(w);
+    UnloadWave(w); // frees data
+    return beep;
+}
+
+void FreeBeeps(GameState *pong)
+{
+    for (unsigned int i = 0; i < ARRAY_SIZE(pong->beeps); i++)
+        UnloadSound(pong->beeps[i]);
 }
 
 bool CheckCollisionBallPaddle(Ball ball, Paddle paddle)
@@ -141,31 +190,27 @@ void BounceBallEdge(GameState *pong)
         pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size - FIELD_LINE_WIDTH;
     }
 
-    float beepLength = 0.1f;
     if (leftEdgeCollide || rightEdgeCollide || topEdgeCollide || bottomEdgeCollide)
     {
         if (topEdgeCollide || bottomEdgeCollide || pong->playerWon)
-            PlayBeepSound(BEEP_FREQUENCY_EDGE, beepLength);
+            PlaySound(pong->beeps[BEEP_EDGE]);
         else if (leftEdgeCollide || rightEdgeCollide)
-            PlayBeepSound(BEEP_FREQUENCY_EDGE+100, beepLength*4);
+            PlaySound(pong->beeps[BEEP_SCORE]);
     }
 }
 
-void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
+void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep)
 {
     if (CheckCollisionBallPaddle(*ball, *paddle) == false)
         return;
 
-    // Track that it's a new player's turn
-    *currentTurn = !*currentTurn;
-
-    bool isLeftPaddle = paddle->position.x < RENDER_WIDTH / 2;
+    bool ballMovingLeft = ball->direction.x < 0;
     // Position the ball outside the paddle
-    if (*currentTurn == TURN_LEFT_SIDE)
+    if (ballMovingLeft)
     {
         ball->position.x = paddle->position.x + paddle->width + 1;
     }
-    else // *currentTurn == TURN_RIGHT_SIDE
+    else
     {
         ball->position.x = paddle->position.x - ball->size - 1;
     }
@@ -184,9 +229,9 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, GameTurn *currentTurn)
 
     // Apply new direction
     ball->direction.y = sinf(newAngle);
-    ball->direction.x = (isLeftPaddle) ? cosf(newAngle) : -cosf(newAngle);
+    ball->direction.x = (ballMovingLeft) ? cosf(newAngle) : -cosf(newAngle);
 
-    PlayBeepSound(BEEP_FREQUENCY_PADDLE, 0.1f);
+    PlaySound(*beep);
 }
 
 void UpdatePongFrame(GameState *pong, UiState *titleMenu)
@@ -241,8 +286,8 @@ void UpdatePongFrame(GameState *pong, UiState *titleMenu)
         BounceBallEdge(pong);
         if (pong->playerWon == false)
         {
-            BounceBallPaddle(&pong->ball, &pong->paddleL, &pong->currentTurn);
-            BounceBallPaddle(&pong->ball, &pong->paddleR, &pong->currentTurn);
+            BounceBallPaddle(&pong->ball, &pong->paddleL, &pong->beeps[BEEP_PADDLE]);
+            BounceBallPaddle(&pong->ball, &pong->paddleR, &pong->beeps[BEEP_PADDLE]);
         }
         EdgeCollisionPaddle(&pong->paddleL);
         EdgeCollisionPaddle(&pong->paddleR);
@@ -362,11 +407,11 @@ void UpdatePaddleComputer(Paddle *paddle, GameState *pong)
         newSpeed = PADDLE_SPEED;
 
     // Update Paddle
+    bool ballMovingLeft = pong->ball.direction.x < 0;
+    bool movingTowardsPaddle = ((paddleIsLeft && ballMovingLeft) ||
+                                (!paddleIsLeft && !ballMovingLeft));
     float distanceToBall = fabsf(paddle->position.x - pong->ball.position.x);
     float ballIsHalfway = (float)(distanceToBall < RENDER_WIDTH/2 - pong->ball.size*2);
-    bool movingTowardsPaddle =
-        ((paddleIsLeft && pong->currentTurn == TURN_RIGHT_SIDE) ||
-        (!paddleIsLeft && pong->currentTurn == TURN_LEFT_SIDE));
 
     if (ballIsHalfway)
     {

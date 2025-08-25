@@ -7,7 +7,6 @@
 #include <stddef.h>
 #include "raylib.h"
 #include "raymath.h" // needed for Vector math
-#include "beep.h"
 
 #include "config.h"
 
@@ -100,10 +99,10 @@ void UpdateUiFrame(UiState *ui, GameState *pong)
     }
 
     UpdateUiCursorSelect(ui, pong);
-    UpdateUiCursorMove(ui);
+    UpdateUiCursorMove(ui, pong);
 }
 
-void UpdateUiCursorMove(UiState *ui)
+void UpdateUiCursorMove(UiState *ui, GameState *pong)
 {
     UiMenu *menu = &ui->menus[ui->currentMenu];
 
@@ -182,10 +181,8 @@ void UpdateUiCursorMove(UiState *ui)
 
     ui->firstFrame = false;
 
-#if !defined(PLATFORM_WEB) // TODO: redo sound to use Sound instead of AudioStream
     if (ui->selectedId != prevId)
-        PlayBeepSound(200.0f, 0.03f);
-#endif
+        PlaySound(pong->beeps[BEEP_MENU]);
 }
 
 void UpdateUiCursorSelect(UiState *ui, GameState *pong)

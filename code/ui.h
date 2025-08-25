@@ -34,7 +34,7 @@ void FreeUiElements(UiState *menu); // Releases memory for menu buttons
 
 // Update / Input
 void UpdateUiFrame(UiState *ui, GameState *pong); // Updates the menu for the current frame
-void UpdateUiCursorMove(UiState *menu); // Updates the cursor for movement by user input
+void UpdateUiCursorMove(UiState *menu, GameState *pong); // Updates the cursor for movement by user input
 void UpdateUiCursorSelect(UiState *menu, GameState *pong); // Updates the cursor for button selection
 bool IsMouseWithinButton(Vector2 mousePos, UiButton *button);
 

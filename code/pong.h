@@ -34,22 +34,20 @@
 
 #define SCORE_PAUSE_TIME 1.0f  // Time to pause after a score
 #define WIN_PAUSE_TIME 10.0f   // Time to pause after a win
-#define BEEP_FREQUENCY_EDGE   500 // Frequency for beep when the ball hits the screen edge
-#define BEEP_FREQUENCY_PADDLE 450 // Frequency for beep when the ball hits a paddle
 
 // Prototypes
 // --------------------------------------------------------------------------------
 
 // Initialization
 GameState InitGameState(void); // Initialize game objects and data for the game loop
+Sound GenBeep(float freq, float lengthSec);
+void FreeBeeps(GameState *pong);
 
 // Collision
 bool CheckCollisionBallPaddle(Ball ball, Paddle paddle); // Check if ball and paddle are colliding
 void EdgeCollisionPaddle(Paddle *paddle); // Paddles collide with screen edges
 void BounceBallEdge(GameState *pong); // Ball bounces off screen edges and updates the score
-void BounceBallPaddle(Ball *ball,     // Ball bounces off paddle
-                      Paddle *paddle,
-                      GameTurn *currentTurn);
+void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep); // Ball bounces off paddle
 
 // Update game
 void UpdatePongFrame(GameState *pong, UiState *titleMenu); // Updates all the game's data and objects for the current frame

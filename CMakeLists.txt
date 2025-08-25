@@ -54,8 +54,10 @@ target_link_libraries(${OUTPUT_NAME} ${LIBRARIES})
 # --------------------------------------------------------------------------------
 
 # Windows / Visual Studio
-set_target_properties(${OUTPUT_NAME} PROPERTIES
-  VS_DEBUGGER_WORKING_DIRECTORY ./) # working directory set to repo directory
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} # startup project set to game
+  PROPERTY VS_STARTUP_PROJECT ${OUTPUT_NAME})
+set_target_properties(${OUTPUT_NAME} # working directory set to repo directory
+  PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ./)
 
 # Web
 if (${PLATFORM} STREQUAL "Web")

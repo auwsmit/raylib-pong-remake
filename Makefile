@@ -144,11 +144,11 @@ all: $(OUTPUT)$(EXTENSION)
 
 # Desktop build
 $(OUTPUT)$(EXTENSION): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -DPLATFORM_WEB
+	$(CC) -o $@ $^ $(LDFLAGS) -DPLATFORM_DESKTOP
 
 # Compile c files to object files
 $(SRC_DIR)/%$(OBJ_EXT): $(SRC_DIR)/%.c $(HEADERS)
-	$(CC) -c $< -o $@ $(DEBUG_FLAGS) $(CFLAGS) $(CPPFLAGS) -DPLATFORM_WEB
+	$(CC) -c $< -o $@ $(DEBUG_FLAGS) $(CFLAGS) $(CPPFLAGS) -DPLATFORM_DESKTOP
 
 # Build with MSVC cl.exe and produce .pdb debug files
 msvc:

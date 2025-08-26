@@ -1,25 +1,16 @@
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# =============================================================================
-# NOTE: This makefile is deprecated!
-# Instead use the build script (build.sh or build.bat) for your platform!
-# =============================================================================
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 # Credit to raylib's makefiles and the RAD Debugger for many pointers and ideas
+
 # --- Usage Notes -------------------------------------------------------------
 #
 # This makefile is used to build this game project on Windows and Linux.
 #
 # With no arguments, running `make` will build the game executable for Desktop
-# and place a copy in the repo directory. It can take a single argument that
-# specifies which compiler to use, or which platform to compile for.
+# with gcc and place a copy in the repo directory. It can take a single
+# argument that specifies which compiler to use.
 #
 # Below is a list of arguments you can use:
-# `make clang` --> use clang to compile
 # `make msvc`  --> use msvc/cl.exe to compile, and make .pdb debug files
 # `make web`   --> compile to web assembly with emscripten
-# `make web-release` -> compile to web assembly for upload to GitHub Pages
 # `make clean` --> delete all previously generated build files
 #
 # -----------------------------------------------------------------------------
@@ -42,7 +33,7 @@ else
 endif
 
 # ==============================================================================
-# Project Info
+# Project Config
 # ==============================================================================
 
 # Output executable name
@@ -50,7 +41,7 @@ OUTPUT     := pong
 
 # Source code, headers, and object file paths
 SRC_DIR    := code
-SRC        ?= $(wildcard $(SRC_DIR)/*.c)
+SRC        := $(wildcard $(SRC_DIR)/*.c)
 HEADERS    := $(wildcard $(SRC_DIR)/*.h)
 OBJS       := $(SRC:.c=$(OBJ_EXT))
 
@@ -64,6 +55,9 @@ RAYLIB_LIB := raylib/lib
 
 # Compiler fallback just in case
 CC ?= gcc
+
+# Debug build by default
+CONFIG ?= DEBUG
 
 # Define C compiler flags: CFLAGS
 # -----------------------------------------------------------------------------
@@ -84,6 +78,13 @@ CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result
 #  -Werror=implicit-function-declaration   catch function calls without prior declaration
 CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
+# Debug or Release flags
+ifeq ($(CONFIG),DEBUG)
+    DEBUG_FLAGS = -g -O0
+else ifeq ($(CONFIG),RELEASE)
+    DEBUG_FLAGS = -O2
+endif
+
 # Define C preprocessor flags and linker/library flags
 CPPFLAGS := -I$(RAYLIB_INC)
 LDFLAGS  := -lraylib
@@ -95,8 +96,6 @@ endif
 
 # Web (emscripten emcc) Flags
 # -----------------------------------------------------------------------------
-# -Os                         size optimization
-# -O2                         optimization level 2
 # -sUSE_GLFW=3                Use glfw3 library (context/input management)
 # -sALLOW_MEMORY_GROWTH=1     to allow memory resizing -> WARNING: Audio buffers could FAIL!
 # -sTOTAL_MEMORY=16777216     to specify heap memory size (default = 16MB) (67108864 = 64MB)
@@ -112,10 +111,10 @@ endif
 # --memory-init-file 0        to avoid an external memory initialization code file (.mem)
 # --preload-file resources    specify a resources folder for data compilation
 # --source-map-base           allow debugging in browser with source map
-WEBFLAGS    := -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB \
-               -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sTOTAL_MEMORY=67108864 \
-	       -sEXPORTED_RUNTIME_METHODS=HEAPF32 --shell-file $(SRC_DIR)/shell.html
-WEB_LIBS    := -lraylib -L$(RAYLIB_LIB)/web
+WEBFLAGS := -O3 -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB \
+            -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sTOTAL_MEMORY=67108864 \
+	    -sEXPORTED_RUNTIME_METHODS=HEAPF32 --shell-file $(SRC_DIR)/shell.html
+WEB_LIBS := -lraylib -L$(RAYLIB_LIB)/web
 
 # MSVC Flags
 # -----------------------------------------------------------------------------
@@ -138,22 +137,18 @@ MSVC_LIBS   := /link /DEBUG /LIBPATH:"$(RAYLIB_LIB)/windows-msvc" \
 # $@ = target, $< = dependency1, $^ = all dependencies
 
 # tell `make` that these aren't files
-.PHONY: all clang msvc web web-release clean
+.PHONY: all msvc web gh-pages clean
 
 # Compile project with no arguments given
 all: $(OUTPUT)$(EXTENSION)
 
 # Desktop build
 $(OUTPUT)$(EXTENSION): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -DPLATFORM_DESKTOP
+	$(CC) -o $@ $^ $(LDFLAGS) -DPLATFORM_WEB
 
 # Compile c files to object files
 $(SRC_DIR)/%$(OBJ_EXT): $(SRC_DIR)/%.c $(HEADERS)
-	$(CC) -c $< -o $@ $(CFLAGS) $(CPPFLAGS) -DPLATFORM_DESKTOP
-
-# Build with clang shortcut
-clang:
-	$(MAKE) CC=clang
+	$(CC) -c $< -o $@ $(DEBUG_FLAGS) $(CFLAGS) $(CPPFLAGS) -DPLATFORM_WEB
 
 # Build with MSVC cl.exe and produce .pdb debug files
 msvc:
@@ -163,10 +158,10 @@ msvc:
 web:
 	emcc -o $(OUTPUT).html $(SRC) $(CFLAGS) $(WEBFLAGS) $(CPPFLAGS) $(WEB_LIBS)
 
-# Build for upload to GitHub pages (see .github/workflows/deploy.yaml)
-web-release:
+# (Automated) Build for upload to GitHub pages (see .github/workflows/deploy.yaml)
+gh-pages:
 	@mkdir -p build_web
-	emcc -o build_web/index.html $(SRC) $(CFLAGS) $(WEBFLAGS) -O3 $(CPPFLAGS) $(WEB_LIBS)
+	emcc -o build_web/index.html $(SRC) $(CFLAGS) $(WEBFLAGS) $(CPPFLAGS) $(WEB_LIBS)
 
 # Clean up generated build files
 clean:

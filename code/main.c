@@ -147,6 +147,7 @@ void UpdateDrawFrame(AppData *app)
         case SCREEN_TITLE:    UpdateUiFrame(&app->ui, &app->pong);
                               break;
         case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->ui);
+                              UpdateUiFrame(&app->ui, &app->pong);
                               break;
 
         default: break;
@@ -163,9 +164,10 @@ void UpdateDrawFrame(AppData *app)
         {
             case SCREEN_LOGO:     DrawRaylibLogo(&app->raylibLogo);
                                   break;
-            case SCREEN_TITLE:    DrawUiFrame(&app->ui, MENU_TITLE);
+            case SCREEN_TITLE:    DrawUiFrame(&app->ui, &app->pong);
                                   break;
-            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong, &app->ui);
+            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
+                                  DrawUiFrame(&app->ui, &app->pong);
                                   break;
             default: break;
         }

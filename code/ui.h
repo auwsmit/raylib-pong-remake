@@ -19,28 +19,27 @@
 #define UI_SPACE_FROM_TITLE     200 // space between the first option and title text
 #define UI_BUTTON_SPACING       50  // spacing between each button
 
-// Types and Structures
-// --------------------------------------------------------------------------------
-
 // Prototypes
 // --------------------------------------------------------------------------------
 
 // Initialize
 UiState InitUiState(void); // Initializes the title screen and allocates memory for buttons
-UiButton *InitUiText(char *text, UiState *ui, UiMenuId menuId);
-UiButton *InitUiButton(char *text, int fontSize, float textPosX, float textPosY, UiMenu *menu);
+UiButton InitUiTitle(char *text);
+UiButton InitUiButton(char *text, int fontSize, float textPosX, float textPosY);
+UiButton *InitUiMenuButton(char *text, int fontSize, float textPosX, float textPosY, UiMenu *menu);
 UiButton *InitUiButtonRelative(char* text, UiButton *originButton, float offsetY, UiMenu *menu);
 void FreeUiElements(UiState *menu); // Releases memory for menu buttons
 
 // Update / Input
 void UpdateUiFrame(UiState *ui, GameState *pong); // Updates the menu for the current frame
-void UpdateUiCursorMove(UiState *menu, GameState *pong); // Updates the cursor for movement by user input
-void UpdateUiCursorSelect(UiState *menu, GameState *pong); // Updates the cursor for button selection
+void UpdateUiMenuMove(UiState *menu, GameState *pong); // Updates the cursor for movement by user input
+void UpdateUiButtonMove(UiButton *button, GameState *pong);
+void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong);
 bool IsMouseWithinButton(Vector2 mousePos, UiButton *button);
 
 // Draw
-void DrawUiFrame(UiState *state, UiMenuId menuId); // Draws the menu for the current frame
+void DrawUiFrame(UiState *state, GameState *pong); // Draws the menu for the current frame
 void DrawUiElement(UiButton *button);
-void DrawUiCursor(UiState *menu);
+void DrawUiCursor(UiState *menu, UiButton *selected);
 
 #endif // PONG_MENU_HEADER_GUARD

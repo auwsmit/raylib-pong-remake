@@ -464,7 +464,7 @@ void UpdateBall(Ball *ball)
     ball->position = Vector2Add(ball->position, deltaTimeSpeed);
 }
 
-void DrawPongFrame(GameState *pong, UiState *ui)
+void DrawPongFrame(GameState *pong)
 {
     // Draw dotted line down middle
     DrawFieldLines(pong->isPaused, pong->currentMode == MODE_DEMO);
@@ -491,7 +491,6 @@ void DrawPongFrame(GameState *pong, UiState *ui)
     if (pong->currentMode == MODE_1PLAYER)
     {
         const char *difficultyText;
-        int diffTextLength;
         switch (pong->difficulty)
         {
             case DIFFICULTY_EASY:
@@ -504,7 +503,8 @@ void DrawPongFrame(GameState *pong, UiState *ui)
                 difficultyText = "Difficulty Hard";
                 break;
         }
-        diffTextLength = MeasureText(difficultyText, DIFFICULTY_FONT_SIZE);
+
+        int diffTextLength = MeasureText(difficultyText, DIFFICULTY_FONT_SIZE);
         DrawText(difficultyText,
                  RENDER_WIDTH / 4 * 3 - diffTextLength / 2,
                  RENDER_HEIGHT - (DIFFICULTY_FONT_SIZE * 2),
@@ -538,6 +538,7 @@ void DrawPongFrame(GameState *pong, UiState *ui)
     }
 }
 
+// TODO: give (UiState *) to auto skip ui elements
 void DrawFieldLines(bool isPaused, bool isDemoMode)
 {
     int dashHeight = 40;
@@ -598,6 +599,7 @@ void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor)
     int fontSize = 100; // this is also the font height because we're using the default font
     int textWidth = MeasureText(msg, fontSize);
     int textPosY = (RENDER_HEIGHT - fontSize) / 4;
+
     if (scoreL == WIN_SCORE)
     {
         int textPosX = RENDER_WIDTH / 4 - textWidth / 2;

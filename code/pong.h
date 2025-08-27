@@ -58,7 +58,7 @@ void UpdatePaddleComputer(Paddle *paddle, GameState *pong); // Paddle speed upda
 void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed
 
 // Draw game
-void DrawPongFrame(GameState *pong, UiState *ui); // Draws all the game's objects for the current frame
+void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame
 void DrawFieldLines(bool isPaused, bool isDemoMode);
 void DrawScores(GameState *pong);
 void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor);

@@ -55,7 +55,6 @@ typedef struct GameState
     Paddle paddleL;
     Paddle paddleR;
     GameMode currentMode;
-    bool leftSideServe; // keeps track of whose turn it currently is
     GameDifficulty difficulty; // unused for MODE_2PLAYER
     int scoreL;
     int scoreR;
@@ -71,40 +70,46 @@ typedef struct GameState
 // User Interface
 // --------------------------------------------------------------------------------
 
-typedef enum UiMenuId { MENU_TITLE, MENU_DIFFICULTY } UiMenuId;
-
-typedef enum UiOptionId
+typedef enum UiMenuId
 {
-    MENUID_1PLAYER, MENUID_2PLAYER, MENUID_DEMO, MENUID_EXIT
-} UiOptionId;
+    UI_MENU_TITLE, UI_MENU_DIFFICULTY, UI_MENU_NONE
+} UiMenuId;
 
-typedef enum UiDifficultyId
+typedef enum UiTitleMenuId
 {
-    MENUID_EASY, MENUID_MEDIUM, MENUID_HARD, MENUID_BACK
-} UiDifficultyId;
+    UI_ID_1PLAYER, UI_ID_2PLAYER, UI_ID_DEMO, UI_ID_EXIT
+} UiTitleMenuId;
 
-typedef struct UiButton // Holds data for a menu button
+typedef enum UiDifficultyMenuId
+{
+    UI_ID_EASY, UI_ID_MEDIUM, UI_ID_HARD, UI_ID_BACK
+} UiDifficultyMenuId;
+
+typedef struct UiButton
 {
     const char *text;
     int fontSize;
+    bool mouseHovered;
     Vector2 position;
     Color color;
 } UiButton;
 
-typedef struct UiMenu // Holds data for a menu of buttons
+typedef struct UiMenu
 {
-    UiButton *buttons;
+    UiButton *buttons; // allocate buttons for variable length menus
     unsigned int buttonCount;
 } UiMenu;
 
 typedef struct UiState // Holds data for the title screen menu
 {
+    UiMenu menus[2]; // title, difficulty
+    UiButton title; // Title text
+    UiButton pause;
+    UiButton unpause;
     UiMenuId currentMenu;
-    UiMenu menus[2]; // title and difficulty menus
-    UiButton text[2]; // Title and Paused text
-    unsigned int selectedId;
     float cursorSize;
     float keyHeldTime;
+    unsigned int selectedId;
     bool firstFrame; // used for mouse selection
     bool autoScroll;
 } UiState;

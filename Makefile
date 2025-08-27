@@ -9,17 +9,20 @@
 # argument that specifies which compiler to use.
 #
 # Below is a list of arguments you can use:
-# `make msvc`  --> use msvc/cl.exe to compile, and make .pdb debug files
+# `make CONFIG=RELEASE`  -> optimized build, no debug files (debug is default)
+# `make msvc`  --> use msvc/cl.exe to compile
 # `make web`   --> compile to web assembly with emscripten
 # `make clean` --> delete all previously generated build files
 #
 # -----------------------------------------------------------------------------
 
 # ==============================================================================
-# Platform Detection
+# Platform Settings
 # ==============================================================================
 
-ifeq ($(OS),Windows_NT)
+ifeq ($(PLATFORM),WEB)
+    EXTENSION := .html
+else ifeq ($(OS),Windows_NT)
     PLATFORM  := WINDOWS
     EXTENSION := .exe
     OBJ_EXT   := .obj
@@ -54,12 +57,31 @@ RAYLIB_LIB := raylib/lib
 # ==============================================================================
 
 # Compiler fallback just in case
-CC ?= gcc
+ifeq ($(PLATFORM),WEB)
+    CC := emcc
+else
+    CC ?= gcc
+endif
 
 # Debug build by default
 CONFIG ?= DEBUG
 
-# Define C compiler flags: CFLAGS
+# Debug or Release flags
+ifeq ($(CC),cl)
+    ifeq ($(CONFIG),RELEASE)
+        OPT_FLAGS := /O2
+    else ifeq ($(CONFIG),DEBUG)
+        DEBUG_FLAGS := /Od /Zi
+    endif
+else ifeq ($(PLATFORM),WEB) # Web always optimized
+    OPT_FLAGS := -O3
+else ifeq ($(CONFIG),RELEASE)
+    OPT_FLAGS := -O2
+else ifeq ($(CONFIG),DEBUG)
+    DEBUG_FLAGS := -g -O0
+endif
+
+# Define C compiler flags
 # -----------------------------------------------------------------------------
 #  -O1                  defines optimization level
 #  -g                   include debug information on compilation
@@ -78,90 +100,109 @@ CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result
 #  -Werror=implicit-function-declaration   catch function calls without prior declaration
 CFLAGS += -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
-# Debug or Release flags
-ifeq ($(CONFIG),DEBUG)
-    DEBUG_FLAGS = -g -O0
-else ifeq ($(CONFIG),RELEASE)
-    DEBUG_FLAGS = -O2
-endif
-
-# Define C preprocessor flags and linker/library flags
-CPPFLAGS := -I$(RAYLIB_INC)
-LDFLAGS  := -lraylib
-ifeq ($(PLATFORM),WINDOWS)
-    LDFLAGS  += -L$(RAYLIB_LIB)/windows -lopengl32 -lgdi32 -lwinmm
-else ifeq ($(PLATFORM),LINUX)
-    LDFLAGS  += -lGL -lm -lpthread -ldl -lrt -lX11
-endif
-
-# Web (emscripten emcc) Flags
-# -----------------------------------------------------------------------------
-# -sUSE_GLFW=3                Use glfw3 library (context/input management)
-# -sALLOW_MEMORY_GROWTH=1     to allow memory resizing -> WARNING: Audio buffers could FAIL!
-# -sTOTAL_MEMORY=16777216     to specify heap memory size (default = 16MB) (67108864 = 64MB)
-# -sUSE_PTHREADS=1            multithreading support
-# -sWASM=0                    disable Web Assembly, emitted by default
-# -sASYNCIFY                  lets synchronous C/C++ code interact with asynchronous JS
-# -sFORCE_FILESYSTEM=1        force filesystem to load/save files data
-# -sASSERTIONS=1              enable runtime checks for common memory allocation errors (-O1 and above turn it off)
-# -sGL_ENABLE_GET_PROC_ADDRESS  enable using the *glGetProcAddress() family of functions, required for extensions loading
-# -sEXPORTED_FUNCTIONS=       export needed functions (only for newer versions of emscripten to help reduce filesize)
-# -sEXPORTED_RUNTIME_METHODS= export runtime functions
-# --profiling                 include information for code profiling
-# --memory-init-file 0        to avoid an external memory initialization code file (.mem)
-# --preload-file resources    specify a resources folder for data compilation
-# --source-map-base           allow debugging in browser with source map
-WEBFLAGS := -O3 -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB \
-            -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sTOTAL_MEMORY=67108864 \
-	    -sEXPORTED_RUNTIME_METHODS=HEAPF32 --shell-file $(SRC_DIR)/shell.html
-WEB_LIBS := -lraylib -L$(RAYLIB_LIB)/web
-
-# MSVC Flags
+# MSVC cl.exe Flags
 # -----------------------------------------------------------------------------
 # /Fo    Specify output directory for object files
 # /Od    Disable optimizations (good for debugging)
 # /W3    Set warning level to 3 (default is 1, max is 4)
 # /MD    Link against MSVCRT.DLL (multithreaded DLL runtime)
 # /Zi    Generate complete debugging information (.pdb files)
-MSVC_CFLAGS := /Fo"$(SRC_DIR)\\" /Od /W3 /MD /Zi
-MSVC_LIBS   := /link /DEBUG /LIBPATH:"$(RAYLIB_LIB)/windows-msvc" \
-               raylib.lib gdi32.lib winmm.lib user32.lib shell32.lib
+ifeq ($(CC),cl)
+    CFLAGS := /Fo"$(SRC_DIR)\\" /W3 /MD
+endif
+
+# Define C preprocessor flags and linker flags
+CPPFLAGS := -I$(RAYLIB_INC)
+LINKFLAGS  := -lraylib
+ifeq ($(CC),cl)
+    LINKFLAGS  := /link /LIBPATH:"$(RAYLIB_LIB)/windows-msvc" \
+                  raylib.lib gdi32.lib winmm.lib user32.lib shell32.lib
+    ifeq ($(CONFIG),DEBUG)
+        LINKFLAGS += /DEBUG
+    endif
+else ifeq ($(PLATFORM),WINDOWS)
+    LINKFLAGS  += -L$(RAYLIB_LIB)/windows -lopengl32 -lgdi32 -lwinmm
+else ifeq ($(PLATFORM),LINUX)
+    LINKFLAGS  += -lGL -lm -lpthread -ldl -lrt -lX11
+else ifeq ($(PLATFORM),WEB)
+    # Web (emscripten emcc) Flags
+    # -----------------------------------------------------------------------------
+    # -Os                         size optimization
+    # -sUSE_GLFW=3                Use glfw3 library (context/input management)
+    # -sALLOW_MEMORY_GROWTH=1     to allow memory resizing -> WARNING: Audio buffers could FAIL!
+    # -sTOTAL_MEMORY=16777216     to specify heap memory size (default = 16MB) (67108864 = 64MB)
+    # -sUSE_PTHREADS=1            multithreading support
+    # -sWASM=0                    disable Web Assembly, emitted by default
+    # -sASYNCIFY                  lets synchronous C/C++ code interact with asynchronous JS
+    # -sFORCE_FILESYSTEM=1        force filesystem to load/save files data
+    # -sASSERTIONS=1              enable runtime checks for common memory allocation errors (-O1 and above turn it off)
+    # -sGL_ENABLE_GET_PROC_ADDRESS  enable using the *glGetProcAddress() family of functions, required for extensions loading
+    # -sEXPORTED_FUNCTIONS=       export needed functions (only for newer versions of emscripten to help reduce filesize)
+    # -sEXPORTED_RUNTIME_METHODS= export runtime functions
+    # --profiling                 include information for code profiling
+    # --memory-init-file 0        to avoid an external memory initialization code file (.mem)
+    # --preload-file resources    specify a resources folder for data compilation
+    # --source-map-base           allow debugging in browser with source map
+    LINKFLAGS  += -L$(RAYLIB_LIB)/web --shell-file $(SRC_DIR)/shell.html \
+    -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -sTOTAL_MEMORY=67108864 \
+    -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sEXPORTED_RUNTIME_METHODS=HEAPF32
+endif
+
+# Define output flags
+ifeq ($(CC),cl)
+    CFLAG_C := /c
+    CFLAG_O := /Fe:
+    OUTFLAG := $(CFLAG_O)$(OUTPUT)$(EXTENSION)
+    PLATFLAG := /DPLATFORM_$(PLATFORM)
+else
+    CFLAG_C := -c
+    CFLAG_O := -o
+    OUTFLAG := $(CFLAG_O) $(OUTPUT)$(EXTENSION)
+    PLATFLAG := -DPLATFORM_$(PLATFORM)
+endif
 
 # ==============================================================================
 # Targets
 # ==============================================================================
 
-# NOTE: make alias syntax reminder
+# MAKE SYNTAX NOTES
+# ----------------------------------------------------
 # target: dependency1 dependency2
 # % = wildcard match between target and dependency
 # $@ = target, $< = dependency1, $^ = all dependencies
+# ----------------------------------------------------
 
 # tell `make` that these aren't files
-.PHONY: all msvc web gh-pages clean
+.PHONY: all clang msvc web gh-pages clang clean
 
-# Compile project with no arguments given
+# (Default) Compile for desktop with no arguments/platform specified
 all: $(OUTPUT)$(EXTENSION)
 
-# Desktop build
+# Link object files into final executable
 $(OUTPUT)$(EXTENSION): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -DPLATFORM_DESKTOP
+	$(CC) $(OUTFLAG) $^ $(LINKFLAGS)
 
 # Compile c files to object files
 $(SRC_DIR)/%$(OBJ_EXT): $(SRC_DIR)/%.c $(HEADERS)
-	$(CC) -c $< -o $@ $(DEBUG_FLAGS) $(CFLAGS) $(CPPFLAGS) -DPLATFORM_DESKTOP
+	$(CC) $(CFLAG_C) $< $(CFLAG_O) $@ $(OPT_FLAGS) $(DEBUG_FLAGS) $(CFLAGS) $(PLATFLAG) $(CPPFLAGS)
 
-# Build with MSVC cl.exe and produce .pdb debug files
+# Build with clang
+clang:
+	$(MAKE) CC=clang
+
+# Build with MSVC cl.exe
 msvc:
-	cl /Fe:$(OUTPUT)$(EXTENSION) $(SRC) $(MSVC_CFLAGS) /I"$(RAYLIB_INC)" $(MSVC_LIBS)
+	$(MAKE) CC=cl
 
 # Build to web assembly with emscripten
 web:
-	emcc -o $(OUTPUT).html $(SRC) $(CFLAGS) $(WEBFLAGS) $(CPPFLAGS) $(WEB_LIBS)
+	$(MAKE) PLATFORM=WEB
 
-# (Automated) Build for upload to GitHub pages (see .github/workflows/deploy.yaml)
+# Build for upload to GitHub pages
+# (Automated by GitHub workflow: .github/workflows/deploy.yaml)
 gh-pages:
 	@mkdir -p build_web
-	emcc -o build_web/index.html $(SRC) $(CFLAGS) $(WEBFLAGS) $(CPPFLAGS) $(WEB_LIBS)
+	$(MAKE) PLATFORM=WEB OUTPUT=build_web/index
 
 # Clean up generated build files
 clean:

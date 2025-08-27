@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 set script_dir=%~dp0
 
-:: Credit to the RAD Debugger for many pointers and ideas
+:: Credit to RAD Debugger for many pointers and ideas
 
 :: Usage Notes
 :: ----------------------------------------------------------------------------
@@ -41,12 +41,13 @@ set output=pong
 set cmake_build_dir=build
 set web_shell=code\shell.html
 set source_code=
-for %%f in ("%script_dir%\code\*.c") do set source_code=!source_code! "%%f"
+for %%f in ("%script_dir%code\*.c") do set source_code=!source_code! "%%f"
 
 :: Unpack Arguments
 :: ----------------------------------------------------------------------------
 for %%a in (%*) do set "%%a=1"
 if "%clean%"=="1"       echo [clean mode] && goto :clean
+if "%web%"=="1"         set "release=1"
 if not "%release%"=="1" set "debug=1"
 if "%release%"=="1"     set "debug=0" && echo [release mode]
 if "%debug%"=="1"       set "release=0"   && echo [debug mode]
@@ -104,25 +105,25 @@ if "%cmake%"=="1"   (
 
 :: Compile/Link Line Definitions
 :: ----------------------------------------------------------------------------
-set cc_common=  -I"raylib\include" -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result -Wextra -Wmissing-prototypes -Wstrict-prototypes
-set cc_link=    -L"raylib\lib\windows" -lraylib -lopengl32 -lgdi32 -lwinmm
-set cc_debug=   -g -O0
-set cc_release= -O3
-set cc_web= -sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sTOTAL_MEMORY=67108864 -sEXPORTED_RUNTIME_METHODS=HEAPF32 --shell-file "%web_shell%"
-set cc_weblink= -L"raylib\lib\web" -lraylib
-set cc_out=     -o
-set cl_common=  cl /I"raylib\include" /W3 /MD /Zi
-set cl_link=    /link /INCREMENTAL:NO /LIBPATH:"raylib\lib\windows-msvc" raylib.lib gdi32.lib winmm.lib user32.lib shell32.lib
-set cl_debug=   -Od /DEBUG
-set cl_release= -O3
-set cl_out=     /out:
+set cc_common=   -I"raylib\include" -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result -Wextra -Wmissing-prototypes -Wstrict-prototypes
+set cc_link=     -L"raylib\lib\windows" -lraylib -lopengl32 -lgdi32 -lwinmm
+set cc_debug=    -g -O0
+set cc_release=  -O2
+set web_release= -O3
+set web_link=    -L"raylib\lib\web" -lraylib --shell-file "%web_shell%" -sUSE_GLFW=3 -sTOTAL_MEMORY=67108864 -sFORCE_FILESYSTEM=1 -sASYNCIFY -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sEXPORTED_RUNTIME_METHODS=HEAPF32
+set cc_out=      -o
+set cl_common=   cl /I"raylib\include" /W3 /MD /Zi
+set cl_link=     /link /INCREMENTAL:NO /LIBPATH:"raylib\lib\windows-msvc" raylib.lib gdi32.lib winmm.lib user32.lib shell32.lib
+set cl_debug=    -Od /DEBUG
+set cl_release=  -O3
+set cl_out=      /Fe:
 
 :: Choose Compile/Link Lines
 :: ----------------------------------------------------------------------------
 if     "%gcc%"=="1"   set compile=gcc %cc_common%
 if     "%clang%"=="1" set compile=clang %cc_common%
-if     "%web%"=="1"   set compile=emcc %cc_common% %cc_web%
-if     "%web%"=="1"                      set compile_link=%cc_weblink%
+if     "%web%"=="1"   set compile=emcc %cc_common% -DPLATFORM_WEB
+if     "%web%"=="1"                      set compile_link=%web_link%
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_link=%cc_link%
 if     "%web%"=="1"                      set compile_out=%cc_out% %output%.html
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_out=%cc_out% %output%.exe
@@ -135,6 +136,7 @@ if not "%msvc%"=="1" set compile_debug=%cc_debug%
 if     "%msvc%"=="1" set compile_debug=%cl_debug%
 if not "%msvc%"=="1" set compile_release=%cc_release%
 if     "%msvc%"=="1" set compile_release=%cl_release%
+if     "%web%"=="1"  set compile_release=%web_release%
 
 if "%debug%"=="1"    set compile=%compile% %compile_debug%
 if "%release%"=="1"  set compile=%compile% %compile_release%
@@ -157,7 +159,7 @@ if "%cmake%"=="1" (
 )
 
 if "%simple_build%"=="1" (
-    %compile% %source_code% %compile_link% %compile_out%
+    %compile% %compile_out% %source_code% %compile_link%
     if "%msvc%"=="1" del /q "%script_dir%\*.obj"
 )
 popd

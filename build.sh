@@ -36,7 +36,7 @@ output=pong
 cmake_build_dir=build
 web_shell=code/shell.html
 source_code=
-for f in "$script_dir/code"/*.c; do source_code="$source_code $f"; done
+for f in "$script_dir/code"/*.c; do source_code="$source_code \"$f\""; done
 
 # Script Entry Point
 # -----------------------------------------------------------------------------
@@ -63,6 +63,7 @@ script_unpack_args()
         echo "[clean mode]" && script_build_cleanup
         exit 0
     fi
+    if [[ "$web" != 1     ]]; then release=1; fi
     if [[ "$release" != 1 ]]; then debug=1; fi
     if [[ "$release" == 1 ]]; then debug=0 && echo "[release mode]"; fi
     if [[ "$debug" == 1   ]]; then release=0 && echo "[debug mode]"; fi
@@ -110,19 +111,20 @@ script_choose_simple_lines()
     cc_common='-I"raylib/include" -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Wunused-result -Wextra -Wmissing-prototypes -Wstrict-prototypes'
     cc_link='-lraylib -lGL -lm -lpthread -ldl -lrt -lX11'
     cc_debug='-g -O0'
-    cc_release='-O3'
-    cc_web='-sUSE_GLFW=3 -sFORCE_FILESYSTEM=1 -sASYNCIFY -DPLATFORM_WEB -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sTOTAL_MEMORY=67108864 -sEXPORTED_RUNTIME_METHODS=HEAPF32 --shell-file "$web_shell"'
-    cc_weblink='-L"raylib/lib/web" -lraylib'
+    cc_release='-O2'
     cc_out='-o'
+    web_release='-O3'
+    web_link='-L"raylib/lib/web" -lraylib --shell-file "$web_shell" -sUSE_GLFW=3 -sTOTAL_MEMORY=67108864 -sFORCE_FILESYSTEM=1 -sASYNCIFY -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sEXPORTED_RUNTIME_METHODS=HEAPF32'
 
     # Choose Lines
     if [[ "$gcc" == 1     ]]; then compile="gcc $cc_common"; fi
     if [[ "$clang" == 1   ]]; then compile="clang $cc_common"; fi
-    if [[ "$web" == 1     ]]; then compile="emcc $cc_common $cc_web"; fi
-    if [[ "$web" == 1     ]]; then compile_link="$cc_weblink"; fi
+    if [[ "$web" == 1     ]]; then compile="emcc $cc_common -DPLATFORM_WEB"; fi
+    if [[ "$web" == 1     ]]; then compile_link="$web_link"; fi
     if [[ "$web" != 1     ]]; then compile_link="$cc_link"; fi
     if [[ "$web" == 1     ]]; then compile_out="$cc_out $output.html"; fi
-    if [[ "$web" != 1     ]]; then compile_out="$cc_out $output.exe"; fi
+    if [[ "$web" != 1     ]]; then compile_out="$cc_out $output"; fi
+    if [[ "$web" == 1     ]]; then compile_release="$web_release"; fi
     if [[ "$debug" == 1   ]]; then compile="$compile $cc_debug"; fi
     if [[ "$release" == 1 ]]; then compile="$compile $cc_release"; fi
 }
@@ -137,7 +139,7 @@ script_cmake_config_and_build()
         cp "$output_dir/$output.js" .
         cp "$output_dir/$output.wasm" .
     else
-        rm -f "$output.exe"
+        rm -f "$output"
         cp "$output_dir/$output" .
     fi
 }

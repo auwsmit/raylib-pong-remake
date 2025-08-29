@@ -22,6 +22,7 @@
 
 ifeq ($(PLATFORM),WEB)
     EXTENSION := .html
+    OBJ_EXT   := .obj
 else ifeq ($(OS),Windows_NT)
     PLATFORM  := WINDOWS
     EXTENSION := .exe
@@ -149,6 +150,12 @@ else ifeq ($(PLATFORM),WEB)
 endif
 
 # Define output flags
+ifeq ($(PLATFORM),WINDOWS)
+    PLATFORM := DESKTOP
+endif
+ifeq ($(PLATFORM),LINUX)
+    PLATFORM := DESKTOP
+endif
 ifeq ($(CC),cl)
     CFLAG_C := /c
     CFLAG_O := /Fe:
@@ -173,7 +180,7 @@ endif
 # ----------------------------------------------------
 
 # tell `make` that these aren't files
-.PHONY: all clang msvc web gh-pages clang clean
+.PHONY: all clang msvc web gh-pages clang new clean
 
 # (Default) Compile for desktop with no arguments/platform specified
 all: $(OUTPUT)$(EXTENSION)
@@ -203,6 +210,10 @@ web:
 gh-pages:
 	@mkdir -p build_web
 	$(MAKE) PLATFORM=WEB OUTPUT=build_web/index
+
+# Build from scratch
+new:
+	$(MAKE) clean && $(MAKE)
 
 # Clean up generated build files
 clean:

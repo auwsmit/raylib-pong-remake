@@ -112,17 +112,19 @@ set cc_release=  -O2
 set web_release= -O3
 set web_link=    -L"raylib\lib\web" -lraylib --shell-file "%web_shell%" -sUSE_GLFW=3 -sTOTAL_MEMORY=67108864 -sFORCE_FILESYSTEM=1 -sASYNCIFY -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sEXPORTED_RUNTIME_METHODS=HEAPF32
 set cc_out=      -o
-set cl_common=   cl /I"raylib\include" /W3 /MD /Zi
+set cl_common=   cl /I"raylib\include" /W3 /MD /Zi /DPLATFORM_DESKTOP
 set cl_link=     /link /INCREMENTAL:NO /LIBPATH:"raylib\lib\windows-msvc" raylib.lib gdi32.lib winmm.lib user32.lib shell32.lib
 set cl_debug=    -Od /DEBUG
 set cl_release=  -O3
 set cl_out=      /Fe:
+set platform_desktop=-DPLATFORM_DESKTOP
+set platform_web=-DPLATFORM_WEB
 
 :: Choose Compile/Link Lines
 :: ----------------------------------------------------------------------------
-if     "%gcc%"=="1"   set compile=gcc %cc_common%
-if     "%clang%"=="1" set compile=clang %cc_common%
-if     "%web%"=="1"   set compile=emcc %cc_common% -DPLATFORM_WEB
+if     "%gcc%"=="1"   set compile=gcc %cc_common% %platform_desktop%
+if     "%clang%"=="1" set compile=clang %cc_common% %platform_desktop%
+if     "%web%"=="1"   set compile=emcc %cc_common% %platform_web%
 if     "%web%"=="1"                      set compile_link=%web_link%
 if not "%web%"=="1" if not "%msvc%"=="1" set compile_link=%cc_link%
 if     "%web%"=="1"                      set compile_out=%cc_out% %output%.html

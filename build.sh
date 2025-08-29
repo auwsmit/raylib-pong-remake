@@ -115,11 +115,13 @@ script_choose_simple_lines()
     cc_out='-o'
     web_release='-O3'
     web_link='-L"raylib/lib/web" -lraylib --shell-file "$web_shell" -sUSE_GLFW=3 -sTOTAL_MEMORY=67108864 -sFORCE_FILESYSTEM=1 -sASYNCIFY -sEXPORTED_FUNCTIONS=_main,requestFullscreen -sEXPORTED_RUNTIME_METHODS=HEAPF32'
+    platform_desktop='-DPLATFORM_DESKTOP'
+    platform_web='-DPLATFORM_WEB'
 
     # Choose Lines
-    if [[ "$gcc" == 1     ]]; then compile="gcc $cc_common"; fi
-    if [[ "$clang" == 1   ]]; then compile="clang $cc_common"; fi
-    if [[ "$web" == 1     ]]; then compile="emcc $cc_common -DPLATFORM_WEB"; fi
+    if [[ "$gcc" == 1     ]]; then compile="gcc $cc_common $platform_desktop"; fi
+    if [[ "$clang" == 1   ]]; then compile="clang $cc_common $platform_desktop"; fi
+    if [[ "$web" == 1     ]]; then compile="emcc $cc_common $platform_web"; fi
     if [[ "$web" == 1     ]]; then compile_link="$web_link"; fi
     if [[ "$web" != 1     ]]; then compile_link="$cc_link"; fi
     if [[ "$web" == 1     ]]; then compile_out="$cc_out $output.html"; fi

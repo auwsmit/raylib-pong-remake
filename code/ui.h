@@ -11,7 +11,8 @@
 
 // Size of menu elements
 #define UI_TITLE_SIZE  180   // title font size
-#define UI_BUTTON_SIZE 80    // button text font size
+#define UI_TITLE_BUTTON_SIZE 80    // title menu button font size
+#define UI_PAUSE_SIZE 50    // pause menu font size
 #define UI_CURSOR_SIZE 20.0f // cursor triangle size
 
 // Ui spacing in pixels
@@ -27,13 +28,13 @@ UiState InitUiState(void); // Initializes the title screen and allocates memory 
 UiButton InitUiTitle(char *text);
 UiButton InitUiButton(char *text, int fontSize, float textPosX, float textPosY);
 UiButton *InitUiMenuButton(char *text, int fontSize, float textPosX, float textPosY, UiMenu *menu);
-UiButton *InitUiButtonRelative(char* text, UiButton *originButton, float offsetY, UiMenu *menu);
+UiButton *InitUiMenuButtonRelative(char* text, int fontSize, UiButton *originButton, float offsetY, UiMenu *menu);
 void FreeUiElements(UiState *menu); // Releases memory for menu buttons
 
 // Update / Input
 void UpdateUiFrame(UiState *ui, GameState *pong); // Updates the menu for the current frame
-void UpdateUiMenuMove(UiState *menu, GameState *pong); // Updates the cursor for movement by user input
-void UpdateUiButtonMove(UiButton *button, GameState *pong);
+void UpdateUiMenuTraverse(UiState *menu, GameState *pong); // Updates the cursor for movement by user input
+void UpdateUiButtonMouseHover(UiButton *button, GameState *pong);
 void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong);
 bool IsMouseWithinButton(Vector2 mousePos, UiButton *button);
 

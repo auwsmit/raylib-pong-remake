@@ -234,15 +234,12 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep)
     PlaySound(*beep);
 }
 
-void UpdatePongFrame(GameState *pong, UiState *titleMenu)
+void UpdatePongFrame(GameState *pong, UiState *ui)
 {
     // Input to go back to title screen
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) ||
-        (pong->currentMode == MODE_DEMO && (IsKeyPressed(KEY_SPACE) ||
-                                            IsKeyPressed(KEY_ENTER) ||
-                                            IsGestureDetected(GESTURE_TAP))))
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {
-        *titleMenu = InitUiState();
+        *ui = InitUiState();
         *pong = InitGameState();
         pong->currentScreen = SCREEN_TITLE;
         return; // back to main game loop
@@ -252,6 +249,15 @@ void UpdatePongFrame(GameState *pong, UiState *titleMenu)
     if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
     {
         pong->isPaused = !pong->isPaused;
+        if (pong->isPaused)
+        {
+            ui->currentMenu = UI_MENU_PAUSE;
+            ui->firstFrame = true;
+            PollInputEvents(); // skip input for rest of frame
+                               // (so that UpdateUiButtonSelect() doesn't select a menu button)
+        }
+        else
+            ui->currentMenu = UI_MENU_GAMEPLAY;
     }
 
     if (!pong->isPaused)

@@ -72,18 +72,23 @@ typedef struct GameState
 
 typedef enum UiMenuId
 {
-    UI_MENU_TITLE, UI_MENU_DIFFICULTY, UI_MENU_NONE
+    UI_MENU_TITLE, UI_MENU_DIFFICULTY, UI_MENU_PAUSE, UI_MENU_GAMEPLAY
 } UiMenuId;
 
-typedef enum UiTitleMenuId
+typedef enum UiButtonIdTitle
 {
-    UI_ID_1PLAYER, UI_ID_2PLAYER, UI_ID_DEMO, UI_ID_EXIT
-} UiTitleMenuId;
+    UI_BID_1PLAYER, UI_BID_2PLAYER, UI_BID_DEMO, UI_BID_EXIT
+} UiButtonIdTitle;
 
 typedef enum UiDifficultyMenuId
 {
-    UI_ID_EASY, UI_ID_MEDIUM, UI_ID_HARD, UI_ID_BACK
+    UI_BID_EASY, UI_BID_MEDIUM, UI_BID_HARD, UI_BID_BACK
 } UiDifficultyMenuId;
+
+typedef enum UiPauseMenuId
+{
+    UI_BID_RESUME, UI_BID_BACKTOTITLE
+} UiPauseMenuId;
 
 typedef struct UiButton
 {
@@ -102,10 +107,9 @@ typedef struct UiMenu
 
 typedef struct UiState // Holds data for the title screen menu
 {
-    UiMenu menus[2]; // title, difficulty
+    UiMenu menus[3]; // title, difficulty, pause
     UiButton title; // Title text
     UiButton pause;
-    UiButton unpause;
     UiMenuId currentMenu;
     float cursorSize;
     float keyHeldTime;
@@ -113,5 +117,17 @@ typedef struct UiState // Holds data for the title screen menu
     bool firstFrame; // used for mouse selection
     bool autoScroll;
 } UiState;
+
+// void StateSetToMenu(UiMenu menu, GameState pong, UiState ui)
+// {
+//
+// }
+
+// void StateSetToGame(GameState pong, UiState ui)
+// {
+//     pong->currentMode = (GameMode)ui->selectedId;
+//     pong->currentScreen = SCREEN_GAMEPLAY;
+//     ui->currentMenu = UI_MENU_GAMEPLAY;
+// }
 
 #endif // PONG_STATES_HEADER_GUARD

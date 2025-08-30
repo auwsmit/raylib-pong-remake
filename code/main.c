@@ -30,7 +30,6 @@ typedef struct AppData // Local variables for the game loop in main()
 // --------------------------------------------------------------------------------
 void CreateNewWindow(void); // Creates a new window with the proper initial settings
 AppData InitGameLoop(void); // Initializes data for the game loop
-void CloseGameLoop(AppData *app); // Frees allocated data for the game loop
 void RunGameLoop(AppData *app); // Runs the game loop
 void UpdateDrawFrame(AppData *app); // Update and Draw the current frame
                                     // Most of the game loop's code is found in here

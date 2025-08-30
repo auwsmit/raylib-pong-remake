@@ -1,5 +1,5 @@
 // EXPLANATION:
-// All the game's logic, including how/when to draw to screen
+// All the game logic, including how/when to draw to screen
 
 #ifndef PONG_GAME_HEADER_GUARD
 #define PONG_GAME_HEADER_GUARD
@@ -26,12 +26,6 @@
 #define RETURN_POSITION_VARIATION 50 // How much the ball's vertical position can change after scoring
 #define RETURN_ANGLE_VARIATION 500   // How much the ball's angle can change after scoring
 
-// UI element size
-#define FIELD_LINE_WIDTH  15 // Width of the field lines (top, bottom, dotted center-line)
-#define SCORE_FONT_SIZE 180     // Also used for pause font size
-#define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
-#define WIN_FONT_SIZE 100
-
 #define SCORE_PAUSE_TIME 1.0f  // Time to pause after a score
 #define WIN_PAUSE_TIME 10.0f   // Time to pause after a win
 
@@ -39,8 +33,8 @@
 // --------------------------------------------------------------------------------
 
 // Initialization
-GameState InitGameState(void); // Initialize game objects and data for the game loop
-Sound GenBeep(float freq, float lengthSec);
+GameState InitGameState(void); // Initialize game data and allocate memory for beeps
+Sound GenBeep(float freq, float lengthSec); // Generate and allocate memory a sine wave buffer for a beep
 void FreeBeeps(GameState *pong);
 
 // Collision
@@ -58,10 +52,7 @@ void UpdatePaddleComputer(Paddle *paddle, GameState *pong); // Paddle speed upda
 void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed
 
 // Draw game
-void DrawPongFrame(GameState *pong); // Draws all the game's objects for the current frame
-void DrawFieldLines(bool isPaused, bool isDemoMode);
-void DrawScores(GameState *pong);
-void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor);
+void DrawPongFrame(GameState *pong, UiState *ui); // Draws all the game's objects for the current frame
 
 // Game functions
 void ResetBall(Ball *ball); // Reset the ball's horizontal position and modify its vertical position and angle

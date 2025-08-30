@@ -147,7 +147,6 @@ void UpdateDrawFrame(AppData *app)
         case SCREEN_TITLE:    UpdateUiFrame(&app->ui, &app->pong);
                               break;
         case SCREEN_GAMEPLAY: UpdatePongFrame(&app->pong, &app->ui);
-                              UpdateUiFrame(&app->ui, &app->pong);
                               break;
 
         default: break;
@@ -166,8 +165,7 @@ void UpdateDrawFrame(AppData *app)
                                   break;
             case SCREEN_TITLE:    DrawUiFrame(&app->ui, &app->pong);
                                   break;
-            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong);
-                                  DrawUiFrame(&app->ui, &app->pong);
+            case SCREEN_GAMEPLAY: DrawPongFrame(&app->pong, &app->ui);
                                   break;
             default: break;
         }

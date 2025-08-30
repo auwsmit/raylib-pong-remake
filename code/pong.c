@@ -1,5 +1,5 @@
 // EXPLANATION:
-// All the game's logic, including how/when to draw to screen
+// All the game logic, including how/when to draw to screen
 // See pong.h for more documentation/descriptions
 
 #include "pong.h"
@@ -54,15 +54,7 @@ GameState InitGameState(void)
             .length = PADDLE_LENGTH,
             .width = PADDLE_WIDTH,
         },
-        .currentMode = 0, // (selected at title screen)
         .difficulty = DIFFICULTY_MEDIUM,
-        .scoreL = 0,
-        .scoreR = 0,
-        .playerWon  = false,
-        .isPaused   = false,
-        .gameShouldExit      = false,
-        .textFade   = 0.0f,
-        .textFadeTimeElapsed = 0.0f,
         .winTimer   = WIN_PAUSE_TIME,
         .scoreTimer = SCORE_PAUSE_TIME,
     };
@@ -76,7 +68,6 @@ GameState InitGameState(void)
     return pong;
 }
 
-// Generate a sine wave buffer for a beep
 Sound GenBeep(float freq, float lengthSec)
 {
     int sampleRate = 44100;
@@ -239,9 +230,7 @@ void UpdatePongFrame(GameState *pong, UiState *ui)
     // Input to go back to title screen
     if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {
-        *ui = InitUiState();
-        *pong = InitGameState();
-        pong->currentScreen = SCREEN_TITLE;
+        ChangeUiMenu(UI_MENU_TITLE, ui, pong);
         return; // back to main game loop
     }
 
@@ -250,14 +239,10 @@ void UpdatePongFrame(GameState *pong, UiState *ui)
     {
         pong->isPaused = !pong->isPaused;
         if (pong->isPaused)
-        {
-            ui->currentMenu = UI_MENU_PAUSE;
-            ui->firstFrame = true;
-            PollInputEvents(); // skip input for rest of frame
-                               // (so that UpdateUiButtonSelect() doesn't select a menu button)
-        }
+            ChangeUiMenu(UI_MENU_PAUSE, ui, pong);
         else
             ui->currentMenu = UI_MENU_GAMEPLAY;
+        PlaySound(pong->beeps[BEEP_MENU]);
     }
 
     if (!pong->isPaused)
@@ -314,34 +299,17 @@ void UpdatePongFrame(GameState *pong, UiState *ui)
             pong->winTimer -= GetFrameTime();
     }
 
-    // Update pause fade animation
-    static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
-    static bool fadingOut = false;
-    float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
-
-    if (pong->textFade >= 1.0f)
-        fadingOut = true;
-    else if (pong->textFade <= 0.0f)
-        fadingOut = false;
-    if (fadingOut)
-        fadeIncrement *= -1;
-
-    pong->textFade += fadeIncrement;
-
     // Reset game after a player wins
     if (pong->playerWon == true && pong->winTimer <= 0)
     {
         GameDifficulty prevDifficulty = pong->difficulty;
+        FreeBeeps(pong);
         *pong = InitGameState();
         pong->currentScreen = SCREEN_GAMEPLAY;
         pong->difficulty = prevDifficulty;
     }
 
-    // Debug: Press R to reset ball
-    // if (IsKeyPressed(KEY_R))
-    // {
-    //     ResetBall(&pong.ball);
-    // }
+    UpdateUiFrame(ui, pong);
 }
 
 void UpdatePaddlePlayer1(Paddle *paddle)
@@ -470,19 +438,15 @@ void UpdateBall(Ball *ball)
     ball->position = Vector2Add(ball->position, deltaTimeSpeed);
 }
 
-void DrawPongFrame(GameState *pong)
+void DrawPongFrame(GameState *pong, UiState *ui)
 {
-    // Draw dotted line down middle
-    DrawFieldLines(pong->isPaused, pong->currentMode == MODE_DEMO);
+    DrawUiFrame(ui, pong);
 
     // Draw ball
     if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
         DrawRectangle((int)pong->ball.position.x, (int)pong->ball.position.y,
                       (int)pong->ball.size,       (int)pong->ball.size, RAYWHITE);
 
-
-    // Draw score
-    DrawScores(pong);
 
     // Draw paddles
     if (pong->playerWon == false)
@@ -517,35 +481,10 @@ void DrawPongFrame(GameState *pong)
                  DIFFICULTY_FONT_SIZE, RAYWHITE);
     }
 
-    // Draw fancy conditional text with a fade animation
-    Color fadeColor = Fade(RAYWHITE, pong->textFade);
-
-    // Draw win message
-    if (pong->playerWon)
-        DrawWinnerMessage(pong->scoreL, pong->scoreR, fadeColor);
-
-    // Draw pause message
-    char *text;
-    if (pong->isPaused)
-    {
-        text = "PAUSED";
-        int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
-        DrawText(text, RENDER_WIDTH / 2 - textOffset,
-                 RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
-                 SCORE_FONT_SIZE, fadeColor);
-    }
-    else if (pong->currentMode == MODE_DEMO) // Draw demo mode message
-    {
-        text = "DEMO MODE";
-        int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
-        DrawText(text, RENDER_WIDTH / 2 - textOffset,
-                 RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
-                 SCORE_FONT_SIZE, fadeColor);
-    }
 }
 
 // TODO: give (UiState *) to auto skip ui elements
-void DrawFieldLines(bool isPaused, bool isDemoMode)
+void DrawUiFieldLines(bool isPaused, bool isDemoMode)
 {
     int dashHeight = 40;
     int spaceHeight = 40;
@@ -582,7 +521,7 @@ void DrawFieldLines(bool isPaused, bool isDemoMode)
     }
 }
 
-void DrawScores(GameState *pong)
+void DrawUiScores(GameState *pong)
 {
     int fontSize = 180;
 
@@ -599,7 +538,7 @@ void DrawScores(GameState *pong)
     DrawText(scoreRMsg, scoreRPosX, scorePosY, fontSize, RAYWHITE);
 }
 
-void DrawWinnerMessage(int scoreL, int scoreR, Color fadeColor)
+void DrawUiWinnerMessage(int scoreL, int scoreR, Color fadeColor)
 {
     char *msg = "Winner";
     int fontSize = 100; // this is also the font height because we're using the default font

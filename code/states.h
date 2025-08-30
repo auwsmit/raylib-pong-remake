@@ -49,20 +49,18 @@ typedef struct Ball
 
 typedef struct GameState
 {
-    ScreenState currentScreen;
     Sound beeps[4];
     Ball ball;
     Paddle paddleL;
     Paddle paddleR;
     GameMode currentMode;
     GameDifficulty difficulty; // unused for MODE_2PLAYER
+    ScreenState currentScreen;
     int scoreL;
     int scoreR;
     bool playerWon;
     bool isPaused;
     bool gameShouldExit;       // flag to tell the game window to close
-    float textFade;            // tracks fade value over time
-    float textFadeTimeElapsed; // tracks time for the fade animation
     float winTimer;            // countdown after player wins
     float scoreTimer;          // countdown after a score
 } GameState;
@@ -70,10 +68,10 @@ typedef struct GameState
 // User Interface
 // --------------------------------------------------------------------------------
 
-typedef enum UiMenuId
+typedef enum UiMenuState
 {
     UI_MENU_TITLE, UI_MENU_DIFFICULTY, UI_MENU_PAUSE, UI_MENU_GAMEPLAY
-} UiMenuId;
+} UiMenuState;
 
 typedef enum UiButtonIdTitle
 {
@@ -107,27 +105,18 @@ typedef struct UiMenu
 
 typedef struct UiState // Holds data for the title screen menu
 {
-    UiMenu menus[3]; // title, difficulty, pause
     UiButton title; // Title text
     UiButton pause;
-    UiMenuId currentMenu;
+    UiMenu menus[3]; // title, difficulty, pause
+    UiMenuState currentMenu;
     float cursorSize;
     float keyHeldTime;
+    float textFade;            // tracks fade value over time
+    float textFadeTimeElapsed; // tracks time for the fade animation
     unsigned int selectedId;
-    bool firstFrame; // used for mouse selection
+    bool firstFrame;
+    bool lastSelectWithMouse;
     bool autoScroll;
 } UiState;
-
-// void StateSetToMenu(UiMenu menu, GameState pong, UiState ui)
-// {
-//
-// }
-
-// void StateSetToGame(GameState pong, UiState ui)
-// {
-//     pong->currentMode = (GameMode)ui->selectedId;
-//     pong->currentScreen = SCREEN_GAMEPLAY;
-//     ui->currentMenu = UI_MENU_GAMEPLAY;
-// }
 
 #endif // PONG_STATES_HEADER_GUARD

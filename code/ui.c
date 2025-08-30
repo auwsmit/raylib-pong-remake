@@ -1,5 +1,5 @@
 // EXPLANATION:
-// For managing the user interface (text, buttons, menus)
+// For managing the user interface
 // See ui.h for more documentation/descriptions
 
 #include "ui.h"
@@ -132,28 +132,33 @@ void UpdateUiFrame(UiState *ui, GameState *pong)
         UpdateUiButtonMouseHover(&ui->pause, pong);
         UpdateUiButtonSelect(&ui->pause, ui, pong);
     }
+
+    // Update pause fade animation
+    static float fadeLength = 1.5f; // Fade in and out at this rate in seconds
+    static bool fadingOut = false;
+    float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
+
+    if (ui->textFade >= 1.0f)
+        fadingOut = true;
+    else if (ui->textFade <= 0.0f)
+        fadingOut = false;
+    if (fadingOut)
+        fadeIncrement *= -1;
+
+    ui->textFade += fadeIncrement;
 }
 
 void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
 {
+    if (ui->currentMenu == UI_MENU_GAMEPLAY)
+        return;
     UiMenu *menu = &ui->menus[ui->currentMenu];
-
-    // Set default position for cursor on first menu frame
-    if (ui->firstFrame == true)
-    {
-        if (ui->currentMenu == UI_MENU_TITLE)
-            ui->selectedId = UI_BID_1PLAYER;
-        else if (ui->currentMenu == UI_MENU_DIFFICULTY)
-            ui->selectedId = UI_BID_MEDIUM;
-        else if (ui->currentMenu == UI_MENU_PAUSE)
-            ui->selectedId = UI_BID_RESUME;
-    }
 
     UiButtonIdTitle prevId = ui->selectedId; // used to play beep
 
     // Move cursor via mouse
     bool mouseMoved = (Vector2Length(GetMouseDelta()) > 0);
-    if (mouseMoved || ui->firstFrame)
+    if (mouseMoved || (ui->firstFrame && ui->lastSelectWithMouse))
     {
         Vector2 mouse = GetMousePosition();
         float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
@@ -167,10 +172,11 @@ void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
             UiButton *currentButton = 0;
             currentButton = &menu->buttons[i];
 
-            if (IsMouseWithinButton(mousePos, currentButton))
+            if (IsMouseWithinUiButton(mousePos, currentButton))
             {
                 ui->selectedId = i;
                 ui->autoScroll = false;
+                ui->lastSelectWithMouse = true;
             }
         }
     }
@@ -180,8 +186,9 @@ void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
     bool isInputDown = (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN));
     const float autoScrollInitPause = 0.6f;
 
-    if ((!ui->autoScroll && ui->keyHeldTime == 0) ||
-        (ui->autoScroll && ui->keyHeldTime >= 0.1f))
+    bool initialKeyPress = (!ui->autoScroll && ui->keyHeldTime == 0);
+    bool heldLongEnoughToRepeat = (ui->autoScroll && ui->keyHeldTime >= 0.1f);
+    if (initialKeyPress || heldLongEnoughToRepeat)
     {
         if (isInputUp)
         {
@@ -190,6 +197,7 @@ void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
             else
                 ui->selectedId = menu->buttonCount - 1;
             ui->keyHeldTime = 0;
+            ui->lastSelectWithMouse = false;
         }
         if (isInputDown)
         {
@@ -198,6 +206,7 @@ void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
             else
                 ui->selectedId = 0;
             ui->keyHeldTime = 0.0f;
+            ui->lastSelectWithMouse = false;
         }
     }
 
@@ -234,7 +243,7 @@ void UpdateUiButtonMouseHover(UiButton *button, GameState *pong)
     mousePos.y = (mouse.y - (GetScreenHeight() - (RENDER_HEIGHT*scale))*0.5f)/scale;
     mousePos = Vector2Clamp(mousePos, (Vector2){ 0, 0 }, (Vector2){ (float)RENDER_WIDTH, (float)RENDER_HEIGHT });
 
-    if (IsMouseWithinButton(mousePos, button))
+    if (IsMouseWithinUiButton(mousePos, button))
     {
         if (!button->mouseHovered)
             PlaySound(pong->beeps[BEEP_MENU]);
@@ -248,6 +257,7 @@ void UpdateUiButtonMouseHover(UiButton *button, GameState *pong)
 
 void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong)
 {
+
     Vector2 mouse = GetMousePosition();
     float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
     Vector2 mousePos = { 0 };
@@ -257,20 +267,20 @@ void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong)
 
     // Select pause button
     if (ui->currentMenu == UI_MENU_GAMEPLAY && IsGestureDetected(GESTURE_TAP) &&
-         (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinButton(mousePos, button)))
+         (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinUiButton(mousePos, button)))
     {
-        pong->isPaused = true;
-        ui->currentMenu = UI_MENU_PAUSE;
-        ui->firstFrame = true;
+        ChangeUiMenu(UI_MENU_PAUSE, ui, pong);
     }
 
     // Select a menu button
     else if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) ||
         (IsGestureDetected(GESTURE_TAP) &&
-         (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinButton(mousePos, button))))
+         (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinUiButton(mousePos, button))))
     {
+        if (ui->currentMenu == UI_MENU_GAMEPLAY && !pong->isPaused)
+            return; // not a menu
 
-        if (ui->currentMenu == UI_MENU_PAUSE)
+        if (ui->currentMenu == UI_MENU_PAUSE && !ui->firstFrame)
         {
             if (ui->selectedId == UI_BID_RESUME)
             {
@@ -279,57 +289,33 @@ void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong)
             }
             else if (ui->selectedId == UI_BID_BACKTOTITLE)
             {
-                *ui = InitUiState();
-                *pong = InitGameState();
-                pong->currentScreen = SCREEN_TITLE;
+                ChangeUiMenu(UI_MENU_TITLE, ui, pong);
             }
         }
 
-        // assumed that (currentScreen == SCREEN_TITLE)
         else if (ui->currentMenu == UI_MENU_TITLE)
         {
             if (ui->selectedId == UI_BID_EXIT)
-            {
                 pong->gameShouldExit = true;
-            }
             else if (ui->selectedId == UI_BID_1PLAYER)
-            {
-                // Main menu -> difficulty menu
-                pong->currentMode = (GameMode)ui->selectedId;
-                ui->currentMenu = UI_MENU_DIFFICULTY;
-                ui->firstFrame = true;
-            }
+                ChangeUiMenu(UI_MENU_DIFFICULTY, ui, pong);
             else
-            {
-                // Main menu -> pong gameplay
-                pong->currentMode = (GameMode)ui->selectedId;
-                pong->currentScreen = SCREEN_GAMEPLAY;
-                ui->currentMenu = UI_MENU_GAMEPLAY;
-            }
+                ChangeUiMenu(UI_MENU_GAMEPLAY, ui, pong);
         }
 
         else if (ui->currentMenu == UI_MENU_DIFFICULTY)
         {
             if (ui->selectedId == UI_BID_BACK)
-            {
-                // Difficulty menu -> main menu
-                ui->currentMenu = UI_MENU_TITLE;
-                ui->firstFrame = true;
-            }
+                ChangeUiMenu(UI_MENU_TITLE, ui, pong);
             else
-            {
-                // Main menu -> pong gameplay
-                pong->difficulty = (GameDifficulty)ui->selectedId;
-                pong->currentScreen = SCREEN_GAMEPLAY;
-                ui->currentMenu = UI_MENU_GAMEPLAY;
-            }
+                ChangeUiMenu(UI_MENU_GAMEPLAY, ui, pong);
         }
 
         PlaySound(pong->beeps[BEEP_MENU]);
     }
 }
 
-bool IsMouseWithinButton(Vector2 mousePos, UiButton *button)
+bool IsMouseWithinUiButton(Vector2 mousePos, UiButton *button)
 {
     int padding = 20; // extra clickable area around the text
     int buttonWidth = MeasureText(button->text, button->fontSize);
@@ -340,6 +326,45 @@ bool IsMouseWithinButton(Vector2 mousePos, UiButton *button)
         return true;
     else
         return false;
+}
+
+void ChangeUiMenu(UiMenuState newMenu, UiState *ui, GameState *pong)
+{
+    if (newMenu == UI_MENU_TITLE)
+    {
+        FreeUiElements(ui);
+        *ui = InitUiState();
+        if (pong->currentScreen == SCREEN_GAMEPLAY)
+        {
+            FreeBeeps(pong);
+            *pong = InitGameState();
+        }
+        pong->currentScreen = SCREEN_TITLE;
+        ui->selectedId = UI_BID_1PLAYER;
+    }
+
+    else if (newMenu == UI_MENU_DIFFICULTY)
+    {
+        ui->selectedId = UI_BID_MEDIUM;
+    }
+
+    else if (newMenu == UI_MENU_PAUSE)
+    {
+        pong->isPaused = true;
+        ui->selectedId = UI_BID_RESUME;
+    }
+
+    else if (newMenu == UI_MENU_GAMEPLAY)
+    {
+        if (ui->currentMenu == UI_MENU_DIFFICULTY)
+            pong->difficulty = (GameDifficulty)ui->selectedId;
+        else
+            pong->currentMode = (GameMode)ui->selectedId;
+        pong->currentScreen = SCREEN_GAMEPLAY;
+    }
+
+    ui->currentMenu = newMenu;
+    ui->firstFrame = true;
 }
 
 void DrawUiFrame(UiState *ui, GameState *pong)
@@ -360,9 +385,46 @@ void DrawUiFrame(UiState *ui, GameState *pong)
     }
     else if (pong->currentScreen == SCREEN_GAMEPLAY)
     {
+        // Draw pause button
         DrawUiElement(&ui->pause);
         if (ui->pause.mouseHovered)
             DrawUiCursor(ui, &ui->pause);
+    }
+
+    if (pong->currentScreen == SCREEN_GAMEPLAY)
+    {
+        // Draw dotted line down middle
+        DrawUiFieldLines(pong->isPaused, pong->currentMode == MODE_DEMO);
+
+        // Draw score
+        DrawUiScores(pong);
+
+        // Fade animation
+        Color fadeColor = Fade(RAYWHITE, ui->textFade);
+
+        // Draw win message
+        if (pong->playerWon)
+            DrawUiWinnerMessage(pong->scoreL, pong->scoreR, fadeColor);
+
+        // Draw pause message
+        char *text;
+        if (pong->isPaused)
+        {
+            text = "PAUSED";
+            int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
+            DrawText(text, RENDER_WIDTH / 2 - textOffset,
+                     RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
+                     SCORE_FONT_SIZE, fadeColor);
+        }
+        else if (pong->currentMode == MODE_DEMO) // Draw demo mode message
+        {
+            text = "DEMO MODE";
+            int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
+            DrawText(text, RENDER_WIDTH / 2 - textOffset,
+                     RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
+                     SCORE_FONT_SIZE, fadeColor);
+        }
+
     }
 
     // Debug:

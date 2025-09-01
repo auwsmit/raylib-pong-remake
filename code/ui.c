@@ -9,6 +9,7 @@
 #include "raymath.h" // needed for Vector math
 
 #include "config.h"
+#include "input.h"
 #include "pong.h" // needed to reset game state
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -112,10 +113,10 @@ void FreeUiElements(UiState *ui)
 
 void UpdateUiFrame(UiState *ui, GameState *pong)
 {
-    // Escape or Backspace or Right click to go back
+    // Input to go back
     if (ui->currentMenu != UI_MENU_GAMEPLAY)
     {
-        if ((IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) ||
+        if ((IsInputActionPressed(INPUT_ACTION_BACK, pong) ||
              IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) && ui->currentMenu != UI_MENU_TITLE)
         {
             ui->currentMenu = UI_MENU_TITLE;
@@ -182,8 +183,10 @@ void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
     }
 
     // Move cursor via keyboard
-    bool isInputUp = (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP));
-    bool isInputDown = (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN));
+    bool isInputUp = IsInputActionDown(INPUT_ACTION_P1_UP, pong) ||
+        IsInputActionDown(INPUT_ACTION_P2_UP, pong);
+    bool isInputDown = IsInputActionDown(INPUT_ACTION_P1_DOWN, pong) ||
+        IsInputActionDown(INPUT_ACTION_P2_DOWN, pong);
     const float autoScrollInitPause = 0.6f;
 
     bool initialKeyPress = (!ui->autoScroll && ui->keyHeldTime == 0);
@@ -273,7 +276,7 @@ void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong)
     }
 
     // Select a menu button
-    else if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) ||
+    else if (IsInputActionPressed(INPUT_ACTION_CONFIRM, pong) ||
         (IsGestureDetected(GESTURE_TAP) &&
          (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinUiButton(mousePos, button))))
     {

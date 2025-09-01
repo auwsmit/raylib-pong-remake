@@ -4,10 +4,10 @@
 #ifndef PONG_MENU_HEADER_GUARD
 #define PONG_MENU_HEADER_GUARD
 
-#include "states.h"
+#include "raylib.h"
 
 // Macros
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 // Size of menu elements
 #define UI_TITLE_SIZE  180      // title font size
@@ -26,8 +26,66 @@
 #define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
 #define WIN_FONT_SIZE 100
 
+// Forward Declarations
+// ----------------------------------------------------------------------------
+typedef struct GameState GameState;
+
+// Types and Structures
+// ----------------------------------------------------------------------------
+
+typedef enum UiMenuState
+{
+    UI_MENU_TITLE, UI_MENU_DIFFICULTY, UI_MENU_PAUSE, UI_MENU_GAMEPLAY
+} UiMenuState;
+
+typedef enum UiButtonIdTitle
+{
+    UI_BID_1PLAYER, UI_BID_2PLAYER, UI_BID_DEMO, UI_BID_EXIT
+} UiButtonIdTitle;
+
+typedef enum UiDifficultyMenuId
+{
+    UI_BID_EASY, UI_BID_MEDIUM, UI_BID_HARD, UI_BID_BACK
+} UiDifficultyMenuId;
+
+typedef enum UiPauseMenuId
+{
+    UI_BID_RESUME, UI_BID_BACKTOTITLE
+} UiPauseMenuId;
+
+typedef struct UiButton
+{
+    const char *text;
+    int fontSize;
+    bool mouseHovered;
+    Vector2 position;
+    Color color;
+} UiButton;
+
+typedef struct UiMenu
+{
+    UiButton *buttons; // allocate buttons for variable length menus
+    unsigned int buttonCount;
+} UiMenu;
+
+typedef struct UiState // Holds data for the title screen menu
+{
+    UiButton title; // Title text
+    UiButton pause;
+    UiMenu menus[3]; // title, difficulty, pause
+    float cursorSize;
+    float keyHeldTime;
+    float textFade;            // tracks fade value over time
+    float textFadeTimeElapsed; // tracks time for the fade animation
+    UiMenuState currentMenu;
+    unsigned int selectedId;
+    bool firstFrame;
+    bool lastSelectWithMouse;
+    bool autoScroll;
+} UiState;
+
 // Prototypes
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 // Initialize
 UiState InitUiState(void); // Initializes the title screen and allocates memory for buttons

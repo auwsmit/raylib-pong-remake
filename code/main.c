@@ -1,12 +1,13 @@
 // EXPLANATION:
 // The main entry point for the game/program
 // The meat of the game loop can be found in the "UpdateDrawFrame" function
+// See header files for more documentation comments (mostly)
 
 #include "raylib.h"
 #include "raymath.h" // Required for: Vector2Clamp()
 
 #include "config.h"  // Program config, e.g. window title/size, fps, vsync
-#include "states.h"  // State machines shared across files
+#include "input.h"   // Input controls / key mappings
 #include "logo.h"    // Raylib logo animation
 #include "ui.h"      // User interface (menus and buttons)
 #include "pong.h"    // Game logic
@@ -23,7 +24,7 @@ typedef struct AppData // Local variables for the game loop in main()
     Logo raylibLogo; // data for logo animation
     bool skipCurrentFrame;
     GameState pong;
-    UiState ui; // data for main menu
+    UiState ui; // data for user interface
 } AppData;
 
 // Local Functions Declaration
@@ -40,18 +41,18 @@ void HandleToggleFullscreen(AppData *app);
 int main(void)
 {
     // Initialization
-    // --------------------------------------------------------------------------------
     CreateNewWindow();
     InitAudioDevice();
     AppData app = InitGameLoop();
+
+    // See UpdateDrawFrame() for the game loop
     RunGameLoop(&app);
 
     // De-Initialization
-    // --------------------------------------------------------------------------------
     FreeBeeps(&app.pong);
     FreeUiElements(&app.ui);
     CloseAudioDevice();
-    CloseWindow();        // Close window and OpenGL context
+    CloseWindow(); // Close window and OpenGL context
 
     return 0;
 }
@@ -61,7 +62,6 @@ void CreateNewWindow(void)
 #if defined(PLATFORM_WEB)
     SetConfigFlags(0); // no vsync or window resize for web
     InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, WINDOW_TITLE);
-    // SetWindowSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 #else
     unsigned int windowFlags = FLAG_WINDOW_RESIZABLE;
     if (VSYNC_ENABLED) windowFlags |= FLAG_VSYNC_HINT;
@@ -115,7 +115,7 @@ void UpdateDrawFrame(AppData *app)
     // Compute required framebuffer scaling
     float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
 
-    SetExitKey(KEY_NULL); // No exit key (use alt+F4 or in-game exit)
+    SetExitKey(KEY_NULL); // No exit key (use alt+F4 or in-game exit option)
 
     // Debug: q for fast quitting
     // SetExitKey(KEY_Q);
@@ -192,10 +192,8 @@ void UpdateDrawFrame(AppData *app)
 
 void HandleToggleFullscreen(AppData *app)
 {
-    // Fullscreen inputs: F11, Alt+Enter, and Shift+F
-    bool isPressedAltEnter = ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(KEY_ENTER));
-    bool isPressedShiftF = ((IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) && IsKeyPressed(KEY_F));
-    if (IsKeyPressed(KEY_F11) || isPressedAltEnter || isPressedShiftF)
+    // Input for fullscreen
+    if (IsInputActionPressed(INPUT_ACTION_FULLSCREEN, &app->pong))
     {
         // Borderless Windowed is generally nicer to use on desktop
         ToggleBorderlessWindowed();

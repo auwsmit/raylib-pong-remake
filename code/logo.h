@@ -4,7 +4,8 @@
 #ifndef PONG_LOGO_HEADER_GUARD
 #define PONG_LOGO_HEADER_GUARD
 
-#include "states.h"
+#include "input.h"
+#include "pong.h"
 
 // Types and Structures
 // --------------------------------------------------------------------------------

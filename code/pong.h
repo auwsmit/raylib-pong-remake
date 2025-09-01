@@ -5,7 +5,7 @@
 #define PONG_GAME_HEADER_GUARD
 
 #include "raylib.h"
-#include "states.h"
+#include "input.h"
 
 // Macros
 // --------------------------------------------------------------------------------
@@ -29,6 +29,67 @@
 #define SCORE_PAUSE_TIME 1.0f  // Time to pause after a score
 #define WIN_PAUSE_TIME 10.0f   // Time to pause after a win
 
+// Forward Declarations
+// --------------------------------------------------------------------------------
+typedef struct UiState UiState;
+
+typedef enum ScreenState
+{
+    SCREEN_LOGO, SCREEN_TITLE, SCREEN_GAMEPLAY, SCREEN_ENDING
+} ScreenState;
+
+typedef enum GameMode
+{
+    MODE_1PLAYER, MODE_2PLAYER, MODE_DEMO
+} GameMode;
+
+typedef enum GameDifficulty // Multiplier for CPU paddle speed
+{
+    DIFFICULTY_EASY, DIFFICULTY_MEDIUM, DIFFICULTY_HARD
+} GameDifficulty;
+
+typedef enum PongBeep
+{
+    BEEP_MENU, BEEP_PADDLE, BEEP_EDGE, BEEP_SCORE
+} PongBeep;
+
+typedef struct Paddle
+{
+    Vector2 position;
+    float nextHitPos; // Only used for Computer paddle
+                      // Determines how the computer will angle its next bounce
+    float speed;
+    int length;
+    int width;
+} Paddle;
+
+typedef struct Ball
+{
+    Vector2 position;
+    Vector2 direction;
+    float speed; // the ball is always set to this speed
+    int size;
+} Ball;
+
+typedef struct GameState
+{
+    Sound beeps[4];
+    Ball ball;
+    Paddle paddleL;
+    Paddle paddleR;
+    GameMode currentMode;
+    GameDifficulty difficulty;
+    ScreenState currentScreen;
+    InputKeyMaps input;
+    int scoreL;
+    int scoreR;
+    bool playerWon;
+    bool isPaused;
+    bool gameShouldExit;
+    float winTimer;   // countdown after player wins
+    float scoreTimer; // countdown after a score
+} GameState;
+
 // Prototypes
 // --------------------------------------------------------------------------------
 
@@ -46,8 +107,8 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep); // Ball bounces 
 // Update game
 void UpdatePongFrame(GameState *pong, UiState *titleMenu); // Updates all the game's data and objects for the current frame
 void UpdatePaddleMouseInput(Paddle *paddle); // Updates paddle's position based on the mouse
-void UpdatePaddlePlayer1(Paddle *paddle); // Paddle speed updates based on player input (W/S with Left Shift)
-void UpdatePaddlePlayer2(Paddle *paddle); // Paddle speed updates based on player input (O/L and Up/Down with Right Shift)
+void UpdatePaddlePlayer1(Paddle *paddle, GameState *pong); // Paddle speed updates based on player input (W/S with Left Shift)
+void UpdatePaddlePlayer2(Paddle *paddle, GameState *pong); // Paddle speed updates based on player input (O/L and Up/Down with Right Shift)
 void UpdatePaddleComputer(Paddle *paddle, GameState *pong); // Paddle speed updates based on Computer AI
 void UpdateBall(Ball *ball); // Moves the ball based on its direction, and normalizes its speed
 

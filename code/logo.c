@@ -37,8 +37,8 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
     const float fadeSpeed = 1.0f; // Fade out in 1 second
     static bool skipped = false;
 
-    // Enter or space or click to skip logo animation
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP))
+    // Press any key or click to skip intro
+    if ((GetKeyPressed() != 0) || IsGestureDetected(GESTURE_TAP))
     {
         if (logo->state >= LOGO_TEXT)
             pong->currentScreen = SCREEN_TITLE;

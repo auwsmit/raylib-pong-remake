@@ -4,16 +4,20 @@
 
 #include "pong.h"
 
-#include <limits.h> // for SHRT_MAX
+#include <limits.h> // for SHRT_MAX for beep sound
 #include "raymath.h" // needed for vector math
 
 #include "config.h"
+#include "input.h"
 #include "ui.h" // needed to reset the title menu
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 GameState InitGameState(void)
 {
+    // Set up default input key controls
+    InputKeyMaps keyMaps = InitInputKeyMaps();
+
     // Start the ball in any random direction
     float ballStartDirectionX = (float)(GetRandomValue(0, 1) * 2 - 1) * 100; // either -100 or +100
     float ballStartDirectionY = (float)GetRandomValue(-100, 100);
@@ -54,10 +58,14 @@ GameState InitGameState(void)
             .length = PADDLE_LENGTH,
             .width = PADDLE_WIDTH,
         },
+
+        .input = keyMaps,
         .difficulty = DIFFICULTY_MEDIUM,
         .winTimer   = WIN_PAUSE_TIME,
         .scoreTimer = SCORE_PAUSE_TIME,
     };
+
+
 
     // Allocate memory for beep sine waves
     pong.beeps[BEEP_MENU] = GenBeep(200.0f, 0.03f);
@@ -228,36 +236,36 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep)
 void UpdatePongFrame(GameState *pong, UiState *ui)
 {
     // Input to go back to title screen
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+    if (IsInputActionPressed(INPUT_ACTION_BACK, pong) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {
         ChangeUiMenu(UI_MENU_TITLE, ui, pong);
         return; // back to main game loop
     }
 
-    // Press Space or P to pause
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_P))
-    {
-        pong->isPaused = !pong->isPaused;
-        if (pong->isPaused)
-            ChangeUiMenu(UI_MENU_PAUSE, ui, pong);
-        else
-            ui->currentMenu = UI_MENU_GAMEPLAY;
-        PlaySound(pong->beeps[BEEP_MENU]);
-    }
+        // Input to pause
+        if (IsInputActionPressed(INPUT_ACTION_PAUSE, pong))
+        {
+            pong->isPaused = !pong->isPaused;
+            if (pong->isPaused)
+                ChangeUiMenu(UI_MENU_PAUSE, ui, pong);
+            else
+                ui->currentMenu = UI_MENU_GAMEPLAY;
+            PlaySound(pong->beeps[BEEP_MENU]);
+        }
 
     if (!pong->isPaused)
     {
-        // Update paddles
+        // Update paddles (checks player Input)
         if (pong->currentMode == MODE_1PLAYER)
         {
-            UpdatePaddlePlayer1(&pong->paddleL);
+            UpdatePaddlePlayer1(&pong->paddleL, pong);
             UpdatePaddleMouseInput(&pong->paddleL);
             UpdatePaddleComputer(&pong->paddleR, pong);
         }
         if (pong->currentMode == MODE_2PLAYER)
         {
-            UpdatePaddlePlayer1(&pong->paddleL);
-            UpdatePaddlePlayer2(&pong->paddleR);
+            UpdatePaddlePlayer1(&pong->paddleL, pong);
+            UpdatePaddlePlayer2(&pong->paddleR, pong);
         }
         if (pong->currentMode == MODE_DEMO)
         {
@@ -287,9 +295,9 @@ void UpdatePongFrame(GameState *pong, UiState *ui)
         if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
             pong->playerWon = true;
 
-        // Press Enter or Space or Click to skip win screen
+        // Input to skip win screen
         if (pong->playerWon == true &&
-            (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsGestureDetected(GESTURE_TAP)))
+            (IsInputActionPressed(INPUT_ACTION_CONFIRM, pong) || IsGestureDetected(GESTURE_TAP)))
             pong->winTimer = 0;
 
         // Update timers for winning and scoring
@@ -312,18 +320,18 @@ void UpdatePongFrame(GameState *pong, UiState *ui)
     UpdateUiFrame(ui, pong);
 }
 
-void UpdatePaddlePlayer1(Paddle *paddle)
+void UpdatePaddlePlayer1(Paddle *paddle, GameState *pong)
 {
     float newSpeed = 0.0f; // Not moving by default
 
-    // W/S to move paddle
-    if (IsKeyDown(KEY_W))
+    // Input to move paddle
+    if (IsInputActionDown(INPUT_ACTION_P1_UP, pong))
         newSpeed = -PADDLE_SPEED;
-    if (IsKeyDown(KEY_S))
+    if (IsInputActionDown(INPUT_ACTION_P1_DOWN, pong))
         newSpeed = PADDLE_SPEED;
 
     // Left Shift and A/D to speed up
-    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_A) || IsKeyDown(KEY_D))
+    if (IsInputActionDown(INPUT_ACTION_P1_SPEED, pong))
         newSpeed *= 2;
 
     // Update paddle
@@ -331,19 +339,18 @@ void UpdatePaddlePlayer1(Paddle *paddle)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void UpdatePaddlePlayer2(Paddle *paddle)
+void UpdatePaddlePlayer2(Paddle *paddle, GameState *pong)
 {
     float newSpeed = 0.0f; // Not moving by default
 
-    // I/K or Up/Down arrow keys to move paddle
-    if (IsKeyDown(KEY_I) || IsKeyDown(KEY_UP))
+    // Input to move paddle
+    if (IsInputActionDown(INPUT_ACTION_P2_UP, pong))
         newSpeed = -PADDLE_SPEED;
-    if (IsKeyDown(KEY_K) || IsKeyDown(KEY_DOWN))
+    if (IsInputActionDown(INPUT_ACTION_P2_DOWN, pong))
         newSpeed = PADDLE_SPEED;
 
-    // Left/Right arrow keys, or J/L to speed up
-    if (IsKeyDown(KEY_J) || IsKeyDown(KEY_L) ||
-        IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT))
+    // Left Shift and A/D to speed up
+    if (IsInputActionDown(INPUT_ACTION_P2_SPEED, pong))
         newSpeed *= 2;
 
     // Update paddle

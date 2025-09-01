@@ -1,19 +1,28 @@
 # Pong Remake with raylib
 
-[**Click here to play in the browser!**](https://auwsmit.github.io/raylib-pong-remake/)
+<p align="center">
+  <a href="https://auwsmit.github.io/raylib-pong-remake/">
+    <img style="width:500px" src="https://github.com/auwsmit/raylib-pong-remake/blob/master/demo.gif">
+  </a>
+  <p align="center">
+    <a href="https://auwsmit.github.io/raylib-pong-remake/"><b>Click here to play in the browser!</b></a>
+  </p>
+</p>
 
 This is my first [raylib](https://www.raylib.com/) project, made to learn about
 the library and basic game development. Expect lots of overly explanatory
-comments within. Still a work in progress.
+comments within. There's still lots of refinements and features I wanted to add,
+but I set a deadline, and so this is the finished state of the game after a
+little over a month of work in my free time.
 
 Runs on Windows, Linux, MacOS, and web browsers. I don't have a Mac to test on
-though, so I would appreciate if anyone can confirm it works there. I'll also
+though, so I would appreciate if anyone can confirm it compiles there. I'll also
 gladly take any advice/feedback/tips/pointers on things to do differently or
 improve.
 
 ## Controls
 
-- **Select/Confirm:** `Mouse click` or `Enter`
+- **Select/Confirm:** `Mouse click` or `Enter` or `Space`
 
 - **Move Player 1:**
     - `Mouse movement` (single player only)
@@ -24,9 +33,9 @@ improve.
     - Press `I`/`K` or `↑`/`↓` to move up and down
     - Hold `J`/`L`/`←`/`→` to move faster
 
-- **Go back:** `Esc`/`Backspace`
+- **Pause:** `P`
 
-- **Pause:** `Space`/`P`
+- **Back to title:** `Esc`/`Backspace`
 
 - **Toggle fullscreen:** `Alt+Enter`/`F11`/`Shift+F` (desktop only)
 

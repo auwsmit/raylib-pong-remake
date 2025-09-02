@@ -6805,9 +6805,9 @@ async function createWasm() {
         throw 'unwind';
       }
     };
-  var _emscripten_set_main_loop_arg = (func, arg, fps, simulateInfiniteLoop) => {
-      var iterFunc = () => ((a1) => dynCall_vi(func, a1))(arg);
-      setMainLoop(iterFunc, fps, simulateInfiniteLoop, arg);
+  var _emscripten_set_main_loop = (func, fps, simulateInfiniteLoop) => {
+      var iterFunc = (() => dynCall_v(func));
+      setMainLoop(iterFunc, fps, simulateInfiniteLoop);
     };
 
   var _emscripten_set_mousemove_callback_on_thread = (target, userData, useCapture, callbackfunc, targetThread) =>
@@ -9776,7 +9776,7 @@ var _emscripten_stack_get_free = makeInvalidEarlyAccess('_emscripten_stack_get_f
 var __emscripten_stack_restore = makeInvalidEarlyAccess('__emscripten_stack_restore');
 var __emscripten_stack_alloc = makeInvalidEarlyAccess('__emscripten_stack_alloc');
 var _emscripten_stack_get_current = makeInvalidEarlyAccess('_emscripten_stack_get_current');
-var dynCall_vi = makeInvalidEarlyAccess('dynCall_vi');
+var dynCall_v = makeInvalidEarlyAccess('dynCall_v');
 var dynCall_vii = makeInvalidEarlyAccess('dynCall_vii');
 var dynCall_viii = makeInvalidEarlyAccess('dynCall_viii');
 var dynCall_viff = makeInvalidEarlyAccess('dynCall_viff');
@@ -9790,13 +9790,13 @@ var dynCall_iiiii = makeInvalidEarlyAccess('dynCall_iiiii');
 var dynCall_iiiji = makeInvalidEarlyAccess('dynCall_iiiji');
 var dynCall_iiiiiii = makeInvalidEarlyAccess('dynCall_iiiiiii');
 var dynCall_jii = makeInvalidEarlyAccess('dynCall_jii');
+var dynCall_vi = makeInvalidEarlyAccess('dynCall_vi');
 var dynCall_vffff = makeInvalidEarlyAccess('dynCall_vffff');
 var dynCall_vf = makeInvalidEarlyAccess('dynCall_vf');
 var dynCall_viiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiii');
 var dynCall_viiiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiiii');
 var dynCall_i = makeInvalidEarlyAccess('dynCall_i');
 var dynCall_vff = makeInvalidEarlyAccess('dynCall_vff');
-var dynCall_v = makeInvalidEarlyAccess('dynCall_v');
 var dynCall_viiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiii');
 var dynCall_vfi = makeInvalidEarlyAccess('dynCall_vfi');
 var dynCall_viif = makeInvalidEarlyAccess('dynCall_viif');
@@ -9830,7 +9830,7 @@ function assignWasmExports(wasmExports) {
   __emscripten_stack_restore = wasmExports['_emscripten_stack_restore'];
   __emscripten_stack_alloc = wasmExports['_emscripten_stack_alloc'];
   _emscripten_stack_get_current = wasmExports['emscripten_stack_get_current'];
-  dynCalls['vi'] = dynCall_vi = createExportWrapper('dynCall_vi', 2);
+  dynCalls['v'] = dynCall_v = createExportWrapper('dynCall_v', 1);
   dynCalls['vii'] = dynCall_vii = createExportWrapper('dynCall_vii', 3);
   dynCalls['viii'] = dynCall_viii = createExportWrapper('dynCall_viii', 4);
   dynCalls['viff'] = dynCall_viff = createExportWrapper('dynCall_viff', 4);
@@ -9844,13 +9844,13 @@ function assignWasmExports(wasmExports) {
   dynCalls['iiiji'] = dynCall_iiiji = createExportWrapper('dynCall_iiiji', 5);
   dynCalls['iiiiiii'] = dynCall_iiiiiii = createExportWrapper('dynCall_iiiiiii', 7);
   dynCalls['jii'] = dynCall_jii = createExportWrapper('dynCall_jii', 3);
+  dynCalls['vi'] = dynCall_vi = createExportWrapper('dynCall_vi', 2);
   dynCalls['vffff'] = dynCall_vffff = createExportWrapper('dynCall_vffff', 5);
   dynCalls['vf'] = dynCall_vf = createExportWrapper('dynCall_vf', 2);
   dynCalls['viiiiiiii'] = dynCall_viiiiiiii = createExportWrapper('dynCall_viiiiiiii', 9);
   dynCalls['viiiiiiiii'] = dynCall_viiiiiiiii = createExportWrapper('dynCall_viiiiiiiii', 10);
   dynCalls['i'] = dynCall_i = createExportWrapper('dynCall_i', 1);
   dynCalls['vff'] = dynCall_vff = createExportWrapper('dynCall_vff', 3);
-  dynCalls['v'] = dynCall_v = createExportWrapper('dynCall_v', 1);
   dynCalls['viiiiiii'] = dynCall_viiiiiii = createExportWrapper('dynCall_viiiiiii', 8);
   dynCalls['vfi'] = dynCall_vfi = createExportWrapper('dynCall_vfi', 3);
   dynCalls['viif'] = dynCall_viif = createExportWrapper('dynCall_viif', 4);
@@ -10238,7 +10238,7 @@ var wasmImports = {
   /** @export */
   emscripten_set_gamepaddisconnected_callback_on_thread: _emscripten_set_gamepaddisconnected_callback_on_thread,
   /** @export */
-  emscripten_set_main_loop_arg: _emscripten_set_main_loop_arg,
+  emscripten_set_main_loop: _emscripten_set_main_loop,
   /** @export */
   emscripten_set_mousemove_callback_on_thread: _emscripten_set_mousemove_callback_on_thread,
   /** @export */

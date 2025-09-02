@@ -4,31 +4,29 @@
 
 #include "ui.h"
 
-#include <stddef.h>
 #include "raylib.h"
 #include "raymath.h" // needed for Vector math
 
 #include "config.h"
 #include "input.h"
-#include "pong.h" // needed to reset game state
+#include "pong.h"
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-UiState InitUiState(void)
+void InitUiState(void)
 {
-    UiState ui =
+    UiState uiDefaults =
     {
         .currentMenu = UI_MENU_TITLE,
-        .cursorSize = UI_CURSOR_SIZE,
         .selectedId = UI_BID_1PLAYER,
         .firstFrame = true,
     };
 
     // Title menu buttons
-    UiMenu *titleMenu = &ui.menus[UI_MENU_TITLE];
+    UiMenu *titleMenu = &uiDefaults.menus[UI_MENU_TITLE];
 
-    ui.title = InitUiTitle("Pong Remake");
-    UiButton *onePlayer = InitUiMenuButtonRelative("One Player", UI_TITLE_BUTTON_SIZE, &ui.title, UI_SPACE_FROM_TITLE, titleMenu);
+    uiDefaults.title = InitUiTitle("Pong Remake");
+    UiButton *onePlayer = InitUiMenuButtonRelative("One Player", UI_TITLE_BUTTON_SIZE, &uiDefaults.title, UI_SPACE_FROM_TITLE, titleMenu);
     UiButton *twoPlayer = InitUiMenuButtonRelative("Two Player", UI_TITLE_BUTTON_SIZE, onePlayer, UI_BUTTON_SPACING, titleMenu);
 #if !defined(PLATFORM_WEB)
     UiButton *demo      =
@@ -39,28 +37,28 @@ UiState InitUiState(void)
 #endif
 
     // Difficulty buttons
-    UiMenu *diffMenu = &ui.menus[UI_MENU_DIFFICULTY];
+    UiMenu *diffMenu = &uiDefaults.menus[UI_MENU_DIFFICULTY];
 
-    UiButton *easy   = InitUiMenuButtonRelative("Easy", UI_TITLE_BUTTON_SIZE, &ui.title, UI_SPACE_FROM_TITLE, diffMenu);
+    UiButton *easy   = InitUiMenuButtonRelative("Easy", UI_TITLE_BUTTON_SIZE, &uiDefaults.title, UI_SPACE_FROM_TITLE, diffMenu);
     UiButton *medium = InitUiMenuButtonRelative("Medium", UI_TITLE_BUTTON_SIZE, easy, UI_BUTTON_SPACING, diffMenu);
     UiButton *hard   = InitUiMenuButtonRelative("Hard", UI_TITLE_BUTTON_SIZE, medium, UI_BUTTON_SPACING, diffMenu);
     InitUiMenuButtonRelative("Back", UI_TITLE_BUTTON_SIZE, hard, UI_BUTTON_SPACING, diffMenu);
 
     // Pause button + menu
-    UiMenu *pauseMenu = &ui.menus[UI_MENU_PAUSE];
+    UiMenu *pauseMenu = &uiDefaults.menus[UI_MENU_PAUSE];
     char *pauseText = "Pause";
     char *resumeText = "Resume";
     char *toTitleText = "Back to Title";
     const int pauseTextLength = MeasureText(pauseText, UI_PAUSE_SIZE);
-    ui.pause =
+    uiDefaults.pause =
         InitUiButton(pauseText, UI_PAUSE_SIZE,
                      (float)RENDER_WIDTH / 4 - pauseTextLength / 2,
                      (float)RENDER_HEIGHT - (UI_PAUSE_SIZE * 2));
 
-    InitUiMenuButtonRelative(resumeText, UI_PAUSE_SIZE, &ui.pause, -UI_PAUSE_SIZE, pauseMenu);
-    InitUiMenuButtonRelative(toTitleText, UI_PAUSE_SIZE, &ui.pause, -UI_PAUSE_SIZE * 2 - UI_BUTTON_SPACING, pauseMenu);
+    InitUiMenuButtonRelative(resumeText, UI_PAUSE_SIZE, &uiDefaults.pause, -UI_PAUSE_SIZE, pauseMenu);
+    InitUiMenuButtonRelative(toTitleText, UI_PAUSE_SIZE, &uiDefaults.pause, -UI_PAUSE_SIZE * 2 - UI_BUTTON_SPACING, pauseMenu);
 
-    return ui;
+    pongUi = uiDefaults;
 }
 
 UiButton InitUiTitle(char *text)
@@ -105,33 +103,32 @@ UiButton *InitUiMenuButtonRelative(char* text, int fontSize, UiButton *originBut
     return InitUiMenuButton(text, fontSize, textPosX, textPosY + offsetY, menu);
 }
 
-void FreeUiElements(UiState *ui)
+void FreeUiMenuButtons(void)
 {
-    for (unsigned int i = 0; i < ARRAY_SIZE(ui->menus); i++)
-        MemFree(ui->menus[i].buttons);
+    for (unsigned int i = 0; i < ARRAY_SIZE(pongUi.menus); i++)
+        MemFree(pongUi.menus[i].buttons);
 }
 
-void UpdateUiFrame(UiState *ui, GameState *pong)
+void UpdateUiFrame(void)
 {
     // Input to go back
-    if (ui->currentMenu != UI_MENU_GAMEPLAY)
+    if (pongUi.currentMenu != UI_MENU_GAMEPLAY)
     {
-        if ((IsInputActionPressed(INPUT_ACTION_BACK, pong) ||
-             IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) && ui->currentMenu != UI_MENU_TITLE)
+        if ((IsInputActionPressed(INPUT_ACTION_BACK) ||
+             IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) && pongUi.currentMenu != UI_MENU_TITLE)
         {
-            ui->currentMenu = UI_MENU_TITLE;
-            ui->firstFrame = true;
-            PlaySound(pong->beeps[BEEP_MENU]);
+            ChangeUiMenu(UI_MENU_TITLE);
+            PlaySound(pongGame.beeps[BEEP_MENU]);
         }
 
-        UiButton *selectedButton = &ui->menus[ui->currentMenu].buttons[ui->selectedId];
-        UpdateUiButtonSelect(selectedButton, ui, pong);
-        UpdateUiMenuTraverse(ui, pong);
+        UiButton *selectedButton = &pongUi.menus[pongUi.currentMenu].buttons[pongUi.selectedId];
+        UpdateUiButtonSelect(selectedButton);
+        UpdateUiMenuTraverse();
     }
-    else if (!pong->isPaused)
+    else if (!pongGame.isPaused)
     {
-        UpdateUiButtonMouseHover(&ui->pause, pong);
-        UpdateUiButtonSelect(&ui->pause, ui, pong);
+        UpdateUiButtonMouseHover(&pongUi.pause);
+        UpdateUiButtonSelect(&pongUi.pause);
     }
 
     // Update pause fade animation
@@ -139,27 +136,27 @@ void UpdateUiFrame(UiState *ui, GameState *pong)
     static bool fadingOut = false;
     float fadeIncrement = (1.0f / fadeLength) * GetFrameTime();
 
-    if (ui->textFade >= 1.0f)
+    if (pongUi.textFade >= 1.0f)
         fadingOut = true;
-    else if (ui->textFade <= 0.0f)
+    else if (pongUi.textFade <= 0.0f)
         fadingOut = false;
     if (fadingOut)
         fadeIncrement *= -1;
 
-    ui->textFade += fadeIncrement;
+    pongUi.textFade += fadeIncrement;
 }
 
-void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
+void UpdateUiMenuTraverse(void)
 {
-    if (ui->currentMenu == UI_MENU_GAMEPLAY)
+    if (pongUi.currentMenu == UI_MENU_GAMEPLAY)
         return;
-    UiMenu *menu = &ui->menus[ui->currentMenu];
+    UiMenu *menu = &pongUi.menus[pongUi.currentMenu];
 
-    UiButtonIdTitle prevId = ui->selectedId; // used to play beep
+    UiTitleMenuId prevId = pongUi.selectedId; // used to play beep
 
     // Move cursor via mouse
     bool mouseMoved = (Vector2Length(GetMouseDelta()) > 0);
-    if (mouseMoved || (ui->firstFrame && ui->lastSelectWithMouse))
+    if (mouseMoved || (pongUi.firstFrame && pongUi.lastSelectWithMouse))
     {
         Vector2 mouse = GetMousePosition();
         float scale = MIN((float)GetScreenWidth()/RENDER_WIDTH, (float)GetScreenHeight()/RENDER_HEIGHT);
@@ -175,66 +172,68 @@ void UpdateUiMenuTraverse(UiState *ui, GameState *pong)
 
             if (IsMouseWithinUiButton(mousePos, currentButton))
             {
-                ui->selectedId = i;
-                ui->autoScroll = false;
-                ui->lastSelectWithMouse = true;
+                pongUi.selectedId = i;
+                pongUi.autoScroll = false;
+                pongUi.lastSelectWithMouse = true;
             }
         }
     }
 
     // Move cursor via keyboard
-    bool isInputUp = IsInputActionDown(INPUT_ACTION_P1_UP, pong) ||
-        IsInputActionDown(INPUT_ACTION_P2_UP, pong);
-    bool isInputDown = IsInputActionDown(INPUT_ACTION_P1_DOWN, pong) ||
-        IsInputActionDown(INPUT_ACTION_P2_DOWN, pong);
+    bool isInputUp =
+        IsInputActionDown(INPUT_ACTION_P1_UP) ||
+        IsInputActionDown(INPUT_ACTION_P2_UP);
+    bool isInputDown =
+        IsInputActionDown(INPUT_ACTION_P1_DOWN) ||
+        IsInputActionDown(INPUT_ACTION_P2_DOWN);
     const float autoScrollInitPause = 0.6f;
 
-    bool initialKeyPress = (!ui->autoScroll && ui->keyHeldTime == 0);
-    bool heldLongEnoughToRepeat = (ui->autoScroll && ui->keyHeldTime >= 0.1f);
+    bool initialKeyPress = (!pongUi.autoScroll && pongUi.keyHeldTime == 0);
+    bool heldLongEnoughToRepeat = (pongUi.autoScroll && pongUi.keyHeldTime >= 0.1f);
     if (initialKeyPress || heldLongEnoughToRepeat)
     {
         if (isInputUp)
         {
-            if (ui->selectedId > 0)
-                ui->selectedId--;
+            if (pongUi.selectedId > 0)
+                pongUi.selectedId--;
             else
-                ui->selectedId = menu->buttonCount - 1;
-            ui->keyHeldTime = 0;
-            ui->lastSelectWithMouse = false;
+                pongUi.selectedId = menu->buttonCount - 1;
+            pongUi.keyHeldTime = 0;
+            pongUi.lastSelectWithMouse = false;
         }
         if (isInputDown)
         {
-            if ((unsigned int)ui->selectedId < menu->buttonCount - 1)
-                ui->selectedId++;
+            if ((unsigned int)pongUi.selectedId < menu->buttonCount - 1)
+                pongUi.selectedId++;
             else
-                ui->selectedId = 0;
-            ui->keyHeldTime = 0.0f;
-            ui->lastSelectWithMouse = false;
+                pongUi.selectedId = 0;
+            pongUi.keyHeldTime = 0.0f;
+            pongUi.lastSelectWithMouse = false;
         }
     }
 
     // Update auto-scroll timer when holding keys
     if (isInputUp || isInputDown)
     {
-        ui->keyHeldTime += GetFrameTime();
-        if (ui->keyHeldTime >= autoScrollInitPause)
+        pongUi.keyHeldTime += GetFrameTime();
+        if (pongUi.keyHeldTime >= autoScrollInitPause)
         {
-            ui->autoScroll = true;
+            pongUi.autoScroll = true;
         }
     }
     else
     {
-        ui->keyHeldTime = 0;
-        ui->autoScroll = false;
+        pongUi.keyHeldTime = 0;
+        pongUi.autoScroll = false;
     }
 
-    if (ui->selectedId != prevId && !ui->firstFrame)
-        PlaySound(pong->beeps[BEEP_MENU]);
+    if (pongUi.selectedId != prevId && !pongUi.firstFrame)
+        PlaySound(pongGame.beeps[BEEP_MENU]);
 
-    ui->firstFrame = false;
+    pongUi.firstFrame = false;
 }
 
-void UpdateUiButtonMouseHover(UiButton *button, GameState *pong)
+void UpdateUiButtonMouseHover(UiButton *button)
 {
     bool mouseMoved = (Vector2Length(GetMouseDelta()) > 0);
     if (!mouseMoved) return;
@@ -249,7 +248,7 @@ void UpdateUiButtonMouseHover(UiButton *button, GameState *pong)
     if (IsMouseWithinUiButton(mousePos, button))
     {
         if (!button->mouseHovered)
-            PlaySound(pong->beeps[BEEP_MENU]);
+            PlaySound(pongGame.beeps[BEEP_MENU]);
         button->mouseHovered = true;
     }
     else
@@ -258,7 +257,7 @@ void UpdateUiButtonMouseHover(UiButton *button, GameState *pong)
     }
 }
 
-void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong)
+void UpdateUiButtonSelect(UiButton *button)
 {
 
     Vector2 mouse = GetMousePosition();
@@ -269,52 +268,52 @@ void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong)
     mousePos = Vector2Clamp(mousePos, (Vector2){ 0, 0 }, (Vector2){ (float)RENDER_WIDTH, (float)RENDER_HEIGHT });
 
     // Select pause button
-    if (ui->currentMenu == UI_MENU_GAMEPLAY && IsGestureDetected(GESTURE_TAP) &&
+    if (pongUi.currentMenu == UI_MENU_GAMEPLAY && IsGestureDetected(GESTURE_TAP) &&
          (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinUiButton(mousePos, button)))
     {
-        ChangeUiMenu(UI_MENU_PAUSE, ui, pong);
+        ChangeUiMenu(UI_MENU_PAUSE);
     }
 
     // Select a menu button
-    else if (IsInputActionPressed(INPUT_ACTION_CONFIRM, pong) ||
+    else if (IsInputActionPressed(INPUT_ACTION_CONFIRM) ||
         (IsGestureDetected(GESTURE_TAP) &&
          (!IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && IsMouseWithinUiButton(mousePos, button))))
     {
-        if (ui->currentMenu == UI_MENU_GAMEPLAY && !pong->isPaused)
+        if (pongUi.currentMenu == UI_MENU_GAMEPLAY && !pongGame.isPaused)
             return; // not a menu
 
-        if (ui->currentMenu == UI_MENU_PAUSE && !ui->firstFrame)
+        if (pongUi.currentMenu == UI_MENU_PAUSE && !pongUi.firstFrame)
         {
-            if (ui->selectedId == UI_BID_RESUME)
+            if (pongUi.selectedId == UI_BID_RESUME)
             {
-                pong->isPaused = false;
-                ui->currentMenu = UI_MENU_GAMEPLAY;
+                pongGame.isPaused = false;
+                pongUi.currentMenu = UI_MENU_GAMEPLAY;
             }
-            else if (ui->selectedId == UI_BID_BACKTOTITLE)
+            else if (pongUi.selectedId == UI_BID_BACKTOTITLE)
             {
-                ChangeUiMenu(UI_MENU_TITLE, ui, pong);
+                ChangeUiMenu(UI_MENU_TITLE);
             }
         }
 
-        else if (ui->currentMenu == UI_MENU_TITLE)
+        else if (pongUi.currentMenu == UI_MENU_TITLE)
         {
-            if (ui->selectedId == UI_BID_EXIT)
-                pong->gameShouldExit = true;
-            else if (ui->selectedId == UI_BID_1PLAYER)
-                ChangeUiMenu(UI_MENU_DIFFICULTY, ui, pong);
+            if (pongUi.selectedId == UI_BID_EXIT)
+                pongGame.gameShouldExit = true;
+            else if (pongUi.selectedId == UI_BID_1PLAYER)
+                ChangeUiMenu(UI_MENU_DIFFICULTY);
             else
-                ChangeUiMenu(UI_MENU_GAMEPLAY, ui, pong);
+                ChangeUiMenu(UI_MENU_GAMEPLAY);
         }
 
-        else if (ui->currentMenu == UI_MENU_DIFFICULTY)
+        else if (pongUi.currentMenu == UI_MENU_DIFFICULTY)
         {
-            if (ui->selectedId == UI_BID_BACK)
-                ChangeUiMenu(UI_MENU_TITLE, ui, pong);
+            if (pongUi.selectedId == UI_BID_BACK)
+                ChangeUiMenu(UI_MENU_TITLE);
             else
-                ChangeUiMenu(UI_MENU_GAMEPLAY, ui, pong);
+                ChangeUiMenu(UI_MENU_GAMEPLAY);
         }
 
-        PlaySound(pong->beeps[BEEP_MENU]);
+        PlaySound(pongGame.beeps[BEEP_MENU]);
     }
 }
 
@@ -331,87 +330,87 @@ bool IsMouseWithinUiButton(Vector2 mousePos, UiButton *button)
         return false;
 }
 
-void ChangeUiMenu(UiMenuState newMenu, UiState *ui, GameState *pong)
+void ChangeUiMenu(UiMenuState newMenu)
 {
     if (newMenu == UI_MENU_TITLE)
     {
-        FreeUiElements(ui);
-        *ui = InitUiState();
-        if (pong->currentScreen == SCREEN_GAMEPLAY)
+        // Clear old game state if returning from gameplay
+        if (pongGame.currentScreen == SCREEN_GAMEPLAY)
         {
-            FreeBeeps(pong);
-            *pong = InitGameState();
+            FreeBeeps();
+            InitGameState();
+            pongGame.currentScreen = SCREEN_TITLE;
         }
-        pong->currentScreen = SCREEN_TITLE;
-        ui->selectedId = UI_BID_1PLAYER;
+
+        pongUi.selectedId = UI_BID_1PLAYER;
     }
 
     else if (newMenu == UI_MENU_DIFFICULTY)
     {
-        ui->selectedId = UI_BID_MEDIUM;
+        pongUi.selectedId = UI_BID_MEDIUM;
     }
 
     else if (newMenu == UI_MENU_PAUSE)
     {
-        pong->isPaused = true;
-        ui->selectedId = UI_BID_RESUME;
+        pongGame.isPaused = true;
+        pongUi.selectedId = UI_BID_RESUME;
     }
 
     else if (newMenu == UI_MENU_GAMEPLAY)
     {
-        if (ui->currentMenu == UI_MENU_DIFFICULTY)
-            pong->difficulty = (GameDifficulty)ui->selectedId;
+        if (pongUi.currentMenu == UI_MENU_DIFFICULTY)
+            pongGame.difficulty = (GameDifficulty)pongUi.selectedId;
         else
-            pong->currentMode = (GameMode)ui->selectedId;
-        pong->currentScreen = SCREEN_GAMEPLAY;
+            pongGame.currentMode = (GameMode)pongUi.selectedId;
+        pongGame.currentScreen = SCREEN_GAMEPLAY;
     }
 
-    ui->currentMenu = newMenu;
-    ui->firstFrame = true;
+    pongUi.currentMenu = newMenu;
+    pongUi.firstFrame = true;
 }
 
-void DrawUiFrame(UiState *ui, GameState *pong)
+void DrawUiFrame(void)
 {
-    if (pong->currentScreen == SCREEN_TITLE)
+    if (pongGame.currentScreen == SCREEN_TITLE)
     {
-        DrawUiElement(&ui->title);
+        DrawUiElement(&pongUi.title);
     }
 
-    if (ui->currentMenu != UI_MENU_GAMEPLAY)
+    if (pongUi.currentMenu != UI_MENU_GAMEPLAY)
     {
-        UiMenu *menu = &ui->menus[ui->currentMenu];
+        UiMenu *menu = &pongUi.menus[pongUi.currentMenu];
         for (unsigned int i = 0; i < menu->buttonCount; i++)
             DrawUiElement(&menu->buttons[i]);
 
-        UiButton *selectedButton = &ui->menus[ui->currentMenu].buttons[ui->selectedId];
-        DrawUiCursor(ui, selectedButton);
+        UiButton *selectedButton = &pongUi.menus[pongUi.currentMenu].buttons[pongUi.selectedId];
+        DrawUiCursor(selectedButton);
     }
-    else if (pong->currentScreen == SCREEN_GAMEPLAY)
+    else if (pongGame.currentScreen == SCREEN_GAMEPLAY)
     {
         // Draw pause button
-        DrawUiElement(&ui->pause);
-        if (ui->pause.mouseHovered)
-            DrawUiCursor(ui, &ui->pause);
+        DrawUiElement(&pongUi.pause);
+        if (pongUi.pause.mouseHovered)
+            DrawUiCursor(&pongUi.pause);
     }
 
-    if (pong->currentScreen == SCREEN_GAMEPLAY)
+    if (pongGame.currentScreen == SCREEN_GAMEPLAY)
     {
         // Draw dotted line down middle
-        DrawUiFieldLines(pong->isPaused, pong->currentMode == MODE_DEMO);
+        DrawUiFieldLines(pongGame.isPaused, pongGame.currentMode == MODE_DEMO);
 
         // Draw score
-        DrawUiScores(pong);
+        DrawUiScores();
 
         // Fade animation
-        Color fadeColor = Fade(RAYWHITE, ui->textFade);
+        Color fadeColor = Fade(RAYWHITE, pongUi.textFade);
 
         // Draw win message
-        if (pong->playerWon)
-            DrawUiWinnerMessage(pong->scoreL, pong->scoreR, fadeColor);
+        if (pongGame.playerWon)
+            DrawUiWinnerMessage(pongGame.scoreL, pongGame.scoreR, fadeColor);
 
         // Draw pause message
         char *text;
-        if (pong->isPaused)
+        if (pongGame.isPaused)
         {
             text = "PAUSED";
             int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
@@ -419,7 +418,7 @@ void DrawUiFrame(UiState *ui, GameState *pong)
                      RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2,
                      SCORE_FONT_SIZE, fadeColor);
         }
-        else if (pong->currentMode == MODE_DEMO) // Draw demo mode message
+        else if (pongGame.currentMode == MODE_DEMO) // Draw demo mode message
         {
             text = "DEMO MODE";
             int textOffset = MeasureText(text, SCORE_FONT_SIZE) / 2;
@@ -440,13 +439,13 @@ void DrawUiElement(UiButton *button)
              button->fontSize, RAYWHITE);
 }
 
-void DrawUiCursor(UiState *ui, UiButton *selected)
+void DrawUiCursor(UiButton *selectedButton)
 {
-    float size = ui->cursorSize;
+    float size = UI_CURSOR_SIZE;
 
     Vector2 selectPointPos; // the corner/vertice pointing towards the right
-    Vector2 cursorOffset = (Vector2){-50.0f, (float)selected->fontSize / 2};
-    selectPointPos = Vector2Add(selected->position, cursorOffset);
+    Vector2 cursorOffset = (Vector2){-50.0f, (float)selectedButton->fontSize / 2};
+    selectPointPos = Vector2Add(selectedButton->position, cursorOffset);
 
     DrawTriangle(Vector2Add(selectPointPos, (Vector2){ -size*2, size }),
                  selectPointPos,
@@ -476,9 +475,6 @@ void DrawUiFieldLines(bool isPaused, bool isDemoMode)
     {
         int y = offsetY + i * totalSegmentHeight;
 
-        // do not draw dashes that overlap with text
-        // TODO: modify generalize for any UI elements on screen
-        //       will probably have to redo ui.h into ui.h or something
         int pauseMessageYPos = RENDER_HEIGHT / 2 - SCORE_FONT_SIZE / 2;
         if (((isPaused || isDemoMode) &&
              (y+dashHeight > pauseMessageYPos) &&
@@ -491,15 +487,15 @@ void DrawUiFieldLines(bool isPaused, bool isDemoMode)
     }
 }
 
-void DrawUiScores(GameState *pong)
+void DrawUiScores(void)
 {
     int fontSize = 180;
 
-    const char *scoreLMsg = TextFormat("%i", pong->scoreL);
+    const char *scoreLMsg = TextFormat("%i", pongGame.scoreL);
     int scoreLWidth = MeasureText(scoreLMsg, fontSize);
     int scoreLPosX = RENDER_WIDTH / 4 - scoreLWidth / 2;
 
-    const char *scoreRMsg = TextFormat("%i", pong->scoreR);
+    const char *scoreRMsg = TextFormat("%i", pongGame.scoreR);
     int scoreRWidth = MeasureText(scoreRMsg, fontSize);
     int scoreRPosX = RENDER_WIDTH / 4 * 3 - scoreRWidth / 2;
 

@@ -6,11 +6,13 @@
 
 #include "raylib.h"
 
-#define INPUT_ACTIONS_COUNT 10
-#define INPUT_MAX_KEYS 9
+// Macros
+// ----------------------------------------------------------------------------
+#define INPUT_ACTIONS_COUNT 10 // Total number of game actions, e.g. confirm, pause, move up
+#define INPUT_MAX_KEYS 9 // Maximum number of keys that can be assigned to an action
 
-typedef struct GameState GameState;
-
+// Types and Structures
+// ----------------------------------------------------------------------------
 typedef enum InputAction
 {
     INPUT_ACTION_CONFIRM,
@@ -31,10 +33,11 @@ typedef struct InputKeyMaps
 } InputKeyMaps;
 
 // Prototypes
-// --------------------------------------------------------------------------------
-InputKeyMaps InitInputKeyMaps(void);
+// ----------------------------------------------------------------------------
+void InitDefaultInputControls(void); // Sets the default key mapping control scheme
 bool IsInputKeyModifier(KeyboardKey key);
-bool IsInputActionPressed(InputAction action, GameState* pong);
-bool IsInputActionDown(InputAction action, GameState* pong);
+bool IsInputActionPressed(InputAction action);
+bool IsInputActionDown(InputAction action);
+void HandleToggleFullscreen(void);
 
 #endif // PONG_INPUT_HEADER_GUARD

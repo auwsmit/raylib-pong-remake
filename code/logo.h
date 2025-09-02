@@ -4,11 +4,17 @@
 #ifndef PONG_LOGO_HEADER_GUARD
 #define PONG_LOGO_HEADER_GUARD
 
-#include "input.h"
-#include "pong.h"
+#include "raylib.h"
+
+// Macros
+// ----------------------------------------------------------------------------
+#define RAYLIB_LOGO_WIDTH 512 // takes multiples of 64
+                              // 192 is the minimum size
+#define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH / 16)
+#define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
 
 // Types and Structures
-// --------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 typedef enum LogoState { LOGO_START, LOGO_GROW1, LOGO_GROW2, LOGO_TEXT, LOGO_PAUSE, LOGO_END } LogoState;
 
 typedef struct Logo {
@@ -20,26 +26,20 @@ typedef struct Logo {
 
     float topSideRecWidth;
     float leftSideRecHeight;
-
     float bottomSideRecWidth;
     float rightSideRecHeight;
 
-    LogoState state;   // Tracking animation states (State Machine)
+    LogoState state; // Tracking animation states (State Machine)
     float alpha; // Useful for fading
 } Logo;
 
-// Macros
-// --------------------------------------------------------------------------------
-#define RAYLIB_LOGO_WIDTH 512 // takes multiples of 64
-                              // 192 is the minimum size
-#define RAYLIB_LOGO_OUTLINE (RAYLIB_LOGO_WIDTH / 16)
-#define RAYLIB_LOGO_FONT_SIZE (RAYLIB_LOGO_WIDTH/8 + RAYLIB_LOGO_OUTLINE)
+extern Logo raylibLogo; // global declaration
 
 // Prototypes
-// --------------------------------------------------------------------------------
-Logo InitRaylibLogo(void); // Initialize the logo animation
-void UpdateRaylibLogo(Logo *logo, GameState *pong); // Update logo animation for the current frame
-                                                    // Also transitions to title screen when finished
-void DrawRaylibLogo(Logo *logo);
+// ----------------------------------------------------------------------------
+void InitRaylibLogo(void);   // Initialize the logo animation
+void UpdateRaylibLogo(void); // Update logo animation for the current frame
+                             // Also transitions to title screen when finished
+void DrawRaylibLogo(void);
 
 #endif // PONG_LOGO_HEADER_GUARD

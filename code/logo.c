@@ -4,32 +4,35 @@
 
 #include "logo.h"
 #include "config.h"
+#include "pong.h"
 
-Logo InitRaylibLogo(void)
+// Global animation state
+Logo raylibLogo = { 0 };
+
+void InitRaylibLogo(void)
 {
-    Logo raylibLogo =
+    Logo startOfAnimation =
     {
-        RENDER_WIDTH/2 - RAYLIB_LOGO_WIDTH/2,  // positionX
-        RENDER_HEIGHT/2 - RAYLIB_LOGO_WIDTH/2, // positionY
+        .positionX = RENDER_WIDTH/2 - RAYLIB_LOGO_WIDTH/2,
+        .positionY = RENDER_HEIGHT/2 - RAYLIB_LOGO_WIDTH/2,
 
-        0, 0, // framesCount, lettersCount
+        .elapsedTime = 0,
+        .lettersCount = 0,
 
-        RAYLIB_LOGO_OUTLINE, // topSideRecWidth
-        RAYLIB_LOGO_OUTLINE, // leftSideRecHeight
+        .topSideRecWidth = RAYLIB_LOGO_OUTLINE,
+        .leftSideRecHeight = RAYLIB_LOGO_OUTLINE,
+        .bottomSideRecWidth = RAYLIB_LOGO_OUTLINE,
+        .rightSideRecHeight = RAYLIB_LOGO_OUTLINE,
 
-        RAYLIB_LOGO_OUTLINE, // bottomSideRecWidth
-        RAYLIB_LOGO_OUTLINE, // rightSideRecHeight
+        .state = LOGO_START, // State machine
 
-        LOGO_START, // state
-               // Tracking animation states (State Machine)
-
-        0.0f,  // alpha
-               // Useful for fading
+        .alpha = 0.0f, // Useful for fading
     };
-    return raylibLogo;
+
+    raylibLogo = startOfAnimation;
 }
 
-void UpdateRaylibLogo(Logo *logo, GameState *pong)
+void UpdateRaylibLogo(void)
 {
     float deltaTime = GetFrameTime();
     const float growSpeed = RAYLIB_LOGO_WIDTH * 0.9375f; // Speed that lines grow
@@ -40,156 +43,155 @@ void UpdateRaylibLogo(Logo *logo, GameState *pong)
     // Press any key or click to skip intro
     if ((GetKeyPressed() != 0) || IsGestureDetected(GESTURE_TAP))
     {
-        if (logo->state >= LOGO_TEXT)
-            pong->currentScreen = SCREEN_TITLE;
+        if (raylibLogo.state >= LOGO_TEXT)
+            pongGame.currentScreen = SCREEN_TITLE;
         else
         {
-            logo->topSideRecWidth = RAYLIB_LOGO_WIDTH;
-            logo->leftSideRecHeight = RAYLIB_LOGO_WIDTH;
-            logo->bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
-            logo->rightSideRecHeight = RAYLIB_LOGO_WIDTH;
-            logo->lettersCount = 10;
-            logo->elapsedTime = 0;
-            logo->state = LOGO_TEXT;
+            raylibLogo.topSideRecWidth = RAYLIB_LOGO_WIDTH;
+            raylibLogo.leftSideRecHeight = RAYLIB_LOGO_WIDTH;
+            raylibLogo.bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
+            raylibLogo.rightSideRecHeight = RAYLIB_LOGO_WIDTH;
+            raylibLogo.lettersCount = 10;
+            raylibLogo.elapsedTime = 0;
+            raylibLogo.state = LOGO_TEXT;
             skipped = true;
         }
     }
 
     // Support raylib!
     // https://github.com/sponsors/raysan5 https://www.patreon.com/raylib :)
-    if (skipped == true && logo->elapsedTime < 1.0f)
+    if (skipped == true && raylibLogo.elapsedTime < 1.0f)
     {
-        logo->elapsedTime += GetFrameTime();
+        raylibLogo.elapsedTime += GetFrameTime();
         return;
     }
 
-    switch (logo->state)
+    switch (raylibLogo.state)
     {
         case LOGO_START: // Small box blinking
-            logo->elapsedTime += deltaTime;
-            if (logo->elapsedTime >= 2.0f) // 2 seconds delay
+            raylibLogo.elapsedTime += deltaTime;
+            if (raylibLogo.elapsedTime >= 2.0f) // 2 seconds delay
             {
-                logo->state = LOGO_GROW1;
-                logo->elapsedTime = 0.0f; // Reset counter... will be used later...
+                raylibLogo.state = LOGO_GROW1;
+                raylibLogo.elapsedTime = 0.0f; // Reset counter... will be used later...
             }
             break;
 
         case LOGO_GROW1: // Top and left bars growing
-            logo->topSideRecWidth += growSpeed * deltaTime;
-            logo->leftSideRecHeight += growSpeed * deltaTime;
+            raylibLogo.topSideRecWidth += growSpeed * deltaTime;
+            raylibLogo.leftSideRecHeight += growSpeed * deltaTime;
 
-            if (logo->topSideRecWidth >= RAYLIB_LOGO_WIDTH)
+            if (raylibLogo.topSideRecWidth >= RAYLIB_LOGO_WIDTH)
             {
-                logo->topSideRecWidth = RAYLIB_LOGO_WIDTH;
-                logo->leftSideRecHeight = RAYLIB_LOGO_WIDTH;
-                logo->state = LOGO_GROW2;
-                logo->elapsedTime = 0.0f;
+                raylibLogo.topSideRecWidth = RAYLIB_LOGO_WIDTH;
+                raylibLogo.leftSideRecHeight = RAYLIB_LOGO_WIDTH;
+                raylibLogo.state = LOGO_GROW2;
+                raylibLogo.elapsedTime = 0.0f;
             }
             break;
 
         case LOGO_GROW2: // Bottom and right bars growing
-            logo->bottomSideRecWidth += growSpeed * deltaTime;
-            logo->rightSideRecHeight += growSpeed * deltaTime;
+            raylibLogo.bottomSideRecWidth += growSpeed * deltaTime;
+            raylibLogo.rightSideRecHeight += growSpeed * deltaTime;
 
-            if (logo->bottomSideRecWidth >= RAYLIB_LOGO_WIDTH)
+            if (raylibLogo.bottomSideRecWidth >= RAYLIB_LOGO_WIDTH)
             {
-                logo->bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
-                logo->rightSideRecHeight = RAYLIB_LOGO_WIDTH;
-                logo->state = LOGO_TEXT;
-                logo->elapsedTime = 0.0f;
+                raylibLogo.bottomSideRecWidth = RAYLIB_LOGO_WIDTH;
+                raylibLogo.rightSideRecHeight = RAYLIB_LOGO_WIDTH;
+                raylibLogo.state = LOGO_TEXT;
+                raylibLogo.elapsedTime = 0.0f;
             }
             break;
 
         case LOGO_TEXT: // Letters appearing (one by one)
-            logo->elapsedTime += deltaTime;
+            raylibLogo.elapsedTime += deltaTime;
 
-            if (logo->lettersCount < 10 && logo->elapsedTime >= letterDelay)
+            if (raylibLogo.lettersCount < 10 && raylibLogo.elapsedTime >= letterDelay)
             {
-                logo->lettersCount++;
-                logo->elapsedTime = 0.0f;
+                raylibLogo.lettersCount++;
+                raylibLogo.elapsedTime = 0.0f;
             }
 
             // When all letters have appeared, just fade out everything
-            if (logo->lettersCount >= 10)
+            if (raylibLogo.lettersCount >= 10)
             {
-                logo->alpha += fadeSpeed * deltaTime;
-                if (logo->alpha >= 1.0f)
+                raylibLogo.alpha += fadeSpeed * deltaTime;
+                if (raylibLogo.alpha >= 1.0f)
                 {
-                    logo->alpha = 1.0f;
-                    logo->state = LOGO_PAUSE;
-                    logo->elapsedTime = 0.0f;
+                    raylibLogo.alpha = 1.0f;
+                    raylibLogo.state = LOGO_PAUSE;
+                    raylibLogo.elapsedTime = 0.0f;
                 }
             }
             break;
 
         case LOGO_PAUSE: // Pause at end of animation
-            logo->elapsedTime += deltaTime;
-            if (logo->elapsedTime >= 1.5f)
-                logo->state = LOGO_END;
+            raylibLogo.elapsedTime += deltaTime;
+            if (raylibLogo.elapsedTime >= 1.5f)
+                raylibLogo.state = LOGO_END;
             break;
 
         case LOGO_END: // Animation is finished
-            pong->currentScreen = SCREEN_TITLE;
+            pongGame.currentScreen = SCREEN_TITLE;
             break;
     }
 }
 
-void DrawRaylibLogo(Logo *logo)
+void DrawRaylibLogo(void)
 {
     int lineWidth = (int)(RAYLIB_LOGO_OUTLINE); // DrawRectangle() takes ints, so all this casting is just to remove warnings
     int offsetA   = (int)(RAYLIB_LOGO_WIDTH*0.9375f);
     int offsetB   = (int)(lineWidth * 2);
+    int offsetC   = (int)(RAYLIB_LOGO_WIDTH*0.171875f);
+    int offsetD   = (int)(RAYLIB_LOGO_WIDTH*0.1875f);
     int fontSize  = (int)(RAYLIB_LOGO_FONT_SIZE);
-    int offsetC   = (int)(RAYLIB_LOGO_WIDTH*0.171875);
-    int offsetD   = (int)(RAYLIB_LOGO_WIDTH*0.1875);
 
-    int posX        = (int)logo->positionX;
-    int posY        = (int)logo->positionY;
-    int topWidth    = (int)logo->topSideRecWidth;
-    int leftHeight  = (int)logo->leftSideRecHeight;
-    int rightHeight = (int)logo->rightSideRecHeight;
-    int bottomWidth = (int)logo->bottomSideRecWidth;
+    int rectPosX    = (int)raylibLogo.positionX;
+    int rectPosY    = (int)raylibLogo.positionY;
+    int topWidth    = (int)raylibLogo.topSideRecWidth;
+    int leftHeight  = (int)raylibLogo.leftSideRecHeight;
+    int rightHeight = (int)raylibLogo.rightSideRecHeight;
+    int bottomWidth = (int)raylibLogo.bottomSideRecWidth;
 
-    if (logo->state != LOGO_PAUSE)
+    if (raylibLogo.state != LOGO_PAUSE)
         DrawText("powered by",
                  (int)((RENDER_WIDTH / 2) - (RAYLIB_LOGO_WIDTH / 2)),
                  (int)((RENDER_HEIGHT / 2) - (RAYLIB_LOGO_WIDTH / 2) - offsetB - lineWidth / 4),
                  (int)(fontSize / 2), RAYWHITE);
 
-    switch (logo->state)
+    switch (raylibLogo.state)
     {
         case LOGO_START:
-            if (((int)(logo->elapsedTime * 4)) % 2)
-                DrawRectangle(posX, posY, lineWidth, lineWidth, RAYWHITE);
+            if (((int)(raylibLogo.elapsedTime * 4)) % 2)
+                DrawRectangle(rectPosX, rectPosY, lineWidth, lineWidth, RAYWHITE);
             else
-                DrawRectangle(posX, posY, lineWidth, lineWidth, BLACK);
+                DrawRectangle(rectPosX, rectPosY, lineWidth, lineWidth, BLACK);
             break;
         case LOGO_GROW1:
-            DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
-            DrawRectangle(posX, posY, lineWidth, leftHeight, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY, topWidth, lineWidth, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY, lineWidth, leftHeight, RAYWHITE);
             break;
         case LOGO_GROW2:
-            DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
-            DrawRectangle(posX, posY, lineWidth, leftHeight, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY, topWidth, lineWidth, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY, lineWidth, leftHeight, RAYWHITE);
 
-            DrawRectangle(posX + offsetA, posY, lineWidth, rightHeight, RAYWHITE);
-            DrawRectangle(posX, posY + offsetA, bottomWidth, lineWidth, RAYWHITE);
+            DrawRectangle(rectPosX + offsetA, rectPosY, lineWidth, rightHeight, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY + offsetA, bottomWidth, lineWidth, RAYWHITE);
             break;
         case LOGO_TEXT:
-            DrawRectangle(posX, posY, topWidth, lineWidth, RAYWHITE);
-            DrawRectangle(posX, posY + lineWidth, lineWidth, leftHeight - offsetB, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY, topWidth, lineWidth, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY + lineWidth, lineWidth, leftHeight - offsetB, RAYWHITE);
 
-            DrawRectangle(posX + offsetA, posY + lineWidth, lineWidth, rightHeight - offsetB, RAYWHITE);
-            DrawRectangle(posX, posY + offsetA, bottomWidth, lineWidth, RAYWHITE);
+            DrawRectangle(rectPosX + offsetA, rectPosY + lineWidth, lineWidth, rightHeight - offsetB, RAYWHITE);
+            DrawRectangle(rectPosX, rectPosY + offsetA, bottomWidth, lineWidth, RAYWHITE);
 
-            DrawText(TextSubtext("raylib", 0, logo->lettersCount),
+            DrawText(TextSubtext("raylib", 0, raylibLogo.lettersCount),
                      RENDER_WIDTH/2 - offsetC, RENDER_HEIGHT/2 + offsetD,
                      fontSize, RAYWHITE);
 
-            DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, logo->alpha));
+            DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, Fade(BLACK, raylibLogo.alpha));
             break;
         case LOGO_PAUSE:
-            // DrawRectangle(0, 0, RENDER_WIDTH, RENDER_HEIGHT, BLACK);
             break;
         case LOGO_END:
             break;

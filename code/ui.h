@@ -26,10 +26,6 @@
 #define DIFFICULTY_FONT_SIZE 50 // For text that shows difficulty at bottom of screen
 #define WIN_FONT_SIZE 100
 
-// Forward Declarations
-// ----------------------------------------------------------------------------
-typedef struct GameState GameState;
-
 // Types and Structures
 // ----------------------------------------------------------------------------
 
@@ -38,10 +34,10 @@ typedef enum UiMenuState
     UI_MENU_TITLE, UI_MENU_DIFFICULTY, UI_MENU_PAUSE, UI_MENU_GAMEPLAY
 } UiMenuState;
 
-typedef enum UiButtonIdTitle
+typedef enum UiTitleMenuId
 {
     UI_BID_1PLAYER, UI_BID_2PLAYER, UI_BID_DEMO, UI_BID_EXIT
-} UiButtonIdTitle;
+} UiTitleMenuId;
 
 typedef enum UiDifficultyMenuId
 {
@@ -72,8 +68,7 @@ typedef struct UiState // Holds data for the title screen menu
 {
     UiButton title; // Title text
     UiButton pause;
-    UiMenu menus[3]; // title, difficulty, pause
-    float cursorSize;
+    UiMenu menus[3]; // title, difficulty, and pause menus
     float keyHeldTime;
     float textFade;            // tracks fade value over time
     float textFadeTimeElapsed; // tracks time for the fade animation
@@ -84,31 +79,33 @@ typedef struct UiState // Holds data for the title screen menu
     bool autoScroll;
 } UiState;
 
+extern UiState pongUi; // global declaration
+
 // Prototypes
 // ----------------------------------------------------------------------------
 
 // Initialize
-UiState InitUiState(void); // Initializes the title screen and allocates memory for buttons
+void InitUiState(void); // Initializes the title screen and allocates memory for menu buttons
 UiButton InitUiTitle(char *text);
 UiButton InitUiButton(char *text, int fontSize, float textPosX, float textPosY);
 UiButton *InitUiMenuButton(char *text, int fontSize, float textPosX, float textPosY, UiMenu *menu);
 UiButton *InitUiMenuButtonRelative(char* text, int fontSize, UiButton *originButton, float offsetY, UiMenu *menu);
-void FreeUiElements(UiState *menu);
+void FreeUiMenuButtons(void);
 
-// Update / Input
-void UpdateUiFrame(UiState *ui, GameState *pong); // Updates the menu for the current frame
-void UpdateUiMenuTraverse(UiState *menu, GameState *pong); // Updates the cursor for movement by user input
-void UpdateUiButtonMouseHover(UiButton *button, GameState *pong); // Draw cursor when mouse is over button
-void UpdateUiButtonSelect(UiButton *button, UiState *ui, GameState *pong); // Selects a button by user input
+// Update / User Input
+void UpdateUiFrame(void); // Updates the menu for the current frame
+void UpdateUiMenuTraverse(void); // Updates the cursor for movement by user input
+void UpdateUiButtonMouseHover(UiButton *button); // Draw cursor when mouse is over button
+void UpdateUiButtonSelect(UiButton *button); // Selects a button by user input
 bool IsMouseWithinUiButton(Vector2 mousePos, UiButton *button);
-void ChangeUiMenu(UiMenuState newMenu, UiState *ui, GameState *pong); // Change from one menu state to another
+void ChangeUiMenu(UiMenuState newMenu); // Change from one menu to another
 
 // Draw
-void DrawUiFrame(UiState *state, GameState *pong); // Draws the menu for the current frame
+void DrawUiFrame(void); // Draws the menu for the current frame
 void DrawUiElement(UiButton *button);
-void DrawUiCursor(UiState *menu, UiButton *selected);
+void DrawUiCursor(UiButton *selected); // Draw the cursor at the given button
 void DrawUiFieldLines(bool isPaused, bool isDemoMode);
-void DrawUiScores(GameState *pong);
-void DrawUiWinnerMessage(int scoreL, int scoreR, Color fadeColor);
+void DrawUiScores(void);
+void DrawUiWinnerMessage(int scoreL, int scoreR, Color fadeColor); // Draw the "Winner" text for the current winner
 
 #endif // PONG_MENU_HEADER_GUARD

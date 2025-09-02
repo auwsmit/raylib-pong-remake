@@ -4,26 +4,26 @@
 
 #include "pong.h"
 
-#include <limits.h> // for SHRT_MAX for beep sound
+#include <limits.h> // for SHRT_MAX for beep sound math
 #include "raymath.h" // needed for vector math
 
 #include "config.h"
 #include "input.h"
-#include "ui.h" // needed to reset the title menu
+#include "ui.h"
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-GameState InitGameState(void)
+void InitGameState(void)
 {
-    // Set up default input key controls
-    InputKeyMaps keyMaps = InitInputKeyMaps();
-
     // Start the ball in any random direction
     float ballStartDirectionX = (float)(GetRandomValue(0, 1) * 2 - 1) * 100; // either -100 or +100
     float ballStartDirectionY = (float)GetRandomValue(-100, 100);
-    GameState pong =
+    GameState defaultState =
     {
+        // Game boots to raylib logo animation
         .currentScreen = SCREEN_LOGO,
+
+        // Default ball settings
         .ball = {
             .position = {
                 RENDER_WIDTH / 2 - BALL_SIZE / 2,
@@ -37,43 +37,39 @@ GameState InitGameState(void)
             .size = BALL_SIZE,
         },
 
+        // Default paddle settings
         .paddleL = {
             .position = {
                 PADDLE_WIDTH * 1.5,
                 RENDER_HEIGHT / 2,
             },
-            .nextHitPos = 0.0f,
             .speed = PADDLE_SPEED,
             .length = PADDLE_LENGTH,
             .width = PADDLE_WIDTH,
         },
-
         .paddleR = {
             .position = {
                 RENDER_WIDTH - PADDLE_WIDTH * 2.5,
                 RENDER_HEIGHT / 2,
             },
-            .nextHitPos = 0.0f,
             .speed = PADDLE_SPEED,
             .length = PADDLE_LENGTH,
             .width = PADDLE_WIDTH,
         },
 
-        .input = keyMaps,
-        .difficulty = DIFFICULTY_MEDIUM,
+        // Default game settings
+        .difficulty = DIFFICULTY_MEDIUM, // only relevant for demo mode (MODE_DEMO)
         .winTimer   = WIN_PAUSE_TIME,
         .scoreTimer = SCORE_PAUSE_TIME,
     };
 
-
-
     // Allocate memory for beep sine waves
-    pong.beeps[BEEP_MENU] = GenBeep(200.0f, 0.03f);
-    pong.beeps[BEEP_PADDLE] = GenBeep(450.0f, 0.1f);
-    pong.beeps[BEEP_EDGE] = GenBeep(500.0f, 0.1f);
-    pong.beeps[BEEP_SCORE] = GenBeep(600.0f, 0.4f);
+    defaultState.beeps[BEEP_MENU] = GenBeep(200.0f, 0.03f);
+    defaultState.beeps[BEEP_PADDLE] = GenBeep(450.0f, 0.1f);
+    defaultState.beeps[BEEP_EDGE] = GenBeep(500.0f, 0.1f);
+    defaultState.beeps[BEEP_SCORE] = GenBeep(600.0f, 0.4f);
 
-    return pong;
+    pongGame = defaultState;
 }
 
 Sound GenBeep(float freq, float lengthSec)
@@ -82,26 +78,28 @@ Sound GenBeep(float freq, float lengthSec)
     int samples = (int)(lengthSec * sampleRate);
     short *data = MemAlloc(samples * sizeof(short));
 
-    // fade length in samples (5 ms)
-    int fadeSamples = (int)(0.005f * sampleRate);
+    // fade length in samples
+    // (This prevents an unpleasant "pop" noise when the sound starts or stops)
+    int fadeSamples = (int)(0.005f * sampleRate); // 5 ms
 
+    // Generate wave data
     for (int i = 0; i < samples; i++)
     {
         float timeInSeconds = (float)i / sampleRate;
         float sample = sinf(2.0f * PI * freq * timeInSeconds);
 
-        // envelope factor
-        float amp = 1.0f;
+        // Apply fade in/out
+        float amplitude = 1.0f;
         if (i < fadeSamples) {
-            amp = (float)i / fadeSamples; // fade in
+            amplitude = (float)i / fadeSamples; // fade in
         } else if (i > samples - fadeSamples) {
-            amp = (float)(samples - i) / fadeSamples; // fade out
+            amplitude = (float)(samples - i) / fadeSamples; // fade out
         }
 
-        data[i] = (short)(sample * amp * SHRT_MAX * 0.25f);
+        data[i] = (short)(sample * amplitude * SHRT_MAX * 0.25f);
     }
 
-    Wave w = {
+    Wave beepSoundWave = {
         .frameCount = samples,
         .sampleRate = sampleRate,
         .sampleSize = 16,
@@ -109,15 +107,15 @@ Sound GenBeep(float freq, float lengthSec)
         .data = data
     };
 
-    Sound beep = LoadSoundFromWave(w);
-    UnloadWave(w); // frees data
+    Sound beep = LoadSoundFromWave(beepSoundWave);
+    UnloadWave(beepSoundWave); // frees data
     return beep;
 }
 
-void FreeBeeps(GameState *pong)
+void FreeBeeps(void)
 {
-    for (unsigned int i = 0; i < ARRAY_SIZE(pong->beeps); i++)
-        UnloadSound(pong->beeps[i]);
+    for (unsigned int i = 0; i < ARRAY_SIZE(pongGame.beeps); i++)
+        UnloadSound(pongGame.beeps[i]);
 }
 
 bool CheckCollisionBallPaddle(Ball ball, Paddle paddle)
@@ -141,69 +139,70 @@ void EdgeCollisionPaddle(Paddle *paddle)
         paddle->position.y = (float)(RENDER_HEIGHT - FIELD_LINE_WIDTH - paddle->length);
 }
 
-void BounceBallEdge(GameState *pong)
+void BounceBallEdge(Ball *ball)
 {
-    bool leftEdgeCollide = (pong->ball.position.x <= 0);
-    bool rightEdgeCollide = (pong->ball.position.x + pong->ball.size >= RENDER_WIDTH);
-    bool topEdgeCollide = (pong->ball.position.y <= FIELD_LINE_WIDTH);
-    bool bottomEdgeCollide = (pong->ball.position.y + pong->ball.size >= RENDER_HEIGHT - FIELD_LINE_WIDTH);
+    bool leftEdgeCollide = (ball->position.x <= 0);
+    bool rightEdgeCollide = (ball->position.x + ball->size >= RENDER_WIDTH);
+    bool topEdgeCollide = (ball->position.y <= FIELD_LINE_WIDTH);
+    bool bottomEdgeCollide = (ball->position.y + ball->size >= RENDER_HEIGHT - FIELD_LINE_WIDTH);
 
-    if (leftEdgeCollide && pong->ball.direction.x < 0)
+    if (leftEdgeCollide && ball->direction.x < 0)
     {
-        if (pong->playerWon)
+        if (pongGame.playerWon)
         {
-            pong->ball.direction.x *= -1; // Bounce
-            pong->ball.position.x = 0; // Don't get stuck
+            ball->direction.x *= -1; // Bounce
+            ball->position.x = 0; // Don't get stuck
         }
         else
         {
-            pong->scoreR += 1;
-            pong->scoreTimer = SCORE_PAUSE_TIME;
-            if (pong->scoreR != WIN_SCORE)
-                ResetBall(&pong->ball);
+            pongGame.scoreR += 1;
+            pongGame.scoreTimer = SCORE_PAUSE_TIME;
+            if (pongGame.scoreR != WIN_SCORE)
+                ResetBall(&pongGame.ball);
         }
     }
-    if (rightEdgeCollide && pong->ball.direction.x > 0)
+    if (rightEdgeCollide && ball->direction.x > 0)
     {
-        if (pong->playerWon)
+        if (pongGame.playerWon)
         {
-        pong->ball.direction.x *= -1;
-        pong->ball.position.x = (float)RENDER_WIDTH - pong->ball.size;
+        ball->direction.x *= -1;
+        ball->position.x = (float)RENDER_WIDTH - ball->size;
         }
         else
         {
-            pong->scoreL += 1;
-            pong->scoreTimer = SCORE_PAUSE_TIME;
-            if (pong->scoreL != WIN_SCORE)
-                ResetBall(&pong->ball);
+            pongGame.scoreL += 1;
+            pongGame.scoreTimer = SCORE_PAUSE_TIME;
+            if (pongGame.scoreL != WIN_SCORE)
+                ResetBall(&pongGame.ball);
         }
     }
-    if (topEdgeCollide && pong->ball.direction.y < 0)
+    if (topEdgeCollide && ball->direction.y < 0)
     {
-        pong->ball.direction.y *= -1;
-        pong->ball.position.y = FIELD_LINE_WIDTH;
+        ball->direction.y *= -1;
+        ball->position.y = FIELD_LINE_WIDTH;
     }
-    if (bottomEdgeCollide && pong->ball.direction.y > 0)
+    if (bottomEdgeCollide && ball->direction.y > 0)
     {
-        pong->ball.direction.y *= -1;
-        pong->ball.position.y = (float)RENDER_HEIGHT - pong->ball.size - FIELD_LINE_WIDTH;
+        ball->direction.y *= -1;
+        ball->position.y = (float)RENDER_HEIGHT - ball->size - FIELD_LINE_WIDTH;
     }
 
     if (leftEdgeCollide || rightEdgeCollide || topEdgeCollide || bottomEdgeCollide)
     {
-        if (topEdgeCollide || bottomEdgeCollide || pong->playerWon)
-            PlaySound(pong->beeps[BEEP_EDGE]);
+        if (topEdgeCollide || bottomEdgeCollide || pongGame.playerWon)
+            PlaySound(pongGame.beeps[BEEP_EDGE]);
         else if (leftEdgeCollide || rightEdgeCollide)
-            PlaySound(pong->beeps[BEEP_SCORE]);
+            PlaySound(pongGame.beeps[BEEP_SCORE]);
     }
 }
 
-void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep)
+void BounceBallPaddle(Ball *ball, Paddle *paddle)
 {
     if (CheckCollisionBallPaddle(*ball, *paddle) == false)
-        return;
+        return; // Do nothing if ball isn't colliding with paddle
 
     bool ballMovingLeft = ball->direction.x < 0;
+
     // Position the ball outside the paddle
     if (ballMovingLeft)
     {
@@ -230,108 +229,111 @@ void BounceBallPaddle(Ball *ball, Paddle *paddle, Sound *beep)
     ball->direction.y = sinf(newAngle);
     ball->direction.x = (ballMovingLeft) ? cosf(newAngle) : -cosf(newAngle);
 
-    PlaySound(*beep);
+    PlaySound(pongGame.beeps[BEEP_PADDLE]);
 }
 
-void UpdatePongFrame(GameState *pong, UiState *ui)
+void UpdatePongFrame(void)
 {
     // Input to go back to title screen
-    if (IsInputActionPressed(INPUT_ACTION_BACK, pong) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+    if (IsInputActionPressed(INPUT_ACTION_BACK) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {
-        ChangeUiMenu(UI_MENU_TITLE, ui, pong);
-        return; // back to main game loop
+        ChangeUiMenu(UI_MENU_TITLE);
+        return; // back to main game loop: UpdateDrawFrame()
     }
 
-        // Input to pause
-        if (IsInputActionPressed(INPUT_ACTION_PAUSE, pong))
-        {
-            pong->isPaused = !pong->isPaused;
-            if (pong->isPaused)
-                ChangeUiMenu(UI_MENU_PAUSE, ui, pong);
-            else
-                ui->currentMenu = UI_MENU_GAMEPLAY;
-            PlaySound(pong->beeps[BEEP_MENU]);
-        }
+    // Input to pause
+    if (IsInputActionPressed(INPUT_ACTION_PAUSE))
+    {
+        pongGame.isPaused = !pongGame.isPaused;
+        if (pongGame.isPaused)
+            ChangeUiMenu(UI_MENU_PAUSE);
+        else
+            pongUi.currentMenu = UI_MENU_GAMEPLAY;
+        PlaySound(pongGame.beeps[BEEP_MENU]);
+    }
 
-    if (!pong->isPaused)
+    if (!pongGame.isPaused)
     {
         // Update paddles (checks player Input)
-        if (pong->currentMode == MODE_1PLAYER)
+        if (pongGame.currentMode == MODE_1PLAYER)
         {
-            UpdatePaddlePlayer1(&pong->paddleL, pong);
-            UpdatePaddleMouseInput(&pong->paddleL);
-            UpdatePaddleComputer(&pong->paddleR, pong);
+            UpdatePaddlePlayer1(&pongGame.paddleL);
+            UpdatePaddleMouseInput(&pongGame.paddleL);
+            UpdatePaddleComputer(&pongGame.paddleR);
         }
-        if (pong->currentMode == MODE_2PLAYER)
+        if (pongGame.currentMode == MODE_2PLAYER)
         {
-            UpdatePaddlePlayer1(&pong->paddleL, pong);
-            UpdatePaddlePlayer2(&pong->paddleR, pong);
+            UpdatePaddlePlayer1(&pongGame.paddleL);
+            UpdatePaddlePlayer2(&pongGame.paddleR);
         }
-        if (pong->currentMode == MODE_DEMO)
+        if (pongGame.currentMode == MODE_DEMO)
         {
-            UpdatePaddleComputer(&pong->paddleL, pong);
-            UpdatePaddleComputer(&pong->paddleR, pong);
+            UpdatePaddleComputer(&pongGame.paddleL);
+            UpdatePaddleComputer(&pongGame.paddleR);
         }
 
         // Update ball
-        if (pong->playerWon && (pong->ball.speed < BALL_SPEED * 4))
-            pong->ball.speed = BALL_SPEED * 4;
+        if (pongGame.playerWon && (pongGame.ball.speed < BALL_SPEED * 4))
+            pongGame.ball.speed = BALL_SPEED * 4;
 
-        if (pong->scoreTimer <= 0 ||
-            pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
-            UpdateBall(&pong->ball);
+        if (pongGame.scoreTimer <= 0 ||
+            pongGame.scoreR == WIN_SCORE || pongGame.scoreL == WIN_SCORE)
+            UpdateBall(&pongGame.ball);
 
         // Collision logic
-        BounceBallEdge(pong);
-        if (pong->playerWon == false)
+        BounceBallEdge(&pongGame.ball);
+        if (pongGame.playerWon == false)
         {
-            BounceBallPaddle(&pong->ball, &pong->paddleL, &pong->beeps[BEEP_PADDLE]);
-            BounceBallPaddle(&pong->ball, &pong->paddleR, &pong->beeps[BEEP_PADDLE]);
+            BounceBallPaddle(&pongGame.ball, &pongGame.paddleL);
+            BounceBallPaddle(&pongGame.ball, &pongGame.paddleR);
         }
-        EdgeCollisionPaddle(&pong->paddleL);
-        EdgeCollisionPaddle(&pong->paddleR);
+        EdgeCollisionPaddle(&pongGame.paddleL);
+        EdgeCollisionPaddle(&pongGame.paddleR);
 
         // Check for winner
-        if (pong->scoreL >= WIN_SCORE || pong->scoreR >= WIN_SCORE)
-            pong->playerWon = true;
+        if (pongGame.scoreL >= WIN_SCORE || pongGame.scoreR >= WIN_SCORE)
+            pongGame.playerWon = true;
 
         // Input to skip win screen
-        if (pong->playerWon == true &&
-            (IsInputActionPressed(INPUT_ACTION_CONFIRM, pong) || IsGestureDetected(GESTURE_TAP)))
-            pong->winTimer = 0;
+        if (pongGame.playerWon == true &&
+            (IsInputActionPressed(INPUT_ACTION_CONFIRM) || IsGestureDetected(GESTURE_TAP)))
+            pongGame.winTimer = 0;
 
         // Update timers for winning and scoring
-        if (pong->scoreTimer > 0)
-            pong->scoreTimer -= GetFrameTime();
-        if (pong->playerWon && pong->winTimer > 0)
-            pong->winTimer -= GetFrameTime();
+        if (pongGame.scoreTimer > 0)
+            pongGame.scoreTimer -= GetFrameTime();
+        if (pongGame.playerWon && pongGame.winTimer > 0)
+            pongGame.winTimer -= GetFrameTime();
     }
 
     // Reset game after a player wins
-    if (pong->playerWon == true && pong->winTimer <= 0)
+    if (pongGame.playerWon == true && pongGame.winTimer <= 0)
     {
-        GameDifficulty prevDifficulty = pong->difficulty;
-        FreeBeeps(pong);
-        *pong = InitGameState();
-        pong->currentScreen = SCREEN_GAMEPLAY;
-        pong->difficulty = prevDifficulty;
+        GameMode prevMode = pongGame.currentMode;
+        GameDifficulty prevDifficulty = pongGame.difficulty;
+        FreeBeeps();
+        InitGameState();
+        pongGame.currentScreen = SCREEN_GAMEPLAY;
+        pongGame.currentMode = prevMode;
+        pongGame.difficulty = prevDifficulty;
     }
 
-    UpdateUiFrame(ui, pong);
+    // Update user interface elements and logic
+    UpdateUiFrame();
 }
 
-void UpdatePaddlePlayer1(Paddle *paddle, GameState *pong)
+void UpdatePaddlePlayer1(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
     // Input to move paddle
-    if (IsInputActionDown(INPUT_ACTION_P1_UP, pong))
+    if (IsInputActionDown(INPUT_ACTION_P1_UP))
         newSpeed = -PADDLE_SPEED;
-    if (IsInputActionDown(INPUT_ACTION_P1_DOWN, pong))
+    if (IsInputActionDown(INPUT_ACTION_P1_DOWN))
         newSpeed = PADDLE_SPEED;
 
     // Left Shift and A/D to speed up
-    if (IsInputActionDown(INPUT_ACTION_P1_SPEED, pong))
+    if (IsInputActionDown(INPUT_ACTION_P1_SPEED))
         newSpeed *= 2;
 
     // Update paddle
@@ -339,18 +341,18 @@ void UpdatePaddlePlayer1(Paddle *paddle, GameState *pong)
     paddle->position.y += paddle->speed * GetFrameTime();
 }
 
-void UpdatePaddlePlayer2(Paddle *paddle, GameState *pong)
+void UpdatePaddlePlayer2(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
 
     // Input to move paddle
-    if (IsInputActionDown(INPUT_ACTION_P2_UP, pong))
+    if (IsInputActionDown(INPUT_ACTION_P2_UP))
         newSpeed = -PADDLE_SPEED;
-    if (IsInputActionDown(INPUT_ACTION_P2_DOWN, pong))
+    if (IsInputActionDown(INPUT_ACTION_P2_DOWN))
         newSpeed = PADDLE_SPEED;
 
     // Left Shift and A/D to speed up
-    if (IsInputActionDown(INPUT_ACTION_P2_SPEED, pong))
+    if (IsInputActionDown(INPUT_ACTION_P2_SPEED))
         newSpeed *= 2;
 
     // Update paddle
@@ -366,40 +368,35 @@ void UpdatePaddleMouseInput(Paddle *paddle)
 
     // Only move if the mouse moved and if no keyboard input was detected
     if (Vector2Length(GetMouseDelta()) > 0 && paddle->speed == 0)
-    {
         paddle->position.y = mousePos.y - paddle->length / 2;
-
-        // float distBetweenMousePaddle = fabsf(scaledMousePos.x - paddle->position.x);
-        // if (distBetweenMousePaddle < RENDER_WIDTH / 2)
-        //     HideCursor();
-        // else
-        //     ShowCursor();
-    }
 }
 
-void UpdatePaddleComputer(Paddle *paddle, GameState *pong)
+void UpdatePaddleComputer(Paddle *paddle)
 {
     float newSpeed = 0.0f; // Not moving by default
-    bool paddleIsLeft = paddle->position.x < RENDER_WIDTH / 2;
+    Ball *ball = &pongGame.ball;
+
     // Follow the ball
-    if ((paddle->position.y + paddle->nextHitPos) > pong->ball.position.y + pong->ball.size)
+    if ((paddle->position.y + paddle->nextHitPos) > ball->position.y + ball->size)
         newSpeed = -PADDLE_SPEED;
-    if ((paddle->position.y + paddle->length - paddle->nextHitPos) < pong->ball.position.y)
+    if ((paddle->position.y + paddle->length - paddle->nextHitPos) < ball->position.y)
         newSpeed = PADDLE_SPEED;
 
+
     // Update Paddle
-    bool ballMovingLeft = pong->ball.direction.x < 0;
+    bool ballMovingLeft = ball->direction.x < 0;
+    bool paddleIsLeft = paddle->position.x < RENDER_WIDTH / 2;
     bool movingTowardsPaddle = ((paddleIsLeft && ballMovingLeft) ||
                                 (!paddleIsLeft && !ballMovingLeft));
-    float distanceToBall = fabsf(paddle->position.x - pong->ball.position.x);
-    float ballIsHalfway = (float)(distanceToBall < RENDER_WIDTH/2 - pong->ball.size*2);
+    float distanceToBall = fabsf(paddle->position.x - ball->position.x);
+    float ballIsHalfway = (float)(distanceToBall < RENDER_WIDTH/2 - ball->size*2);
 
     if (ballIsHalfway)
     {
-        GameDifficulty diff = pong->difficulty;
+        GameDifficulty diff = pongGame.difficulty;
         paddle->speed = newSpeed * (diff + 1);
 
-        // Tweak/adjust diff speeds
+        // Tweak/adjust difficulty speeds
         if (diff == DIFFICULTY_EASY)
             paddle->speed += paddle->speed * 0.30f;
         // else if (diff == DIFFICULTY_MEDIUM)
@@ -409,14 +406,15 @@ void UpdatePaddleComputer(Paddle *paddle, GameState *pong)
 
         // Move slower after hitting ball
         if (!movingTowardsPaddle && (distanceToBall < RENDER_WIDTH / 8))
-            paddle->speed /= 3;
+            paddle->speed /= 4;
+        else if (!movingTowardsPaddle && (distanceToBall < RENDER_WIDTH / 4))
+            paddle->speed /= 2;
 
-        // if (pong->scoreTimer <= 0)
         paddle->position.y += paddle->speed * GetFrameTime();
     }
 
     // // Perfect computer
-    // paddle->position.y = pong->ball.position.y;
+    // paddle->position.y = pongGame.ball.position.y;
 
     // TODO: make computer behavior more interesting/varied
 }
@@ -445,30 +443,28 @@ void UpdateBall(Ball *ball)
     ball->position = Vector2Add(ball->position, deltaTimeSpeed);
 }
 
-void DrawPongFrame(GameState *pong, UiState *ui)
+void DrawPongFrame(void)
 {
-    DrawUiFrame(ui, pong);
-
     // Draw ball
-    if (pong->scoreTimer <= 0 || pong->scoreR == WIN_SCORE || pong->scoreL == WIN_SCORE)
-        DrawRectangle((int)pong->ball.position.x, (int)pong->ball.position.y,
-                      (int)pong->ball.size,       (int)pong->ball.size, RAYWHITE);
+    if (pongGame.scoreTimer <= 0 || pongGame.scoreR == WIN_SCORE || pongGame.scoreL == WIN_SCORE)
+        DrawRectangle((int)pongGame.ball.position.x, (int)pongGame.ball.position.y,
+                      (int)pongGame.ball.size,       (int)pongGame.ball.size, RAYWHITE);
 
 
     // Draw paddles
-    if (pong->playerWon == false)
+    if (pongGame.playerWon == false)
     {
-        DrawRectangle((int)pong->paddleR.position.x, (int)pong->paddleR.position.y,
-                      (int)pong->paddleR.width,      (int)pong->paddleR.length, RAYWHITE);
-        DrawRectangle((int)pong->paddleL.position.x, (int)pong->paddleL.position.y,
-                      (int)pong->paddleL.width,      (int)pong->paddleL.length, RAYWHITE);
+        DrawRectangle((int)pongGame.paddleR.position.x, (int)pongGame.paddleR.position.y,
+                      (int)pongGame.paddleR.width,      (int)pongGame.paddleR.length, RAYWHITE);
+        DrawRectangle((int)pongGame.paddleL.position.x, (int)pongGame.paddleL.position.y,
+                      (int)pongGame.paddleL.width,      (int)pongGame.paddleL.length, RAYWHITE);
     }
 
     // Draw difficulty mode text in lower right
-    if (pong->currentMode == MODE_1PLAYER)
+    if (pongGame.currentMode == MODE_1PLAYER)
     {
         const char *difficultyText;
-        switch (pong->difficulty)
+        switch (pongGame.difficulty)
         {
             case DIFFICULTY_EASY:
                 difficultyText = "Difficulty Easy";
@@ -488,6 +484,8 @@ void DrawPongFrame(GameState *pong, UiState *ui)
                  DIFFICULTY_FONT_SIZE, RAYWHITE);
     }
 
+    // Draw user interface elements
+    DrawUiFrame();
 }
 
 void ResetBall(Ball *ball)
@@ -498,6 +496,8 @@ void ResetBall(Ball *ball)
     // Change the ball's return position and angle a bit
     ball->position.y += GetRandomValue(-RETURN_POSITION_VARIATION, RETURN_POSITION_VARIATION);
     ball->direction.y += GetRandomValue(-RETURN_ANGLE_VARIATION, RETURN_ANGLE_VARIATION);
+
+    // Don't get stuck in the wall
     if (ball->position.y <= FIELD_LINE_WIDTH)
         ball->position.y = (float)(FIELD_LINE_WIDTH + ball->size);
     else if (ball->position.y >= RENDER_HEIGHT - FIELD_LINE_WIDTH)

@@ -2,49 +2,41 @@
 // Helps handle game input
 
 #include "input.h"
-#include "pong.h"
 
-InputKeyMaps InitInputKeyMaps(void)
+// Global struct to track input key mappings
+InputKeyMaps gameInput = { 0 };
+
+void InitDefaultInputControls(void)
 {
-    InputKeyMaps input =
+    InputKeyMaps defaultControls =
     {
-        // Input action key mappings
-        .keyMaps[INPUT_ACTION_CONFIRM][0] = KEY_ENTER,
-        .keyMaps[INPUT_ACTION_CONFIRM][1] = KEY_SPACE,
+        // Global across program
+        .keyMaps[INPUT_ACTION_FULLSCREEN] =
+        {
+            KEY_LEFT_ALT, KEY_ENTER,
+            KEY_RIGHT_ALT, KEY_ENTER,
+            KEY_LEFT_SHIFT, KEY_F,
+            KEY_RIGHT_SHIFT, KEY_F,
+            KEY_F11,
+        },
 
-        .keyMaps[INPUT_ACTION_BACK][0] = KEY_ESCAPE,
-        .keyMaps[INPUT_ACTION_BACK][1] = KEY_BACKSPACE,
+        // Menu and Game
+        .keyMaps[INPUT_ACTION_CONFIRM] = { KEY_ENTER, KEY_SPACE },
+        .keyMaps[INPUT_ACTION_BACK] =    { KEY_ESCAPE, KEY_BACKSPACE, },
+        .keyMaps[INPUT_ACTION_PAUSE] =   { KEY_P },
 
-        .keyMaps[INPUT_ACTION_PAUSE][0] = KEY_P,
+        // Player 1 controls
+        .keyMaps[INPUT_ACTION_P1_UP] =   { KEY_W, },
+        .keyMaps[INPUT_ACTION_P1_DOWN] = { KEY_S, },
+        .keyMaps[INPUT_ACTION_P1_SPEED] = { KEY_D, KEY_A, KEY_LEFT_SHIFT, },
 
-        .keyMaps[INPUT_ACTION_FULLSCREEN][0] = KEY_LEFT_ALT,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][1] = KEY_ENTER,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][2] = KEY_RIGHT_ALT,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][3] = KEY_ENTER,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][4] = KEY_LEFT_SHIFT,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][5] = KEY_F,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][6] = KEY_RIGHT_SHIFT,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][7] = KEY_F,
-        .keyMaps[INPUT_ACTION_FULLSCREEN][8] = KEY_F11,
-
-        .keyMaps[INPUT_ACTION_P1_UP][0] = KEY_W,
-        .keyMaps[INPUT_ACTION_P1_DOWN][0] = KEY_S,
-        .keyMaps[INPUT_ACTION_P1_SPEED][0] = KEY_D,
-        .keyMaps[INPUT_ACTION_P1_SPEED][1] = KEY_A,
-        .keyMaps[INPUT_ACTION_P1_SPEED][2] = KEY_LEFT_SHIFT,
-
-        .keyMaps[INPUT_ACTION_P2_UP][0] = KEY_I,
-        .keyMaps[INPUT_ACTION_P2_UP][1] = KEY_UP,
-        .keyMaps[INPUT_ACTION_P2_DOWN][0] = KEY_K,
-        .keyMaps[INPUT_ACTION_P2_DOWN][1] = KEY_DOWN,
-        .keyMaps[INPUT_ACTION_P2_SPEED][0] = KEY_J,
-        .keyMaps[INPUT_ACTION_P2_SPEED][1] = KEY_K,
-        .keyMaps[INPUT_ACTION_P2_SPEED][2] = KEY_LEFT,
-        .keyMaps[INPUT_ACTION_P2_SPEED][3] = KEY_RIGHT,
-        .keyMaps[INPUT_ACTION_P2_SPEED][4] = KEY_LEFT_SHIFT,
+        // Player 2 controls
+        .keyMaps[INPUT_ACTION_P2_UP] =   { KEY_I, KEY_UP },
+        .keyMaps[INPUT_ACTION_P2_DOWN] = { KEY_K, KEY_DOWN },
+        .keyMaps[INPUT_ACTION_P2_SPEED] = { KEY_J, KEY_K, KEY_LEFT, KEY_RIGHT },
     };
 
-    return input;
+    gameInput = defaultControls;
 }
 
 bool IsInputKeyModifier(KeyboardKey key)
@@ -56,9 +48,9 @@ bool IsInputKeyModifier(KeyboardKey key)
     return false;
 }
 
-bool IsInputActionPressed(InputAction action, GameState* pong)
+bool IsInputActionPressed(InputAction action)
 {
-    KeyboardKey* keys = pong->input.keyMaps[action];
+    KeyboardKey* keys = gameInput.keyMaps[action];
 
     // Check potential key combinations
     for (int i = 0; i < INPUT_MAX_KEYS && keys[i] != 0; i++)
@@ -88,19 +80,19 @@ bool IsInputActionPressed(InputAction action, GameState* pong)
     return false;
 }
 
-bool IsInputActionDown(InputAction action, GameState* pong)
+bool IsInputActionDown(InputAction action)
 {
-    KeyboardKey* keys = pong->input.keyMaps[action];
+    KeyboardKey* keys = gameInput.keyMaps[action];
 
     for (int i = 0; i < INPUT_MAX_KEYS && keys[i] != 0; i++)
     {
         KeyboardKey key = keys[i];
 
-        if (key == KEY_LEFT_ALT || key == KEY_RIGHT_ALT ||
-            key == KEY_LEFT_SHIFT || key == KEY_RIGHT_SHIFT ||
-            key == KEY_LEFT_CONTROL || key == KEY_RIGHT_CONTROL)
+        // Check modifier plus next key (only 1 modifier for now)
+        if (IsInputKeyModifier(key))
         {
-            if (i + 1 < INPUT_MAX_KEYS && keys[i + 1] != 0)
+            if ((i + 1 < INPUT_MAX_KEYS) && (keys[i + 1] != 0) &&
+                (!IsInputKeyModifier(keys[i + 1])))
             {
                 if (IsKeyDown(key) && IsKeyDown(keys[i + 1]))
                     return true;
@@ -115,4 +107,19 @@ bool IsInputActionDown(InputAction action, GameState* pong)
             return true;
     }
     return false;
+}
+
+void HandleToggleFullscreen(void)
+{
+    // No fullscreen input for web because it's buggy
+    // For now just use emscripten's fullscreen button
+#if !defined(PLATFORM_WEB)
+    // Input for fullscreen
+    if (IsInputActionPressed(INPUT_ACTION_FULLSCREEN))
+    {
+        // Borderless Windowed is generally nicer to use on desktop
+        ToggleBorderlessWindowed();
+        PollInputEvents(); // Skip to the next frame's input
+    }
+#endif
 }

@@ -4,8 +4,8 @@
 #ifndef PONG_CONFIG_HEADER_GUARD
 #define PONG_CONFIG_HEADER_GUARD
 
-// Global macros
-// --------------------------------------------------------------------------------
+// Macros
+// ----------------------------------------------------------------------------
 
 #define WINDOW_TITLE "Pong Remake with raylib"
 
